@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}My Account — MangaStore{% endblock %}
+
+{% set type_labels = {
+    'entry_fee': 'Entry fee',
+    'loan':      'Loan',
+    'return':    'Return',
+    'overdue':   'Overdue charge',
+    'manual':    'Adjustment',
+    'refund':    'Refund',
+    'topup':     'Top-up'
+} %}
+
+{% block content %}
+<div class="acct-page">
+
+    <!-- Top bar -->
+    <div class="detail-topbar">
+        <a href="{{ url_for('books.scan') }}" class="btn btn-ghost btn-sm">
+            &larr; Back
+        </a>
+        <span class="page-topbar-title">
+            {{ current_user.username }}
+        </span>
+        <a href="{{ url_for('account.change_pin') }}" class="btn btn-ghost btn-sm ml-auto">
+            {{ _t('acct.change_pin') }}
+        </a>
+    </div>
+
+    <!-- ── Language switcher ── -->
+    <div class="lang-switcher-row">
+        <span class="lang-switcher-label">{{ _t('acct.language') }}:</span>
+        <div class="lang-switcher">
+            {% for lang in supported_langs %}
+                <form method="post" action="{{ url_for('account.set_language', lang=lang) }}" class="inline-form">
+                    <button type="submit" class="lang-btn {% if current_lang == lang %}active{% endif %}">
+                        {{ lang_labels[lang] }}
+                    </button>
+                </form>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="acct-body">
+
+        <!-- ── Balance card ── -->
+        <div class="acct-section">
+            <div class="acct-qr-row">
+                <img src="{{ url_for('loans.user_qr', user_id=current_user.id) }}"
+                     class="acct-qr-img" alt="Your scanner QR">
+                <div class="acct-qr-hint hint">{{ _t('acct.qr_hint') }}</div>
+            </div>
+
+            <div class="hint-aside-row">
+                <div class="balance-card balance-{{ balance_status }}">
+                    <div class="balance-label">{{ _t('acct.balance') }}</div>
+                    <div class="balance-amount">
+                        {{ '%.2f'|format(current_user.guthaben) }} &euro;
+                    </div>
+                </div>
+                <div class="hint balance-hint">
+                    {% if balance_status == 'ok' %}{{ _t('acct.can_borrow') }}
+                    {% elif balance_status == 'warn' %}{{ _t('acct.warn_funds') }}
+                    {% else %}{{ _t('acct.empty') }}{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Top-up ── -->
+        <div class="acct-section">
+            <div class="acct-section-title">{{ _t('acct.add_funds') }}</div>
+            <div class="hint-aside-row">
+                <form method="post" action="{{ url_for('account.topup') }}" class="topup-form">
+                    <div class="topup-presets">
+                        <button type="submit" name="amount" value="5.00"  class="btn btn-ghost topup-btn">5 &euro;</button>
+                        <button type="submit" name="amount" value="10.00" class="btn btn-ghost topup-btn">10 &euro;</button>
+                        <button type="submit" name="amount" value="20.00" class="btn btn-ghost topup-btn">20 &euro;</button>
+                    </div>
+                    <div class="topup-custom">
+                        <input type="number"
+                               name="amount"
+                               class="form-input topup-input"
+                               placeholder="other amount"
+                               min="0.50"
+                               max="50"
+                               step="0.50">
+                        <button type="submit" class="btn btn-primary topup-submit">{{ _t('btn.add') }}</button>
+                    </div>
+                </form>
+                <div class="hint topup-hint">{{ _t('acct.topup_hint') }}</div>
+            </div>
+        </div>
+
+        <!-- ── Active loans ── -->
+        <div class="acct-section">
+            <div class="acct-section-title">
+                {{ _t('acct.active_loans') }}
+                {% if active_loans %}
+                    <span class="acct-count">{{ active_loans | length }}</span>
+                {% endif %}
+            </div>
+
+            {% if active_loans %}
+                <div class="loan-list">
+                    {% for loan in active_loans %}
+                        {% set overdue = loan.due_date < now_iso %}
+                        <div class="loan-card {% if overdue %}loan-overdue{% endif %}">
+                            <div class="loan-card-cover">
+                                {% if loan.copy.book.cover_path %}
+                                    <img src="{{ url_for('static', filename=loan.copy.book.cover_path) }}"
+                                         alt="" loading="lazy">
+                                {% else %}
+                                    <div class="cover-placeholder cover-sm">
+                                        {{ (loan.copy.book.title or '?')[0] | upper }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="loan-card-info">
+                                <div class="loan-card-title">
+                                    {{ loan.copy.book.title }}
+                                </div>
+                                <div class="loan-card-meta">
+                                    Copy #{{ loan.copy.copy_num }}
+                                    &middot;
+                                    Borrowed {{ loan.taken_out_at | fmt_date }}
+                                </div>
+                            </div>
+                            <div class="loan-card-right">
+                                {% if overdue %}
+                                    <span class="overdue-badge">Overdue</span>
+                                {% endif %}
+                                <div class="loan-card-due {% if overdue %}text-danger{% endif %}">
+                                    {% if overdue %}Was due{% else %}Due{% endif %}
+                                    <strong>{{ loan.due_date | fmt_date }}</strong>
+                                </div>
+                                <a href="{{ url_for('loans.return_confirm', loan_id=loan.id) }}"
+                                   class="btn btn-ghost btn-sm">Return</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="acct-empty">{{ _t('acct.no_loans') }}</div>
+            {% endif %}
+        </div>
+
+        <!-- ── Recent activity ── -->
+        <div class="acct-section">
+            <div class="acct-section-title">{{ _t('acct.activity') }}</div>
+
+            {% if recent_txns %}
+                <div class="txn-list">
+                    {% for txn in recent_txns %}
+                        <div class="txn-row">
+                            <div class="txn-date">
+                                {{ txn.created_at | fmt_date }}
+                            </div>
+                            <div class="txn-desc">
+                                <span class="txn-type">
+                                    {{ type_labels.get(txn.type, txn.type) }}
+                                </span>
+                                {% if txn.description %}
+                                    <span class="txn-detail">
+                                        {{ txn.description | truncate(45, True) }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="txn-amount
+                                {% if txn.amount > 0 %}txn-credit
+                                {% elif txn.amount < 0 %}txn-debit
+                                {% else %}txn-neutral{% endif %}">
+                                {% if txn.amount > 0 %}+{% endif %}
+                                {% if txn.amount != 0 %}
+                                    {{ '%.2f'|format(txn.amount) }} &euro;
+                                {% else %}
+                                    &mdash;
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="acct-empty">{{ _t('acct.no_txns') }}</div>
+            {% endif %}
+        </div>
+
+    </div><!-- /acct-body -->
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Settings</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="admin-page">
+        <nav class="admin-nav">
+            <a href="/admin/users.html" class="admin-nav-item">Users</a>
+            <a href="/admin/overdue.html" class="admin-nav-item">Overdue</a>
+            <a href="/admin/rebuy.html" class="admin-nav-item">Rebuy</a>
+            <a href="/admin/settings.html" class="admin-nav-item active">Settings</a>
+        </nav>
+        <div class="admin-body">
+            <div class="hint-aside-row" style="align-items:start;padding-top:8px">
+                <div class="card" style="max-width:420px">
+                    <div class="card-header">Library Settings</div>
+                    <div class="card-body">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Max books per user</label>
+                            <input type="number" id="max-books" class="form-input" min="1" max="20" value="3">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Max loan days</label>
+                            <input type="number" id="max-days" class="form-input" min="7" max="365" value="60">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Default loan rate (€)</label>
+                            <select id="default-rate" class="form-input form-select">
+                                <option value="0.50">0.50 €</option>
+                                <option value="1.00">1.00 €</option>
+                                <option value="1.50">1.50 €</option>
+                                <option value="2.00">2.00 €</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="btn-save">Save Settings</button>
+                        <div id="msg" class="fetch-status mt-2" style="display:none"></div>
+                        <hr class="divider" style="margin-top:20px">
+                        <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">Remove all books from the database where every copy is broken or missing.</div>
+                        <button class="btn btn-danger btn-sm" id="btn-purge">Purge Empty Books</button>
+                        <div id="purge-msg" class="fetch-status mt-2" style="display:none"></div>
+                    </div>
+                </div>
+                <div class="hint text-muted">
+                    <p><strong>Max books</strong><br>How many books a user can borrow at once.</p>
+                    <p><strong>Loan days</strong><br>How many days until a book is due.</p>
+                    <p><strong>Default rate</strong><br>The pre-selected loan fee per book.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+async function init() {
+    await initPage();
+    requireAdminPin(loadContent);
+}
+
+async function loadContent() {
+    try {
+        const s = await API.get('/api/admin/settings');
+        document.getElementById('max-books').value    = s.max_books_per_user;
+        document.getElementById('max-days').value     = s.max_loan_days;
+        document.getElementById('default-rate').value = s.default_loan_rate;
+    } catch (err) {
+        if (handleAuthError(err)) return;
+    }
+}
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+    const msgEl = document.getElementById('msg');
+    const body = {
+        max_books_per_user: parseInt(document.getElementById('max-books').value),
+        max_loan_days:      parseInt(document.getElementById('max-days').value),
+        default_loan_rate:  document.getElementById('default-rate').value,
+    };
+    try {
+        await API.post('/api/admin/settings', body);
+        msgEl.className = 'fetch-status text-success';
+        msgEl.textContent = 'Settings saved.';
+        msgEl.style.display = 'block';
+        setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
+    } catch (err) {
+        msgEl.className = 'fetch-status text-danger';
+        msgEl.textContent = err.detail || 'Failed.';
+        msgEl.style.display = 'block';
+    }
+});
+
+document.getElementById('btn-purge').addEventListener('click', async () => {
+    const msgEl = document.getElementById('purge-msg');
+    if (!confirm('Delete all books with no usable copies from the database?')) return;
+    try {
+        const res = await API.post('/api/admin/purge-empty-books');
+        msgEl.className = 'fetch-status text-success';
+        msgEl.textContent = res.message;
+        msgEl.style.display = 'block';
+    } catch (err) {
+        msgEl.className = 'fetch-status text-danger';
+        msgEl.textContent = err.detail || 'Failed.';
+        msgEl.style.display = 'block';
+    }
+});
+
+init();
+</script>
+</body>
+</html>

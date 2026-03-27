@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Return</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="picker-page">
+        <div class="detail-topbar">
+            <a href="/index.html" class="btn btn-ghost btn-sm">← Scan</a>
+            <span class="page-topbar-title">Return — pick copy</span>
+        </div>
+        <div class="picker-body" id="picker-body">
+            <div class="picker-right">
+                <div class="text-muted">Loading…</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function init() {
+    await initPage();
+    const isbn = new URLSearchParams(location.search).get('isbn');
+    if (!isbn) { window.location.href = '/index.html'; return; }
+
+    const data = await API.get(`/api/return-pick/${encodeURIComponent(isbn)}`).catch(() => null);
+    if (!data) { window.location.href = '/index.html'; return; }
+
+    if (data.loans.length === 1) {
+        window.location.href = `/return.html?loan_id=${data.loans[0].id}`;
+        return;
+    }
+
+    const coverHtml = data.book && data.book.cover_path
+        ? `<img class="detail-cover-img" src="/static/${esc(data.book.cover_path)}" alt="">`
+        : `<div class="cover-placeholder cover-xl">📖</div>`;
+
+    const items = data.loans.map(l => `
+        <a class="picker-item" href="/return.html?loan_id=${l.id}">
+            <span class="picker-copy">Copy #${l.copy_num}</span>
+            <span class="picker-date">Due ${esc(fmtDate(l.due_date))}</span>
+            <span class="picker-arrow">›</span>
+        </a>
+    `).join('');
+
+    document.getElementById('picker-body').innerHTML = `
+        <div class="picker-cover">${coverHtml}</div>
+        <div class="picker-right">
+            <div class="picker-question">Which copy?</div>
+            <div class="picker-book-title">${esc(data.book ? data.book.title : '')}</div>
+            <div class="picker-list">${items}</div>
+        </div>
+    `;
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Add Book</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="addbook-page">
+        <div class="detail-topbar">
+            <a href="/index.html" class="btn btn-ghost btn-sm">← Scan</a>
+            <span class="page-topbar-title">Add Book</span>
+        </div>
+        <div class="addbook-layout">
+            <div class="addbook-form-col">
+                <form id="add-form">
+                    <div class="form-group">
+                        <label class="form-label">ISBN</label>
+                        <div class="isbn-row">
+                            <input type="text" id="isbn" class="form-input" inputmode="numeric" placeholder="9781234567890">
+                            <button type="button" class="btn btn-ghost" id="btn-lookup">Lookup</button>
+                        </div>
+                        <div id="lookup-msg" class="fetch-status" style="display:none"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Title *</label>
+                        <input type="text" id="title" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Author</label>
+                        <input type="text" id="author" class="form-input">
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">Publisher</label>
+                            <input type="text" id="publisher" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Published</label>
+                            <input type="text" id="published" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cover URL</label>
+                        <input type="text" id="cover-url" class="form-input">
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">Loan rate (€)</label>
+                            <select id="loan-rate" class="form-input form-select">
+                                <option value="0.50">0.50 €</option>
+                                <option value="1.00">1.00 €</option>
+                                <option value="1.50">1.50 €</option>
+                                <option value="2.00">2.00 €</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Donor</label>
+                            <select id="donor-id" class="form-input form-select">
+                                <option value="">— none —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="save-msg" class="fetch-status" style="display:none"></div>
+                    <div style="display:flex;gap:10px;margin-top:4px">
+                        <button type="button" class="btn btn-primary" style="flex:1" id="btn-add">Add Book</button>
+                        <a href="/index.html" class="btn btn-ghost">Cancel</a>
+                    </div>
+                </form>
+            </div>
+            <div class="addbook-cover-col">
+                <div class="cover-preview-wrap" id="cover-preview">
+                    <div class="cover-placeholder cover-xl">📖</div>
+                </div>
+                <div class="hint text-muted" style="font-size:13px;line-height:1.5">
+                    <p>Enter the ISBN and click <strong>Lookup</strong> to auto-fill metadata.</p>
+                    <p>The first physical copy is registered automatically.</p>
+                    <p>Set a donor if a user donated this copy — they'll borrow it free.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function set(id, val) { document.getElementById(id).value = val || ''; }
+
+async function init() {
+    const user = await initPage();
+    if (!user.is_admin) { window.location.href = '/index.html'; return; }
+
+    const isbn = new URLSearchParams(location.search).get('isbn') || '';
+    if (isbn) { set('isbn', isbn); doLookup(isbn); }
+
+    try {
+        const users = await API.get('/api/admin/users');
+        const sel = document.getElementById('donor-id');
+        users.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.id; opt.textContent = u.username;
+            sel.appendChild(opt);
+        });
+    } catch (e) {}
+}
+
+async function doLookup(isbn) {
+    const msgEl = document.getElementById('lookup-msg');
+    msgEl.className = 'fetch-status text-muted';
+    msgEl.textContent = 'Looking up…';
+    msgEl.style.display = 'block';
+    try {
+        const meta = await API.get(`/api/books/fetch-isbn?isbn=${encodeURIComponent(isbn)}`);
+        set('title',     meta.title);
+        set('author',    meta.author);
+        set('publisher', meta.publisher);
+        set('published', meta.published);
+        set('cover-url', meta.cover_url);
+        if (meta.cover_url) {
+            document.getElementById('cover-preview').innerHTML =
+                `<img class="cover-preview-img" src="${esc(meta.cover_url)}" alt="" onerror="this.style.display='none'">`;
+        }
+        msgEl.className = 'fetch-status text-success';
+        msgEl.textContent = 'Metadata loaded.';
+        setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
+    } catch (err) {
+        msgEl.className = 'fetch-status text-warning';
+        msgEl.textContent = 'Not found — fill in manually.';
+    }
+}
+
+document.getElementById('btn-lookup').addEventListener('click', () => {
+    doLookup(document.getElementById('isbn').value.trim());
+});
+
+document.getElementById('btn-add').addEventListener('click', async () => {
+    const msgEl = document.getElementById('save-msg');
+    const body = {
+        isbn:      document.getElementById('isbn').value.trim(),
+        title:     document.getElementById('title').value.trim(),
+        author:    document.getElementById('author').value.trim() || null,
+        publisher: document.getElementById('publisher').value.trim() || null,
+        published: document.getElementById('published').value.trim() || null,
+        cover_url: document.getElementById('cover-url').value.trim() || null,
+        loan_rate: parseFloat(document.getElementById('loan-rate').value),
+        donor_id:  document.getElementById('donor-id').value ? parseInt(document.getElementById('donor-id').value) : null,
+    };
+    try {
+        await API.post('/api/books', body);
+        window.location.href = `/book.html?isbn=${encodeURIComponent(body.isbn)}`;
+    } catch (err) {
+        msgEl.className = 'fetch-status text-danger';
+        msgEl.textContent = err.detail || 'Failed.';
+        msgEl.style.display = 'block';
+    }
+});
+
+init();
+</script>
+</body>
+</html>

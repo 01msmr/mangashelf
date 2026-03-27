@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}MangaStore — Create Account{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+
+    <div class="auth-welcome">
+        <span class="auth-welcome-hex">⬡</span> Create Account
+    </div>
+
+    <div class="hint-aside-row">
+        <div class="auth-card">
+
+            <form method="post" action="{{ url_for('auth.register') }}" class="auth-form">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input
+                        class="form-input"
+                        type="text"
+                        id="username"
+                        name="username"
+                        value="{{ username | default('') }}"
+                        placeholder="letters and numbers only"
+                        autocomplete="username"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        minlength="3"
+                        autofocus
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="pin">PIN</label>
+                    <input
+                        class="form-input form-input-pin"
+                        type="password"
+                        id="pin"
+                        name="pin"
+                        placeholder="&#9679; &#9679; &#9679; &#9679;"
+                        maxlength="4"
+                        data-pin
+                        data-pin-label="Choose a PIN"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="pin_confirm">Confirm PIN</label>
+                    <input
+                        class="form-input form-input-pin"
+                        type="password"
+                        id="pin_confirm"
+                        name="pin_confirm"
+                        placeholder="&#9679; &#9679; &#9679; &#9679;"
+                        maxlength="4"
+                        data-pin
+                        data-pin-label="Confirm your PIN"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg mt-1">
+                    Create Account
+                </button>
+            </form>
+        </div>
+
+        <div class="hint">
+            Letters and numbers only, at least 3 characters.<br><br>
+            Choose a 4-digit PIN you'll remember.<br><br>
+            10.00 &euro; entry fee is added automatically.
+        </div>
+    </div>
+
+    <div class="auth-register-card">
+        Already have an account?
+        <a href="{{ url_for('auth.login') }}">Log in</a>
+    </div>
+
+</div>
+{% endblock %}

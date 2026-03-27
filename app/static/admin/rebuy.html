@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Rebuy List</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="admin-page">
+        <nav class="admin-nav">
+            <a href="/admin/users.html" class="admin-nav-item">Users</a>
+            <a href="/admin/overdue.html" class="admin-nav-item">Overdue</a>
+            <a href="/admin/rebuy.html" class="admin-nav-item active">Rebuy</a>
+            <a href="/admin/settings.html" class="admin-nav-item">Settings</a>
+        </nav>
+        <div class="admin-body">
+            <div id="list" class="rebuy-list">
+                <div class="empty-state">Loading…</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function loadList() {
+    const list = document.getElementById('list');
+    try {
+        const items = await API.get('/api/admin/rebuy');
+        if (!items.length) {
+            list.innerHTML = '<div class="empty-state">No items to rebuy. 🎉</div>';
+            return;
+        }
+        list.innerHTML = items.map(i => {
+            const coverHtml = i.cover_path
+                ? `<div class="rebuy-cover"><img src="/static/${esc(i.cover_path)}" alt=""></div>`
+                : '';
+            return `
+                <div class="rebuy-row" id="rebuy-${i.id}">
+                    ${coverHtml}
+                    <div class="rebuy-info">
+                        <div class="rebuy-title">
+                            <a href="/book.html?isbn=${encodeURIComponent(i.book_isbn)}" class="rebuy-book-link">${esc(i.book_title)}</a>
+                            ${i.copy_num ? `<span class="rebuy-copy">Copy #${i.copy_num}</span>` : ''}
+                        </div>
+                        <div class="rebuy-reason">${esc(i.reason || '')}</div>
+                        <div class="rebuy-date">${esc(fmtDate(i.added_at))}</div>
+                    </div>
+                    <div class="rebuy-action">
+                        <button class="btn btn-ghost btn-sm" onclick="resolve(${i.id})">Mark Resolved</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        list.innerHTML = `<p class="text-danger">${esc(err.detail)}</p>`;
+    }
+}
+
+async function resolve(id) {
+    try {
+        await API.post(`/api/admin/rebuy/${id}/resolve`);
+        document.getElementById(`rebuy-${id}`).remove();
+        if (!document.querySelector('.rebuy-row')) {
+            document.getElementById('list').innerHTML = '<div class="empty-state">No items to rebuy. 🎉</div>';
+        }
+    } catch (err) {
+        alert(err.detail || 'Failed');
+    }
+}
+
+initPage().then(() => requireAdminPin(loadList));
+</script>
+</body>
+</html>

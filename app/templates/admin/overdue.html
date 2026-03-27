@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Overdue — Admin{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    {% include 'admin/_nav.html' %}
+
+    <div class="admin-body">
+        {% if overdue_items %}
+            <div class="overdue-list">
+                {% for item in overdue_items %}
+                    {% set loan = item.loan %}
+                    <div class="overdue-row">
+
+                        <div class="overdue-cover">
+                            {% if loan.copy.book.cover_path %}
+                                <img src="{{ url_for('static', filename=loan.copy.book.cover_path) }}"
+                                     alt="" loading="lazy">
+                            {% else %}
+                                <div class="cover-placeholder cover-sm">
+                                    {{ (loan.copy.book.title or '?')[0] | upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="overdue-info">
+                            <div class="overdue-title">
+                                <a href="{{ url_for('books.book_detail', isbn=loan.copy.book.isbn) }}"
+                                   class="overdue-book-link">
+                                    {{ loan.copy.book.title }}
+                                </a>
+                                <span class="overdue-copy">Copy #{{ loan.copy.copy_num }}</span>
+                            </div>
+                            <div class="overdue-meta">
+                                <span class="overdue-borrower">{{ loan.user.username }}</span>
+                                <span class="overdue-due">
+                                    Due {{ loan.due_date | fmt_date }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="overdue-right">
+                            <span class="overdue-days-badge">
+                                {{ item.days }} day{{ 's' if item.days != 1 }}
+                            </span>
+                            {% if loan.overdue_fee > 0 %}
+                                <span class="overdue-fee-charged">
+                                    &minus;{{ '%.2f'|format(loan.overdue_fee) }} &euro; charged
+                                </span>
+                            {% else %}
+                                <span class="overdue-fee-pending">
+                                    fee pending
+                                </span>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <div class="empty-state">
+                No overdue loans &mdash; all good!
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}MangaStore — Set New PIN{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-title">Set Your <span>PIN</span></div>
+
+        <div class="setup-notice">
+            You are using the default admin PIN. Please choose a new 4-digit PIN
+            before continuing. The default PIN (0000) is not allowed.
+        </div>
+
+        <form method="post" action="{{ url_for('auth.setup_pin') }}" class="auth-form">
+            <div class="form-group">
+                <label class="form-label" for="pin">New PIN</label>
+                <input
+                    class="form-input form-input-pin"
+                    type="password"
+                    id="pin"
+                    name="pin"
+                    placeholder="&#9679; &#9679; &#9679; &#9679;"
+                    maxlength="4"
+                    data-pin
+                    data-pin-label="Choose a new PIN"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="pin_confirm">Confirm New PIN</label>
+                <input
+                    class="form-input form-input-pin"
+                    type="password"
+                    id="pin_confirm"
+                    name="pin_confirm"
+                    placeholder="&#9679; &#9679; &#9679; &#9679;"
+                    maxlength="4"
+                    data-pin
+                    data-pin-label="Confirm your PIN"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg mt-1">
+                Save PIN &amp; Continue
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

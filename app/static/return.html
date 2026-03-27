@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Return</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="action-page">
+        <div class="detail-topbar">
+            <a href="/index.html" class="btn btn-ghost btn-sm">← All Books</a>
+            <span class="page-topbar-title">Return</span>
+        </div>
+        <div class="action-body" id="action-body">
+            <div class="action-panel">
+                <div class="text-muted">Loading…</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function init() {
+    await initPage();
+    const loanId = new URLSearchParams(location.search).get('loan_id');
+    if (!loanId) { document.getElementById('action-body').innerHTML = '<div class="action-panel"><p>No loan ID.</p></div>'; return; }
+
+    let info;
+    try {
+        info = await API.get(`/api/return/${loanId}`);
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        document.getElementById('action-body').innerHTML =
+            `<div class="action-panel"><div class="text-danger">${esc(err.detail)}</div></div>`;
+        return;
+    }
+
+    const coverHtml = info.book.cover_path
+        ? `<img class="detail-cover-img" src="/static/${esc(info.book.cover_path)}" alt="">`
+        : `<div class="cover-placeholder cover-xl">📖</div>`;
+
+    const now = new Date().toISOString();
+    const overdue = info.due_date < now;
+    const overdueBadge = overdue
+        ? `<span class="overdue-badge" style="margin-bottom:8px;display:inline-block">OVERDUE</span>`
+        : '';
+
+    document.getElementById('action-body').innerHTML = `
+        <div class="action-cover">${coverHtml}</div>
+        <div class="action-panel">
+            <div class="action-title">${esc(info.book.title)}</div>
+            <div class="action-subtitle">${esc(info.book.author || '')}</div>
+            ${overdueBadge}
+            <div class="action-details">
+                <div class="detail-row">
+                    <span class="dr-label">Due date</span>
+                    <span class="dr-value${overdue ? ' text-danger' : ''}">${esc(fmtDate(info.due_date))}</span>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-primary flex-1" id="btn-return">Confirm Return</button>
+                <a href="/index.html" class="btn btn-ghost">Cancel</a>
+            </div>
+        </div>
+        <div class="page-hint text-muted">
+            <p>Return the physical book to the shelf first.</p>
+            <p>Then confirm here to update your account.</p>
+        </div>
+    `;
+
+    document.getElementById('btn-return').addEventListener('click', async () => {
+        try {
+            const res = await API.post(`/api/return/${loanId}`);
+            document.getElementById('action-body').innerHTML = `
+                <div class="action-panel">
+                    <div class="action-title text-success">✓ Returned!</div>
+                    <div class="action-subtitle">${esc(res.message)}</div>
+                    <div class="action-buttons mt-3">
+                        <a href="/index.html" class="btn btn-primary flex-1">← All Books</a>
+                    </div>
+                </div>`;
+        } catch (err) {
+            if (handleAuthError(err)) return;
+            alert(err.detail || 'Return failed.');
+        }
+    });
+}
+
+init();
+</script>
+</body>
+</html>

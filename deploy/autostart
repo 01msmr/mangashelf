@@ -1,0 +1,24 @@
+# LXDE-pi autostart — MangaStore kiosk mode
+# Place this file at: /etc/xdg/lxsession/LXDE-pi/autostart
+
+@lxpanel --profile LXDE-pi
+@pcmanfm --desktop --profile LXDE-pi
+
+# Hide the mouse cursor after 3 seconds of inactivity
+@unclutter -idle 3 -root
+
+# Disable screen blanking / DPMS
+@xset s off
+@xset -dpms
+@xset s noblank
+
+# Launch Chromium in kiosk mode
+@chromium-browser \
+    --kiosk \
+    --noerrdialogs \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-restore-session-state \
+    --no-first-run \
+    --check-for-update-interval=31536000 \
+    http://localhost:5000

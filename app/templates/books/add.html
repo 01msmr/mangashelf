@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Add Book — MangaStore{% endblock %}
+
+{% block content %}
+<div class="addbook-page">
+
+    <div class="detail-topbar">
+        <a href="{{ url_for('books.book_list') }}" class="btn btn-ghost btn-sm">
+            &larr; Books
+        </a>
+        <span class="page-topbar-title">Add Book</span>
+    </div>
+
+    <div class="addbook-layout">
+
+        <!-- Left: form fields -->
+        <div class="addbook-form-col">
+            <form method="post" action="{{ url_for('books.book_add') }}" id="add-form">
+
+                <div class="form-group">
+                    <label class="form-label" for="isbn-input">ISBN</label>
+                    <div class="isbn-row">
+                        <input class="form-input"
+                               type="text"
+                               id="isbn-input"
+                               name="isbn"
+                               value="{{ isbn }}"
+                               placeholder="scan or type ISBN&hellip;"
+                               autocomplete="off"
+                               required>
+                        <button type="button" class="btn btn-ghost" id="fetch-btn">
+                            Fetch
+                        </button>
+                    </div>
+                    <div class="fetch-status" id="fetch-status">
+                    Only the Title is required &mdash; all other fields are optional.
+                </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="field-title">Title *</label>
+                    <input class="form-input"
+                           type="text"
+                           id="field-title"
+                           name="title"
+                           value="{{ meta.title or '' }}"
+                           placeholder="book title"
+                           required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="field-author">Author</label>
+                    <input class="form-input"
+                           type="text"
+                           id="field-author"
+                           name="author"
+                           value="{{ meta.author or '' }}"
+                           placeholder="author name">
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="field-publisher">Publisher</label>
+                        <input class="form-input"
+                               type="text"
+                               id="field-publisher"
+                               name="publisher"
+                               value="{{ meta.publisher or '' }}"
+                               placeholder="publisher">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="field-published">Year</label>
+                        <input class="form-input"
+                               type="text"
+                               id="field-published"
+                               name="published"
+                               value="{{ meta.published or '' }}"
+                               placeholder="e.g. 2020">
+                    </div>
+                </div>
+
+                <!-- Hidden: cover URL to pass through to server for caching -->
+                <input type="hidden" id="field-cover-url" name="cover_url"
+                       value="{{ meta.cover_url or '' }}">
+
+                <div class="form-group">
+                    <label class="form-label" for="donor-select">
+                        Donor (free loan for them)
+                    </label>
+                    <select class="form-input form-select"
+                            id="donor-select"
+                            name="donor_id">
+                        <option value="">— none —</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}">
+                                {{ user.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block mt-2">
+                    Add Book to Library
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: cover preview -->
+        <div class="addbook-cover-col">
+            <div class="cover-preview-wrap">
+                {% if meta.cover_url %}
+                    <img id="cover-preview-img"
+                         src="{{ meta.cover_url }}"
+                         alt="cover preview"
+                         class="cover-preview-img">
+                {% else %}
+                    <div id="cover-preview-placeholder" class="cover-placeholder cover-xl">?</div>
+                    <img id="cover-preview-img"
+                         src=""
+                         alt="cover preview"
+                         class="cover-preview-img"
+                         style="display:none">
+                {% endif %}
+            </div>
+        </div>
+
+    </div><!-- /addbook-layout -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const fetchBtn   = document.getElementById('fetch-btn');
+const isbnInput  = document.getElementById('isbn-input');
+const statusEl   = document.getElementById('fetch-status');
+const coverImg   = document.getElementById('cover-preview-img');
+const coverPh    = document.getElementById('cover-preview-placeholder');
+const coverUrlIn = document.getElementById('field-cover-url');
+
+async function fetchMeta() {
+    const isbn = isbnInput.value.trim();
+    if (!isbn) { setStatus('Enter an ISBN first.', false); return; }
+
+    setStatus('Looking up\u2026', null);
+    fetchBtn.disabled = true;
+
+    try {
+        const r = await fetch(`/admin/book/fetch-isbn?isbn=${encodeURIComponent(isbn)}`);
+        if (!r.ok) {
+            setStatus('Not found in any database \u2014 fill in the fields below manually.', false);
+            return;
+        }
+        const d = await r.json();
+
+        setValue('field-title',     d.title);
+        setValue('field-author',    d.author);
+        setValue('field-publisher', d.publisher);
+        setValue('field-published', d.published);
+
+        if (d.cover_url) {
+            coverUrlIn.value  = d.cover_url;
+            coverImg.src      = d.cover_url;
+            coverImg.style.display = '';
+            if (coverPh) coverPh.style.display = 'none';
+        }
+        setStatus('Info fetched.', true);
+    } catch {
+        setStatus('Network error — check connection.', false);
+    } finally {
+        fetchBtn.disabled = false;
+    }
+}
+
+function setValue(id, val) {
+    if (val) document.getElementById(id).value = val;
+}
+
+function setStatus(msg, ok) {
+    statusEl.textContent = msg;
+    statusEl.style.color = ok === true  ? 'var(--success)'
+                         : ok === false ? 'var(--danger)'
+                         : 'var(--text-muted)';
+}
+
+fetchBtn.addEventListener('click', fetchMeta);
+
+// Let scanner fill ISBN and auto-trigger
+isbnInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); fetchMeta(); }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Users — Admin{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    {% include 'admin/_nav.html' %}
+
+    <div class="admin-body">
+        {% if users %}
+            <div class="user-list">
+                {% for user in users %}
+                    <div class="user-row" id="user-row-{{ user.id }}">
+
+                        <!-- Main info row -->
+                        <div class="user-main">
+                            <div class="user-info">
+                                <span class="user-name">{{ user.username }}</span>
+                                {% if user.is_admin %}
+                                    <span class="badge-admin">Admin</span>
+                                {% endif %}
+                                {% if not user.active %}
+                                    <span class="badge-inactive">Inactive</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="user-stats">
+                                <span class="user-balance
+                                    {% if user.guthaben > 10 %}bal-ok
+                                    {% elif user.guthaben > 0 %}bal-warn
+                                    {% else %}bal-danger{% endif %}">
+                                    {{ '%.2f'|format(user.guthaben) }} &euro;
+                                </span>
+                                <span class="user-loans">
+                                    {{ loan_counts[user.id] }} loan{{ 's' if loan_counts[user.id] != 1 }}
+                                </span>
+                                <span class="user-since">
+                                    since {{ user.created_at | fmt_date }}
+                                </span>
+                            </div>
+
+                            <div class="user-actions">
+                                <img src="{{ url_for('loans.user_qr', user_id=user.id) }}"
+                                     class="user-qr-thumb"
+                                     alt="QR"
+                                     title="Scan to open phone scanner as {{ user.username }}">
+                                {% if user.id != current_user.id %}
+                                    <form method="post"
+                                          action="{{ url_for('admin.user_promote', user_id=user.id) }}"
+                                          class="inline-form">
+                                        <button type="submit" class="btn btn-ghost btn-sm">
+                                            {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <button type="button"
+                                        class="btn btn-ghost btn-sm"
+                                        onclick="toggleAdjust({{ user.id }})">
+                                    Adjust &darr;
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Inline balance adjustment form (hidden by default) -->
+                        <div class="user-adjust" id="adjust-{{ user.id }}" style="display:none">
+                            <form method="post"
+                                  action="{{ url_for('admin.user_adjust', user_id=user.id) }}"
+                                  class="adjust-form">
+                                <input type="number"
+                                       name="amount"
+                                       step="0.01"
+                                       class="form-input adjust-amount"
+                                       placeholder="e.g. 5.00 or &minus;2.00"
+                                       required>
+                                <input type="text"
+                                       name="reason"
+                                       class="form-input adjust-reason"
+                                       placeholder="Reason">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    Apply
+                                </button>
+                                <button type="button"
+                                        class="btn btn-ghost btn-sm"
+                                        onclick="toggleAdjust({{ user.id }})">
+                                    Cancel
+                                </button>
+                            </form>
+                        </div>
+
+                    </div><!-- /user-row -->
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">No users registered yet.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAdjust(id) {
+    const el = document.getElementById('adjust-' + id);
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+    if (el.style.display !== 'none') {
+        el.querySelector('input[name="amount"]').focus();
+    }
+}
+</script>
+{% endblock %}

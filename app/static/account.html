@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Account</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main" id="main-content"></main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function tryLoadAccount() {
+    try {
+        const data = await API.get('/api/account');
+        renderAccount(data);
+    } catch (err) {
+        if (err.status === 403) {
+            renderVerify();
+        } else if (handleAuthError(err)) {
+            // redirected
+        } else {
+            document.getElementById('main-content').innerHTML =
+                `<p style="padding:24px" class="text-danger">${esc(err.detail)}</p>`;
+        }
+    }
+}
+
+function renderVerify() {
+    document.getElementById('main-content').innerHTML = `
+        <div class="auth-page">
+            <div class="hint-aside-row">
+                <div class="auth-card">
+                    <div class="auth-title">Enter PIN</div>
+                    <div class="auth-subtitle">Confirm your identity to view account details.</div>
+                    <div id="verify-error" class="auth-error" style="display:none"></div>
+                    <div class="auth-form">
+                        <input type="password" id="verify-pin" class="form-input form-input-pin"
+                               inputmode="numeric" maxlength="4" placeholder="••••">
+                        <button class="btn btn-primary btn-block" id="btn-verify">Confirm</button>
+                    </div>
+                </div>
+                <div class="hint text-muted">
+                    <p>This kiosk is shared. Enter your PIN to view account details.</p>
+                    <p>Access stays open for 5 minutes.</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const pinEl = document.getElementById('verify-pin');
+    pinEl.focus();
+
+    async function doVerify() {
+        const pin   = pinEl.value.trim();
+        const errEl = document.getElementById('verify-error');
+        hideError(errEl);
+        try {
+            await API.post('/api/account/verify', { pin });
+            tryLoadAccount();
+        } catch (err) {
+            showError(errEl, err.detail || 'Incorrect PIN.');
+            pinEl.value = '';
+            pinEl.focus();
+        }
+    }
+
+    document.getElementById('btn-verify').addEventListener('click', doVerify);
+    pinEl.addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
+    pinEl.addEventListener('input', () => { if (pinEl.value.length === 4) setTimeout(doVerify, 150); });
+}
+
+function renderAccount(data) {
+    const balClass = data.balance_status === 'ok' ? 'balance-ok'
+                   : data.balance_status === 'warn' ? 'balance-warn'
+                   : 'balance-danger';
+    const balHint  = data.balance_status === 'ok'   ? 'You can borrow books.'
+                   : data.balance_status === 'warn'  ? 'Add funds — you need more than 10.00 € to borrow.'
+                   : 'Account empty — please contact an admin.';
+
+    const topupBtns = [1, 2, 5, 10, 20].map(a =>
+        `<button class="btn topup-btn" data-amount="${a}">${a} €</button>`
+    ).join('');
+
+    const loansHtml = data.active_loans.length
+        ? data.active_loans.map(l => {
+            const overdue = l.overdue;
+            return `
+                <div class="loan-card${overdue ? ' loan-overdue' : ''}">
+                    <div class="loan-card-info">
+                        <div class="loan-card-title">
+                            <a href="/book.html?isbn=${encodeURIComponent(l.book_isbn)}" style="color:inherit;text-decoration:none">${esc(l.book_title)}</a>
+                        </div>
+                    </div>
+                    <div class="loan-card-right">
+                        <div class="loan-card-due${overdue ? ' text-danger' : ''}">
+                            ${overdue ? '⚠ ' : ''}Due ${esc(fmtDate(l.due_date))}
+                        </div>
+                        ${overdue ? '<span class="overdue-badge">OVERDUE</span>' : ''}
+                        <a href="/return.html?loan_id=${l.id}" class="btn btn-ghost btn-sm" style="margin-top:4px">Return</a>
+                    </div>
+                </div>
+            `;
+        }).join('')
+        : '<div class="acct-empty">No books currently borrowed.</div>';
+
+    const txnsHtml = data.recent_txns.length
+        ? `<div class="txn-list">${data.recent_txns.map(t => {
+            const cls = t.amount > 0 ? 'txn-credit' : t.amount < 0 ? 'txn-debit' : 'txn-neutral';
+            const amtStr = t.amount !== 0
+                ? (t.amount > 0 ? '+' : '') + t.amount.toFixed(2) + ' €'
+                : '—';
+            return `
+                <div class="txn-row">
+                    <span class="txn-date">${esc(fmtDate(t.created_at))}</span>
+                    <div class="txn-desc">
+                        <span class="txn-type">${esc(t.type)}</span>
+                        <span class="txn-detail">${esc(t.description || '')}</span>
+                    </div>
+                    <span class="txn-amount ${cls}">${amtStr}</span>
+                </div>
+            `;
+        }).join('')}</div>`
+        : '<div class="acct-empty">No transactions yet.</div>';
+
+    const langBtns = ['en', 'de', 'schwaebisch'].map(l =>
+        `<button class="lang-btn${data.lang===l?' active':''}" data-lang="${l}">${l === 'schwaebisch' ? 'SCHWÄB' : l.toUpperCase()}</button>`
+    ).join('');
+
+    document.getElementById('main-content').innerHTML = `
+        <div class="acct-page">
+            <div class="detail-topbar">
+                <span class="page-topbar-title">${esc(data.username)}</span>
+            </div>
+            <div class="lang-switcher-row">
+                <span class="lang-switcher-label">Language</span>
+                <div class="lang-switcher">${langBtns}</div>
+            </div>
+            <div class="acct-body">
+                <div class="acct-section">
+                    <div class="acct-section-title">Balance</div>
+                    <div class="balance-card ${balClass}">
+                        <span class="balance-label">Balance</span>
+                        <span class="balance-amount">${data.guthaben.toFixed(2)} €</span>
+                        <span class="balance-hint">${balHint}</span>
+                    </div>
+                </div>
+
+                <div class="acct-section">
+                    <div class="acct-section-title">Add Funds</div>
+                    <div class="topup-form">
+                        <div class="topup-hint">Put cash in the box, then tap the amount:</div>
+                        <div class="topup-presets">${topupBtns}</div>
+                        <div id="topup-msg" style="font-size:13px;display:none"></div>
+                    </div>
+                </div>
+
+                <div class="acct-section">
+                    <div class="acct-section-title">
+                        Active Loans
+                        ${data.active_loans.length ? `<span class="acct-count">${data.active_loans.length}</span>` : ''}
+                    </div>
+                    <div class="loan-list">${loansHtml}</div>
+                </div>
+
+                <div class="acct-section">
+                    <div class="acct-section-title">
+                        Recent Activity
+                        ${data.recent_txns.length ? `<span class="acct-count">${data.recent_txns.length}</span>` : ''}
+                    </div>
+                    ${txnsHtml}
+                </div>
+
+                <div class="acct-section">
+                    <div class="acct-section-title">Phone Scanner</div>
+                    <div class="acct-qr-row">
+                        <img class="acct-qr-img" src="/user-qr/${encodeURIComponent(data.username)}.png" alt="QR"
+                             onerror="this.style.display='none'">
+                        <span class="acct-qr-hint">Scan with your phone to use its camera as a barcode scanner.</span>
+                    </div>
+                </div>
+
+                <div class="acct-section">
+                    <div class="acct-section-title">Settings</div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;padding:8px 0">
+                        <a href="/change-pin.html" class="btn btn-ghost btn-sm">Change PIN</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.querySelectorAll('.topup-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const amount = parseFloat(btn.dataset.amount);
+            const msgEl  = document.getElementById('topup-msg');
+            try {
+                const res = await API.post('/api/account/topup', { amount });
+                msgEl.className = 'text-success';
+                msgEl.textContent = res.message;
+                msgEl.style.display = 'block';
+                setTimeout(() => tryLoadAccount(), 1500);
+            } catch (err) {
+                msgEl.className = 'text-danger';
+                msgEl.textContent = err.detail || 'Top-up failed.';
+                msgEl.style.display = 'block';
+            }
+        });
+    });
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            await API.post(`/api/account/language/${btn.dataset.lang}`).catch(() => {});
+            tryLoadAccount();
+        });
+    });
+}
+
+async function init() {
+    await initPage();
+    tryLoadAccount();
+}
+
+init();
+</script>
+</body>
+</html>

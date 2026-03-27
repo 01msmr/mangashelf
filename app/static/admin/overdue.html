@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Overdue</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="admin-page">
+        <nav class="admin-nav">
+            <a href="/admin/users.html" class="admin-nav-item">Users</a>
+            <a href="/admin/overdue.html" class="admin-nav-item active">
+                Overdue <span class="nav-badge" id="overdue-badge" style="display:none"></span>
+            </a>
+            <a href="/admin/rebuy.html" class="admin-nav-item">Rebuy</a>
+            <a href="/admin/settings.html" class="admin-nav-item">Settings</a>
+        </nav>
+        <div class="admin-body">
+            <div id="list" class="overdue-list">
+                <div class="empty-state">Loading…</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function init() {
+    await initPage();
+    requireAdminPin(loadContent);
+}
+
+async function loadContent() {
+    const list = document.getElementById('list');
+    try {
+        const items = await API.get('/api/admin/overdue');
+        if (!items.length) {
+            list.innerHTML = '<div class="empty-state">No overdue loans. 🎉</div>';
+            return;
+        }
+        document.getElementById('overdue-badge').textContent = items.length;
+        document.getElementById('overdue-badge').style.display = 'inline-block';
+        list.innerHTML = items.map(i => {
+            const coverHtml = i.cover_path
+                ? `<div class="overdue-cover"><img src="/static/${esc(i.cover_path)}" alt=""></div>`
+                : '';
+            return `
+                <div class="overdue-row">
+                    ${coverHtml}
+                    <div class="overdue-info">
+                        <div class="overdue-title">
+                            <a href="/book.html?isbn=${encodeURIComponent(i.book_isbn)}" class="overdue-book-link">${esc(i.book_title)}</a>
+                        </div>
+                        <div class="overdue-meta">
+                            <span class="overdue-borrower">${esc(i.username)}</span>
+                            <span class="overdue-due">Due ${esc(fmtDate(i.due_date))}</span>
+                        </div>
+                    </div>
+                    <div class="overdue-right">
+                        <span class="overdue-days-badge">${i.days_overdue}d overdue</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        list.innerHTML = `<p class="text-danger">${esc(err.detail)}</p>`;
+    }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Change PIN</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="auth-page">
+        <div class="hint-aside-row">
+            <div class="auth-card">
+                <div class="auth-title">Change PIN</div>
+                <div id="error-box" class="auth-error" style="display:none"></div>
+                <div class="auth-form">
+                    <div class="form-group">
+                        <label class="form-label">Current PIN</label>
+                        <input type="password" id="current-pin" class="form-input" inputmode="numeric" maxlength="4">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New PIN</label>
+                        <input type="password" id="new-pin" class="form-input" inputmode="numeric" maxlength="4">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm New PIN</label>
+                        <input type="password" id="pin-confirm" class="form-input" inputmode="numeric" maxlength="4">
+                    </div>
+                    <div style="display:flex;gap:10px">
+                        <button class="btn btn-primary" style="flex:1" id="btn-save">Save</button>
+                        <a href="/account.html" class="btn btn-ghost">Cancel</a>
+                    </div>
+                </div>
+            </div>
+            <div class="hint text-muted">
+                <p>Choose a 4-digit PIN.</p>
+                <p>Your PIN must be different from the current one.</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+const errorBox = document.getElementById('error-box');
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+    hideError(errorBox);
+    const current_pin = document.getElementById('current-pin').value.trim();
+    const pin         = document.getElementById('new-pin').value.trim();
+    const pin_confirm = document.getElementById('pin-confirm').value.trim();
+    try {
+        await API.post('/api/account/change-pin', { current_pin, pin, pin_confirm });
+        window.location.href = '/account.html';
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        showError(errorBox, err.detail || 'Failed.');
+    }
+});
+
+initPage();
+</script>
+</body>
+</html>

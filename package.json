@@ -1,0 +1,17 @@
+{
+  "name": "mangastore",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "style-check": "node style_check.js",
+    "style-check-shots": "node style_check.js --screenshots"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer": "^24.40.0"
+  }
+}

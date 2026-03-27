@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Toolbox MangaStore — Login{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+
+    <div class="auth-welcome">
+        <span class="auth-welcome-hex">⬡</span> {{ _t('auth.welcome') }} Manga<span>Store</span>
+    </div>
+
+    <div class="hint-aside-row">
+        <div class="auth-card">
+
+            {% if login_error %}
+                <div class="auth-error">{{ login_error }}</div>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('auth.login') }}" class="auth-form" autocomplete="off">
+
+                <div class="form-group auth-username-wrap">
+                    <label class="form-label" for="username">{{ _t('auth.username') }}</label>
+                    <input
+                        class="form-input"
+                        type="text"
+                        id="username"
+                        name="username"
+                        value="{{ username | default('') }}"
+                        autocomplete="off"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        autofocus
+                        required
+                    >
+                    <ul class="username-suggestions" id="username-suggestions"></ul>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="pin">{{ _t('auth.pin') }}</label>
+                    <input
+                        class="form-input form-input-pin"
+                        type="password"
+                        id="pin"
+                        name="pin"
+                        placeholder="&#9679; &#9679; &#9679; &#9679;"
+                        maxlength="4"
+                        data-pin
+                        data-pin-label="{{ _t('auth.pin') }}"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg mt-1">
+                    {{ _t('auth.login') }}
+                </button>
+            </form>
+        </div>
+
+        <div class="hint">{{ _t('auth.hint_user') }}<br><br>{{ _t('auth.hint_pin') }}</div>
+    </div>
+
+    <div class="auth-register-card">
+        {{ _t('auth.no_account') }}
+        <a href="{{ url_for('auth.register') }}">{{ _t('auth.create') }}</a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const input       = document.getElementById('username');
+    const list        = document.getElementById('username-suggestions');
+    const pinInput    = document.getElementById('pin');
+    let activeSuggest = -1;
+
+    function hideSuggestions() {
+        list.innerHTML = '';
+        list.style.display = 'none';
+        activeSuggest = -1;
+    }
+
+    function pickSuggestion(name) {
+        input.value = name;
+        hideSuggestions();
+        pinInput.focus();
+    }
+
+    input.addEventListener('input', function () {
+        const q = this.value.trim();
+        if (q.length < 1) { hideSuggestions(); return; }
+        fetch('/api/users?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(names => {
+                if (!names.length) { hideSuggestions(); return; }
+                list.innerHTML = '';
+                names.forEach((name) => {
+                    const li = document.createElement('li');
+                    li.className = 'username-suggestion-item';
+                    li.textContent = name;
+                    li.addEventListener('pointerdown', (e) => { e.preventDefault(); pickSuggestion(name); });
+                    list.appendChild(li);
+                });
+                list.style.display = 'block';
+                activeSuggest = -1;
+            });
+    });
+
+    input.addEventListener('keydown', function (e) {
+        const items = list.querySelectorAll('.username-suggestion-item');
+        if (!items.length) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeSuggest = Math.min(activeSuggest + 1, items.length - 1);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeSuggest = Math.max(activeSuggest - 1, -1);
+        } else if (e.key === 'Enter' && activeSuggest >= 0) {
+            e.preventDefault();
+            pickSuggestion(items[activeSuggest].textContent);
+            return;
+        } else if (e.key === 'Escape') {
+            hideSuggestions(); return;
+        } else { return; }
+        items.forEach((el, i) => el.classList.toggle('active', i === activeSuggest));
+    });
+
+    document.addEventListener('pointerdown', function (e) {
+        if (!input.contains(e.target) && !list.contains(e.target)) hideSuggestions();
+    });
+})();
+</script>
+{% endblock %}

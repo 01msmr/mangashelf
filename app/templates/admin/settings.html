@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Settings — Admin{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    {% include 'admin/_nav.html' %}
+
+    <div class="admin-body">
+        <form method="post" action="{{ url_for('admin.settings') }}"
+              class="settings-form">
+
+            <!-- Max books per user -->
+            <div class="setting-row">
+                <div class="setting-info">
+                    <div class="setting-name">Max books per user</div>
+                    <div class="setting-desc">
+                        Maximum number of books a single user may have on loan at once.
+                    </div>
+                </div>
+                <input class="form-input setting-input"
+                       type="number"
+                       name="max_books_per_user"
+                       value="{{ current.max_books_per_user }}"
+                       min="1" max="20"
+                       required>
+            </div>
+
+            <!-- Max loan days -->
+            <div class="setting-row">
+                <div class="setting-info">
+                    <div class="setting-name">Loan duration (days)</div>
+                    <div class="setting-desc">
+                        How many days a user has to return a borrowed book before it is overdue.
+                    </div>
+                </div>
+                <input class="form-input setting-input"
+                       type="number"
+                       name="max_loan_days"
+                       value="{{ current.max_loan_days }}"
+                       min="7" max="365"
+                       required>
+            </div>
+
+            <!-- Default loan rate -->
+            <div class="setting-row setting-row-rate">
+                <div class="setting-info">
+                    <div class="setting-name">Default loan rate</div>
+                    <div class="setting-desc">
+                        Donation amount charged when a book is borrowed
+                        (applied to new books; existing books keep their own rate).
+                    </div>
+                </div>
+                <div class="rate-group">
+                    {% for rate in loan_rates %}
+                        <label class="rate-option
+                               {% if rate == current.default_loan_rate %}active{% endif %}">
+                            <input type="radio"
+                                   name="default_loan_rate"
+                                   value="{{ rate }}"
+                                   {% if rate == current.default_loan_rate %}checked{% endif %}>
+                            {{ rate }}&nbsp;&euro;
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button type="submit" class="btn btn-primary">
+                    Save Settings
+                </button>
+                <span class="settings-note">
+                    Changes apply to new loans immediately.
+                </span>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Highlight selected rate option when radio changes
+document.querySelectorAll('.rate-option input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        document.querySelectorAll('.rate-option').forEach(l => l.classList.remove('active'));
+        radio.closest('.rate-option').classList.add('active');
+    });
+});
+</script>
+{% endblock %}

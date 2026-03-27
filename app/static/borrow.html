@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Borrow</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="action-page">
+        <div class="detail-topbar">
+            <a href="/index.html" class="btn btn-ghost btn-sm">← All Books</a>
+            <span class="page-topbar-title">Borrow</span>
+        </div>
+        <div class="action-body" id="action-body">
+            <div class="action-panel">
+                <div class="text-muted">Loading…</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function init() {
+    await initPage();
+    const isbn = new URLSearchParams(location.search).get('isbn');
+    if (!isbn) { document.getElementById('action-body').innerHTML = '<div class="action-panel"><p>No ISBN.</p></div>'; return; }
+
+    let info;
+    try {
+        info = await API.get(`/api/borrow/${encodeURIComponent(isbn)}`);
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        document.getElementById('action-body').innerHTML = `
+            <div class="action-panel">
+                <div class="action-title text-danger">${esc(err.detail)}</div>
+                <div class="action-buttons"><a href="/index.html" class="btn btn-ghost" style="flex:1">← Back</a></div>
+            </div>`;
+        return;
+    }
+
+    const coverHtml = info.book.cover_path
+        ? `<img class="detail-cover-img" src="/static/${esc(info.book.cover_path)}" alt="">`
+        : `<div class="cover-placeholder cover-xl">📖</div>`;
+
+    const donorBadge = info.is_donor
+        ? `<div class="status-badge status-available" style="margin-bottom:8px">Your donated copy — Free!</div>`
+        : '';
+
+    const rateHtml = info.is_donor ? '' : `
+        <div class="takeout-rate-label">Loan rate</div>
+        <div class="takeout-rate-group rate-group" id="rate-group">
+            ${info.loan_rates.map(r =>
+                `<label class="rate-option${r === info.default_rate ? ' active' : ''}">
+                    <input type="radio" name="rate" value="${r}"${r === info.default_rate ? ' checked' : ''}>${r} €
+                </label>`
+            ).join('')}
+        </div>
+    `;
+
+    document.getElementById('action-body').innerHTML = `
+        <div class="action-cover">${coverHtml}</div>
+        <div class="action-panel">
+            <div class="action-title">${esc(info.book.title)}</div>
+            <div class="action-subtitle">${esc(info.book.author || '')}</div>
+            ${donorBadge}
+            ${rateHtml}
+            <div class="action-details">
+                <div class="detail-row">
+                    <span class="dr-label">Balance</span>
+                    <span class="dr-value">${info.guthaben.toFixed(2)} €</span>
+                </div>
+                <div class="detail-row">
+                    <span class="dr-label">Due date</span>
+                    <span class="dr-value">${esc(info.due_date)}</span>
+                </div>
+            </div>
+            <div id="err-msg" class="auth-error" style="display:none"></div>
+            <div class="action-buttons">
+                <button class="btn btn-primary flex-1" id="btn-confirm">Confirm Borrow</button>
+                <a href="/book.html?isbn=${encodeURIComponent(isbn)}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </div>
+        <div class="page-hint text-muted">
+            <p>Balance must stay above <strong>10.00 €</strong>.</p>
+            <p>Fee is deducted immediately.</p>
+            <p>Donating your copy lets you borrow it free.</p>
+        </div>
+    `;
+
+    // Rate option click handling
+    document.querySelectorAll('.rate-option').forEach(lbl => {
+        lbl.addEventListener('click', () => {
+            document.querySelectorAll('.rate-option').forEach(l => l.classList.remove('active'));
+            lbl.classList.add('active');
+        });
+    });
+
+    document.getElementById('btn-confirm').addEventListener('click', async () => {
+        const errEl = document.getElementById('err-msg');
+        hideError(errEl);
+        const rateInput = document.querySelector('.rate-option.active input[type="radio"]');
+        const selectedRate = rateInput ? rateInput.value : null;
+        try {
+            const res = await API.post(`/api/borrow/${encodeURIComponent(isbn)}`,
+                { loan_rate: info.is_donor ? null : selectedRate });
+            document.getElementById('action-body').innerHTML = `
+                <div class="action-panel">
+                    <div class="action-title text-success">✓ Borrowed!</div>
+                    <div class="action-subtitle">${esc(res.message)}</div>
+                    <div class="action-buttons mt-3">
+                        <a href="/index.html" class="btn btn-primary flex-1">← All Books</a>
+                    </div>
+                </div>`;
+        } catch (err) {
+            if (handleAuthError(err)) return;
+            showError(errEl, err.detail || 'Failed to borrow.');
+        }
+    });
+}
+
+init();
+</script>
+</body>
+</html>

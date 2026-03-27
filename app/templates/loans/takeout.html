@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}Take Out — {{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="action-page">
+
+    <div class="detail-topbar">
+        <a href="{{ url_for('books.book_detail', isbn=book.isbn) }}"
+           class="btn btn-ghost btn-sm">&larr; Back</a>
+        <span class="page-topbar-title">Take Out</span>
+    </div>
+
+    <div class="action-body">
+
+        <!-- Cover -->
+        <div class="action-cover">
+            {% if book.cover_path %}
+                <img class="detail-cover-img"
+                     src="{{ url_for('static', filename=book.cover_path) }}"
+                     alt="{{ book.title }}">
+            {% else %}
+                <div class="cover-placeholder cover-xl">
+                    {{ (book.title or '?')[0] | upper }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Hint column -->
+        <div class="hint page-hint">
+            Select a loan fee, then tap Confirm.<br><br>
+            The fee is deducted from your balance. Return the book before the due date.
+        </div>
+
+        <!-- Confirmation panel -->
+        <div class="action-panel">
+            <h1 class="action-title">{{ book.title }}</h1>
+            {% if book.author %}
+                <div class="action-subtitle">{{ book.author }}</div>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('loans.borrow', isbn=book.isbn) }}"
+                  id="takeout-form">
+
+                {% if not is_donor %}
+                <!-- Rate picker -->
+                <div class="takeout-rate-label">Loan fee</div>
+                <div class="rate-group takeout-rate-group">
+                    {% for rate in loan_rates %}
+                        <label class="rate-option{% if rate == default_rate %} active{% endif %}">
+                            <input type="radio" name="loan_rate" value="{{ rate }}"
+                                   {% if rate == default_rate %}checked{% endif %}>
+                            {{ rate }} &euro;
+                        </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <input type="hidden" name="loan_rate" value="0.00">
+                {% endif %}
+
+                <div class="action-details">
+                    <div class="detail-row">
+                        <span class="dr-label">Loan fee</span>
+                        <span class="dr-value">
+                            {% if is_donor %}
+                                <span class="text-success">Free &mdash; your donated copy</span>
+                            {% else %}
+                                <strong id="fee-display">{{ default_rate }} &euro;</strong>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="dr-label">Your balance</span>
+                        <span class="dr-value">
+                            {{ '%.2f'|format(guthaben) }} &euro;
+                            {% if not is_donor %}
+                                &rarr; <strong id="bal-after-display"></strong>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="dr-label">Return by</span>
+                        <span class="dr-value"><strong>{{ due_date }}</strong></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="dr-label">Copy</span>
+                        <span class="dr-value">#{{ copy.copy_num }}</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-primary btn-lg flex-1">
+                        Confirm Take-Out
+                    </button>
+                    <a href="{{ url_for('books.scan') }}"
+                       class="btn btn-ghost btn-lg">Cancel</a>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const feeDisplay = document.getElementById('fee-display');
+    const balDisplay = document.getElementById('bal-after-display');
+    if (!feeDisplay) return;  // donor copy — no picker needed
+
+    const guthaben   = {{ guthaben }};
+    const radios     = document.querySelectorAll('input[name="loan_rate"]');
+    const rateLabels = document.querySelectorAll('.takeout-rate-group .rate-option');
+
+    function update(rate) {
+        const fee  = parseFloat(rate);
+        const after = Math.round((guthaben - fee) * 100) / 100;
+        feeDisplay.textContent = fee.toFixed(2) + ' \u20ac';
+        balDisplay.textContent = after.toFixed(2) + ' \u20ac';
+        balDisplay.className   = after <= 10.0 ? 'text-warning' : '';
+    }
+
+    radios.forEach((radio, i) => {
+        radio.addEventListener('change', () => {
+            rateLabels.forEach(l => l.classList.remove('active'));
+            rateLabels[i].classList.add('active');
+            update(radio.value);
+        });
+    });
+
+    const checked = document.querySelector('input[name="loan_rate"]:checked');
+    if (checked) update(checked.value);
+})();
+</script>
+{% endblock %}

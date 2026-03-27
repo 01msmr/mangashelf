@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}{{ book.title }} — MangaStore{% endblock %}
+
+{% block content %}
+<div class="detail-page">
+
+    <div class="detail-topbar">
+        <a href="{{ url_for('books.book_list') }}" class="btn btn-ghost btn-sm">
+            &larr; Books
+        </a>
+        <span class="detail-isbn">ISBN {{ book.isbn }}</span>
+    </div>
+
+    <div class="detail-body">
+
+        <!-- Cover -->
+        <div class="detail-cover-wrap">
+            {% if book.cover_path %}
+                <img class="detail-cover-img"
+                     src="{{ url_for('static', filename=book.cover_path) }}"
+                     alt="{{ book.title }}">
+            {% else %}
+                <div class="cover-placeholder cover-xl">
+                    {{ (book.title or '?')[0] | upper }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Hint column -->
+        <div class="hint page-hint">
+            Scan the barcode or tap Take Out to borrow.<br><br>
+            Return before the due date to avoid overdue charges.
+        </div>
+
+        <!-- Info panel -->
+        <div class="detail-info">
+            <h1 class="detail-title">{{ book.title }}</h1>
+
+            {% if book.author %}
+                <div class="detail-author">{{ book.author }}</div>
+            {% endif %}
+
+            {% if book.publisher or book.published %}
+                <div class="detail-meta">
+                    {% if book.publisher %}{{ book.publisher }}{% endif %}
+                    {% if book.publisher and book.published %} &middot; {% endif %}
+                    {% if book.published %}{{ book.published }}{% endif %}
+                </div>
+            {% endif %}
+
+            <!-- Availability -->
+            <div class="detail-availability">
+                {% set avail = book.available_copies | length %}
+                {% set total = book.active_copies | length %}
+
+                {% if avail > 0 %}
+                    <span class="status-badge status-available status-lg">
+                        {{ avail }} of {{ total }}
+                        cop{{ 'y' if total == 1 else 'ies' }} available
+                    </span>
+                {% else %}
+                    <span class="status-badge status-loaned status-lg">
+                        All {{ total }} cop{{ 'y' if total == 1 else 'ies' }} loaned
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- Take Out / Return buttons -->
+            {% if user_loan %}
+                <a href="{{ url_for('loans.return_confirm', loan_id=user_loan.id) }}"
+                   class="btn btn-primary btn-lg detail-action-btn">
+                    Return this book
+                </a>
+            {% elif book.available_copies %}
+                {% if borrow_allowed %}
+                    <a href="{{ url_for('loans.borrow', isbn=book.isbn) }}"
+                       class="btn btn-primary btn-lg detail-action-btn">
+                        Take Out
+                    </a>
+                {% else %}
+                    <div class="detail-borrow-blocked">
+                        {% if borrow_reason == 'balance_low' %}
+                            Balance too low &mdash; you need more than 10.00 &euro; to borrow.
+                        {% else %}
+                            Loan limit reached.
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <!-- Active loans -->
+            {% if loans_info %}
+                <div class="detail-loans">
+                    {% for info in loans_info %}
+                        <div class="loan-row">
+                            <span class="loan-copy">Copy #{{ info.copy_num }}</span>
+                            <span class="loan-due">
+                                due back by
+                                <strong>{{ info.due_date | fmt_date }}</strong>
+                            </span>
+                            {% if current_user.is_admin and info.borrower %}
+                                <span class="loan-borrower">{{ info.borrower }}</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Admin actions -->
+            {% if current_user.is_admin and breakable %}
+                <div class="detail-admin">
+                    <div class="detail-admin-label">Admin</div>
+                    {% for copy in breakable %}
+                        <div class="broken-group" id="bg-{{ copy.id }}">
+                            <button type="button"
+                                    class="btn btn-danger btn-sm"
+                                    onclick="showBrokenForm({{ copy.id }})">
+                                Copy #{{ copy.copy_num }} — Mark Broken
+                            </button>
+                            <form id="broken-form-{{ copy.id }}"
+                                  method="post"
+                                  action="{{ url_for('books.copy_mark_broken', copy_id=copy.id) }}"
+                                  class="broken-form"
+                                  style="display:none">
+                                <input type="text"
+                                       name="broken_note"
+                                       class="form-input"
+                                       placeholder="Optional note (e.g. pages missing)">
+                                <div class="broken-form-btns">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        Confirm
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-ghost btn-sm"
+                                            onclick="hideBrokenForm({{ copy.id }})">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+        </div><!-- /detail-info -->
+    </div><!-- /detail-body -->
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showBrokenForm(id) {
+    const grp  = document.getElementById('bg-' + id);
+    grp.querySelector('button[onclick]').style.display = 'none';
+    document.getElementById('broken-form-' + id).style.display = '';
+}
+function hideBrokenForm(id) {
+    const grp  = document.getElementById('bg-' + id);
+    grp.querySelector('button[onclick]').style.display = '';
+    document.getElementById('broken-form-' + id).style.display = 'none';
+}
+</script>
+{% endblock %}

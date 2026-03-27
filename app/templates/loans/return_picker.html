@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Return — Choose Copy{% endblock %}
+
+{% block content %}
+<div class="picker-page">
+
+    <div class="detail-topbar">
+        <a href="{{ url_for('books.scan') }}" class="btn btn-ghost btn-sm">
+            &larr; Cancel
+        </a>
+        <span class="page-topbar-title">Return Book</span>
+    </div>
+
+    <div class="picker-body">
+
+        <div class="picker-cover">
+            {% if book.cover_path %}
+                <img src="{{ url_for('static', filename=book.cover_path) }}"
+                     alt="{{ book.title }}"
+                     class="detail-cover-img">
+            {% else %}
+                <div class="cover-placeholder cover-xl">
+                    {{ (book.title or '?')[0] | upper }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="picker-right">
+            <div class="picker-question">Which copy are you returning?</div>
+            <div class="picker-book-title">{{ book.title }}</div>
+
+            <div class="picker-list">
+                {% for loan in loans %}
+                    <a href="{{ url_for('loans.return_confirm', loan_id=loan.id) }}"
+                       class="picker-item">
+                        <span class="picker-copy">Copy #{{ loan.copy.copy_num }}</span>
+                        <span class="picker-date">
+                            borrowed {{ loan.taken_out_at | fmt_date }}
+                        </span>
+                        <span class="picker-arrow">&rsaquo;</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

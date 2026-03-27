@@ -1,0 +1,2460 @@
+/* ============================================================
+   MangaStore — Manga-themed dark UI, optimised for 800×480
+   ============================================================ */
+
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+    --bg:            #0d0d1a;
+    --surface:       #1a1a2e;
+    --surface-2:     #22223a;
+    --surface-3:     #2d2d50;
+    --border:        #2d2d50;
+    --primary:       #e63946;
+    --primary-hover: #c5303c;
+    --primary-dim:   rgba(230, 57, 70, 0.15);
+    --text:          #f0eef8;
+    --text-muted:    #8a88a8;
+    --text-dim:      #55557a;
+    --success:       #4ade80;
+    --warning:       #fbbf24;
+    --danger:        #e63946;
+    --admin-gold:    #ffd60a;
+    --header-h:      68px;
+    --radius:        8px;
+    --radius-lg:     12px;
+    --radius-xl:     16px;
+    --shadow:        0 4px 24px rgba(0, 0, 0, 0.5);
+    --transition:    0.15s ease;
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.4;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.app-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 2px solid var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    z-index: 100;
+    gap: 12px;
+}
+
+.header-left {
+    position: absolute;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+.header-left a { display: flex; align-items: center; min-height: 44px; pointer-events: auto; }
+.header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
+
+.app-logo {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+}
+.app-logo span { color: var(--primary); }
+
+.app-main {
+    position: fixed;
+    top: var(--header-h);
+    left: 0; right: 0; bottom: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── User badge in header ───────────────────────────────────── */
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+    min-height: 44px;
+}
+
+.badge-admin {
+    background: var(--admin-gold);
+    color: #1a1a00;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ── Flash messages ─────────────────────────────────────────── */
+.flash-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 16px 0;
+}
+
+.flash {
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+}
+.flash-success { background: rgba(74, 222, 128, 0.12); border-color: var(--success); color: var(--success); }
+.flash-error   { background: rgba(230, 57, 70, 0.12);  border-color: var(--danger);  color: #ff6b78; }
+.flash-warning { background: rgba(251, 191, 36, 0.12); border-color: var(--warning); color: var(--warning); }
+.flash-info    { background: rgba(100, 160, 255, 0.12); border-color: #64a0ff; color: #8ab4ff; }
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 56px;
+    padding: 0 24px;
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background var(--transition), opacity var(--transition),
+                box-shadow var(--transition), padding var(--transition),
+                color var(--transition), border-color var(--transition);
+    text-decoration: none;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+    padding-bottom: 0;
+    padding-top: 0;
+}
+.btn:active { opacity: 0.8; }
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+}
+.btn-primary:hover {
+    background: var(--primary-hover);
+    box-shadow: 0 4px 16px rgba(230, 57, 70, 0.45);
+}
+
+.btn-ghost {
+    background: #242240;
+    color: #a09ec4;
+    border: 1px solid #48467a;
+}
+.btn-ghost:hover {
+    background: var(--surface-3);
+    color: var(--text);
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(230, 57, 70, 0.28), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn-danger {
+    background: rgba(230, 57, 70, 0.15);
+    color: var(--danger);
+    border: 1px solid rgba(230, 57, 70, 0.4);
+}
+.btn-danger:hover {
+    background: rgba(230, 57, 70, 0.3);
+    border-color: var(--danger);
+    box-shadow: 0 0 12px rgba(230, 57, 70, 0.45), 0 2px 8px rgba(230, 57, 70, 0.25);
+}
+
+.btn-sm {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 13px;
+}
+
+.btn-block { width: 100%; }
+
+.btn-lg {
+    height: 64px;
+    font-size: 19px;
+    border-radius: var(--radius-lg);
+}
+
+/* ── Forms ──────────────────────────────────────────────────── */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.form-input {
+    height: 56px;
+    padding: 0 16px;
+    background: #2a2848;
+    border: 1px solid #48467a;
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 17px;
+    font-family: inherit;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+    width: 100%;
+}
+.form-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-dim);
+}
+.form-input::placeholder { color: #6e6c96; }
+
+/* PIN display input — shows dots, opens numpad on tap */
+.form-input-pin {
+    letter-spacing: 12px;
+    font-size: 22px;
+    cursor: pointer;
+    caret-color: transparent;
+}
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.card-body { padding: 18px; }
+
+/* ── Divider ────────────────────────────────────────────────── */
+.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+}
+
+/* ── Auth pages ─────────────────────────────────────────────── */
+.auth-page {
+    min-height: calc(100vh - var(--header-h));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    gap: 14px;
+}
+
+.auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: var(--shadow);
+}
+
+.auth-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+.auth-title span { color: var(--primary); }
+
+.auth-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 22px;
+}
+
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+
+.auth-footer {
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.auth-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 4px;
+}
+.auth-footer a:hover { text-decoration: underline; }
+
+/* ── Page-level aside hint (flex child in row layouts) ─────── */
+.page-hint {
+    flex-shrink: 0;
+    width: 180px;
+    align-self: center;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+/* ── Auth inline error ──────────────────────────────────────── */
+.auth-error {
+    background: var(--primary-dim);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius);
+    color: var(--primary);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+    text-align: center;
+}
+
+/* ── Register card (below login card) ──────────────────────── */
+.auth-register-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 14px 24px;
+    width: 100%;
+    max-width: 540px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+.auth-register-card a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 6px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 4px;
+}
+.auth-register-card a:hover { text-decoration: underline; }
+
+/* ── Username autocomplete dropdown ────────────────────────── */
+.auth-username-wrap { position: relative; }
+
+.username-suggestions {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    z-index: 200;
+    box-shadow: var(--shadow);
+}
+.username-suggestion-item {
+    padding: 10px 14px;
+    font-size: 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+}
+.username-suggestion-item:last-child { border-bottom: none; }
+.username-suggestion-item:hover,
+.username-suggestion-item.active {
+    background: var(--primary-dim);
+    color: var(--primary);
+}
+
+/* ── Setup PIN page ─────────────────────────────────────────── */
+.setup-notice {
+    background: var(--primary-dim);
+    border: 1px solid rgba(230, 57, 70, 0.35);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #ff8a92;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* ── Scan page ──────────────────────────────────────────────── */
+.scan-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.scan-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-xl);
+    background: var(--primary-dim);
+    border: 2px solid rgba(230, 57, 70, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.scan-icon svg { width: 36px; height: 36px; fill: var(--primary); }
+
+.scan-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.scan-instruction {
+    font-size: 15px;
+    color: var(--text-muted);
+    max-width: 320px;
+    line-height: 1.5;
+}
+
+.scan-input-hidden {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+
+.scan-balance-warn {
+    margin-top: 8px;
+    padding: 10px 16px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--warning);
+    max-width: 320px;
+}
+
+/* ── Scan-page QR code ──────────────────────────────────────── */
+.scan-qr-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+.scan-qr-img {
+    width: 240px;
+    height: 240px;
+    border-radius: var(--radius);
+    background: #1a1a2e;
+}
+.scan-qr-label {
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+/* ── Phone-scan camera page ─────────────────────────────────── */
+.phone-scan-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    min-height: 100dvh;
+}
+.phone-scan-prompt {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 32px 24px;
+    background: var(--bg);
+    text-align: center;
+}
+.phone-scan-prompt-icon svg {
+    width: 64px;
+    height: 64px;
+    color: var(--primary);
+}
+.phone-scan-prompt-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+}
+.phone-scan-prompt-msg {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 280px;
+}
+.phone-scan-prompt .btn {
+    width: 100%;
+    max-width: 280px;
+}
+.phone-scan-viewfinder {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+.phone-scan-viewfinder video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.phone-scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.phone-scan-reticle {
+    width: 220px;
+    height: 140px;
+    border: 2px solid var(--primary);
+    border-radius: var(--radius);
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.45);
+}
+.phone-scan-hint {
+    position: absolute;
+    bottom: 24px;
+    left: 0; right: 0;
+    text-align: center;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+.phone-scan-manual {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    background: var(--bg);
+}
+.phone-scan-manual-msg {
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+.phone-manual-form {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.phone-manual-input {
+    text-align: center;
+    font-size: 20px;
+    letter-spacing: 2px;
+}
+
+/* ── Manual ISBN form on scan page ──────────────────────────── */
+.manual-isbn-form {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 4px;
+}
+.manual-isbn-input {
+    flex: 1;
+    height: 48px;
+    font-size: 16px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.scan-nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ── PIN Numpad overlay ─────────────────────────────────────── */
+.pinpad-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    z-index: 9000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+}
+.pinpad-overlay.active { display: flex; }
+
+.pinpad {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 22px 22px 18px;
+    width: 300px;
+    box-shadow: var(--shadow);
+}
+
+.pinpad-label {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 16px;
+}
+
+.pinpad-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    border: 2px solid var(--border);
+    transition: background var(--transition), border-color var(--transition), transform 0.1s;
+}
+
+.dot.filled {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: scale(1.15);
+}
+
+.pinpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.pinpad-key {
+    height: 68px;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 22px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--transition), transform 0.08s;
+    font-family: inherit;
+}
+.pinpad-key:active,
+.pinpad-key.pressed { background: var(--surface-3); transform: scale(0.94); }
+
+.pinpad-key-back {
+    font-size: 18px;
+    color: var(--text-muted);
+}
+
+.pinpad-key-clear {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
+.pinpad-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.pinpad-actions .btn { flex: 1; height: 48px; font-size: 15px; }
+
+/* ── Utilities ──────────────────────────────────────────────── */
+.text-center  { text-align: center; }
+.text-right   { text-align: right; }
+.text-muted   { color: var(--text-muted); }
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+.text-warning { color: var(--warning); }
+.text-danger  { color: var(--danger); }
+
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: 6px; }
+.mt-2 { margin-top: 12px; }
+.mt-3 { margin-top: 20px; }
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 6px; }
+.mb-2 { margin-bottom: 12px; }
+.mb-3 { margin-bottom: 20px; }
+
+.inline-form { display: inline; }
+
+.guthaben-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--success);
+}
+.guthaben-value.warn  { color: var(--warning); }
+.guthaben-value.block { color: var(--danger); }
+
+/* ── Status badges ──────────────────────────────────────────── */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+.status-available {
+    background: rgba(74, 222, 128, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+}
+.status-loaned {
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--warning);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+.status-lg {
+    padding: 6px 14px;
+    font-size: 14px;
+    border-radius: 24px;
+}
+
+/* ── Cover placeholder ──────────────────────────────────────── */
+.cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-weight: 800;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.cover-sm  { width: 44px;  height: 64px;  font-size: 18px; }
+.cover-xl  { width: 160px; height: 230px; font-size: 40px; border-radius: var(--radius-lg); }
+
+/* ── Page header bar ────────────────────────────────────────── */
+.detail-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.detail-isbn,
+.page-topbar-title {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+/* ── Book list ──────────────────────────────────────────────── */
+.list-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.list-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.search-form  { flex: 1; }
+.search-input { height: 44px; font-size: 15px; }
+
+.book-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.book-row-wrap {
+    border-bottom: 1px solid var(--border);
+}
+
+.book-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    color: inherit;
+    cursor: pointer;
+    transition: background var(--transition);
+    min-height: 78px;
+}
+.book-row:hover { background: var(--surface-2); }
+.book-row-wrap.expanded > .book-row { background: var(--surface-2); }
+
+/* ── Inline book expand panel ──────────────────────────────── */
+.book-panel {
+    display: none;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    gap: 14px;
+    align-items: flex-start;
+    border-top: 1px solid var(--border);
+}
+.book-panel.open { display: flex; }
+
+.book-panel-cover {
+    flex-shrink: 0;
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+.book-panel-cover img {
+    width: 78px;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    display: block;
+}
+.book-panel-cover-placeholder {
+    width: 78px;
+    height: 110px;
+    border-radius: 6px;
+    background: var(--surface-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+.book-panel-isbn {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    word-break: break-all;
+    line-height: 1.3;
+    max-width: 78px;
+}
+.book-panel-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+.book-panel-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.book-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.book-panel-loans { display: flex; flex-direction: column; gap: 3px; }
+.book-panel-loan-row { font-size: 12px; color: var(--text-muted); }
+.book-panel-admin {
+    border-top: 1px solid rgba(230,57,70,0.2);
+    padding-top: 8px;
+    margin-top: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.book-panel-admin-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+.book-panel-broken-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.book-panel-msg {
+    font-size: 13px;
+    font-weight: 600;
+    display: none;
+    margin-top: 2px;
+}
+
+.book-row-cover {
+    flex-shrink: 0;
+    transition: width var(--transition), opacity var(--transition);
+}
+.book-row-cover img {
+    width: 44px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+}
+/* Hide small row cover when panel is open — panel shows the larger one */
+.book-row-wrap.expanded .book-row-cover {
+    display: none;
+}
+
+.book-row-info {
+    flex: 1;
+    min-width: 0;
+}
+.book-row-title {
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.book-row-author {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-row-status {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+.borrower-names {
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+/* ── Empty state ────────────────────────────────────────────── */
+.empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 15px;
+    padding: 24px;
+    text-align: center;
+}
+
+/* ── Book detail ────────────────────────────────────────────── */
+.detail-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.detail-body {
+    flex: 1;
+    display: flex;
+    gap: 0;
+    overflow: hidden;
+}
+
+.detail-cover-wrap {
+    flex-shrink: 0;
+    width: 180px;
+    padding: 16px 0 16px 16px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.detail-cover-img {
+    width: 160px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    display: block;
+}
+
+.detail-info {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.detail-title {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--text);
+}
+.detail-author {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.detail-meta {
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+.detail-availability { margin-top: 6px; }
+
+.detail-loans {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.loan-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    font-size: 13px;
+    flex-wrap: wrap;
+}
+.loan-copy    { color: var(--text-muted); flex-shrink: 0; }
+.loan-due     { flex: 1; }
+.loan-borrower {
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--surface-3);
+    padding: 2px 7px;
+    border-radius: 10px;
+}
+
+/* ── Admin broken section ───────────────────────────────────── */
+.detail-action-btn { margin-top: 10px; align-self: flex-start; }
+
+.detail-borrow-blocked {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--warning);
+}
+
+/* ── Admin broken section ───────────────────────────────────── */
+.detail-admin {
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.detail-admin-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+.broken-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    border: 1px solid rgba(230, 57, 70, 0.3);
+}
+.broken-form .form-input {
+    height: 44px;
+    font-size: 14px;
+}
+.broken-form-btns { display: flex; gap: 8px; }
+
+/* ── Add book form ──────────────────────────────────────────── */
+.addbook-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.addbook-layout {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.addbook-form-col {
+    flex: 1;
+    padding: 14px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.addbook-form-col form { display: flex; flex-direction: column; gap: 10px; }
+
+.addbook-cover-col {
+    flex-shrink: 0;
+    width: 200px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border-left: 1px solid var(--border);
+}
+
+.cover-preview-wrap { display: flex; align-items: flex-start; }
+
+.cover-preview-img {
+    width: 160px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    display: block;
+}
+
+.isbn-row {
+    display: flex;
+    gap: 8px;
+}
+.isbn-row .form-input { flex: 1; }
+
+.fetch-status {
+    font-size: 13px;
+    color: var(--text-muted);
+    min-height: 18px;
+    margin-top: 2px;
+}
+
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.form-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a88a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+}
+.form-select option { background: var(--surface-2); color: var(--text); }
+
+/* ── Shared action page (take-out / return) ─────────────────── */
+.action-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.action-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.action-cover {
+    flex-shrink: 0;
+    width: 190px;
+    padding: 16px 0 16px 16px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.action-panel {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.action-title {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.action-subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+}
+
+/* ── Detail rows (fee, due date, etc.) ──────────────────────── */
+.action-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin: 4px 0;
+    max-width: 420px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    gap: 12px;
+}
+.detail-row:last-child { border-bottom: none; }
+
+.dr-label {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-size: 13px;
+}
+.dr-value {
+    text-align: right;
+    font-weight: 500;
+}
+
+/* ── Action buttons (confirm / cancel) ──────────────────────── */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 8px;
+    max-width: 420px;
+}
+.action-buttons .flex-1 { flex: 1; }
+
+/* ── Return picker ──────────────────────────────────────────── */
+.picker-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.picker-body {
+    flex: 1;
+    display: flex;
+    gap: 0;
+    overflow: hidden;
+}
+
+.picker-cover {
+    flex-shrink: 0;
+    width: 190px;
+    padding: 16px 0 16px 16px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.picker-right {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.picker-question {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.picker-book-title {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.picker-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: inherit;
+    transition: background var(--transition);
+    min-height: 64px;
+}
+.picker-item:hover,
+.picker-item:active { background: var(--surface-3); }
+
+.picker-copy {
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.picker-date {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+.picker-arrow {
+    font-size: 22px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+/* ── Account page ───────────────────────────────────────────── */
+.acct-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.acct-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-bottom: 12px;
+}
+
+.acct-section {
+    padding: 12px 16px 0;
+}
+
+.acct-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+}
+
+.acct-count {
+    background: var(--surface-3);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+
+.acct-empty {
+    font-size: 14px;
+    color: var(--text-dim);
+    padding: 10px 0;
+}
+
+/* ── Balance card ───────────────────────────────────────────── */
+.balance-card {
+    border-radius: var(--radius-lg);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid transparent;
+}
+
+.balance-ok {
+    background: rgba(74, 222, 128, 0.08);
+    border-color: rgba(74, 222, 128, 0.25);
+}
+.balance-warn {
+    background: rgba(251, 191, 36, 0.08);
+    border-color: rgba(251, 191, 36, 0.25);
+}
+.balance-danger {
+    background: rgba(230, 57, 70, 0.08);
+    border-color: rgba(230, 57, 70, 0.3);
+}
+
+.balance-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    min-width: 60px;
+}
+
+.balance-amount {
+    font-size: 28px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+.balance-ok   .balance-amount { color: var(--success); }
+.balance-warn .balance-amount { color: var(--warning); }
+.balance-danger .balance-amount { color: var(--danger); }
+
+.balance-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    flex: 1;
+    line-height: 1.4;
+}
+
+/* ── Active loans list ──────────────────────────────────────── */
+.loan-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.loan-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-height: 68px;
+}
+.loan-card.loan-overdue {
+    border-color: rgba(230, 57, 70, 0.4);
+    background: rgba(230, 57, 70, 0.06);
+}
+
+.loan-card-cover { flex-shrink: 0; }
+.loan-card-cover img {
+    width: 38px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 3px;
+    display: block;
+}
+
+.loan-card-info {
+    flex: 1;
+    min-width: 0;
+}
+.loan-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.loan-card-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.loan-card-right {
+    flex-shrink: 0;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+.loan-card-due {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.overdue-badge {
+    display: inline-block;
+    background: var(--danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* ── Transaction list ───────────────────────────────────────── */
+.txn-list {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.txn-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    min-height: 44px;
+}
+.txn-row:last-child { border-bottom: none; }
+
+.txn-date {
+    flex-shrink: 0;
+    color: var(--text-dim);
+    font-size: 12px;
+    min-width: 62px;
+}
+
+.txn-desc {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.txn-type {
+    font-weight: 600;
+    color: var(--text);
+}
+.txn-detail {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.txn-amount {
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 14px;
+    min-width: 72px;
+    text-align: right;
+}
+.txn-credit  { color: var(--success); }
+.txn-debit   { color: var(--danger); }
+.txn-neutral { color: var(--text-dim); }
+
+/* ── Utility: margin-left auto ──────────────────────────────── */
+.ml-auto { margin-left: auto; }
+
+/* ── Admin layout ───────────────────────────────────────────── */
+.admin-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.admin-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 16px 16px;
+}
+
+/* ── Admin sub-navigation ───────────────────────────────────── */
+.admin-nav {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+}
+
+.admin-nav-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 42px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color var(--transition), border-color var(--transition);
+}
+.admin-nav-item:hover  { color: var(--text); }
+.admin-nav-item.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.nav-badge {
+    background: var(--danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 8px;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* ── User list ──────────────────────────────────────────────── */
+.user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.user-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.user-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    min-height: 58px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 140px;
+}
+.user-name {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.badge-inactive {
+    background: var(--surface-3);
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.user-stats {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+
+.user-balance {
+    font-weight: 700;
+    font-size: 15px;
+    min-width: 72px;
+}
+.bal-ok     { color: var(--success); }
+.bal-warn   { color: var(--warning); }
+.bal-danger { color: var(--danger); }
+
+.user-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* ── Admin promote toggle button ────────────────────────────── */
+.btn-promote {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 22px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.btn-promote .lbl-hover { display: none; }
+.btn-promote:hover .lbl-normal { display: none; }
+.btn-promote:hover .lbl-hover  { display: inline; }
+
+/* Admin state: gold badge → red "—" on hover */
+.btn-promote.is-admin {
+    background: var(--admin-gold);
+    color: #1a1a00;
+}
+.btn-promote.is-admin:hover {
+    background: var(--danger);
+    color: #fff;
+}
+
+/* Non-admin state: dim "A" → gold "A" on hover */
+.btn-promote.not-admin {
+    background: var(--surface-3);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+}
+.btn-promote.not-admin:hover {
+    background: var(--admin-gold);
+    color: #1a1a00;
+    border-color: var(--admin-gold);
+}
+
+/* ── Scan + search bar (home page list-header) ──────────────── */
+/*
+ * Layout (single row, left to right):
+ *   [ISBN input — fixed width for 16 digits] [Go] [📷] [+Add?]
+ *   [Search input — 30% flex] [Search btn]
+ */
+.scan-bar-input {
+    /* ~16 digits at ~10px/char + padding */
+    width: 190px;
+    flex-shrink: 0;
+    height: 44px;
+    font-size: 15px;
+    text-align: right;
+    letter-spacing: 1px;
+    margin-left: auto;   /* push to far right */
+}
+/* Search form takes 30% of remaining space */
+.list-header .search-form {
+    flex: 0 0 30%;
+    min-width: 0;
+}
+
+.scan-msg {
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.scan-msg.success { color: var(--success); background: rgba(74,222,128,0.08); }
+.scan-msg.error   { color: var(--danger);  background: var(--primary-dim); }
+
+/* ── Inline balance adjust form ─────────────────────────────── */
+.user-adjust {
+    border-top: 1px solid var(--border);
+    padding: 10px 14px;
+    background: var(--surface-2);
+}
+
+.adjust-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.adjust-amount {
+    width: 110px;
+    height: 44px;
+    font-size: 15px;
+}
+.adjust-reason {
+    flex: 0 1 80px;
+    min-width: 60px;
+    height: 44px;
+    font-size: 14px;
+}
+
+/* ── Overdue list ───────────────────────────────────────────── */
+.overdue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.overdue-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(230, 57, 70, 0.06);
+    border: 1px solid rgba(230, 57, 70, 0.25);
+    border-radius: var(--radius);
+    min-height: 68px;
+}
+
+.overdue-cover { flex-shrink: 0; }
+.overdue-cover img {
+    width: 38px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 3px;
+    display: block;
+}
+
+.overdue-info { flex: 1; min-width: 0; }
+
+.overdue-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.overdue-book-link {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.overdue-book-link:hover { text-decoration: underline; }
+.overdue-copy {
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.overdue-meta {
+    display: flex;
+    gap: 10px;
+    margin-top: 3px;
+    font-size: 13px;
+    flex-wrap: wrap;
+}
+.overdue-borrower {
+    font-weight: 600;
+    color: var(--primary);
+}
+.overdue-due { color: var(--text-muted); }
+
+.overdue-right {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+.overdue-days-badge {
+    background: var(--danger);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+.overdue-fee-charged {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.overdue-fee-pending {
+    font-size: 12px;
+    color: var(--warning);
+    font-style: italic;
+}
+
+/* ── Settings form ──────────────────────────────────────────── */
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-row-rate { flex-wrap: wrap; }
+
+.setting-info { flex: 1; }
+.setting-name {
+    font-size: 15px;
+    font-weight: 700;
+}
+.setting-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+.setting-input {
+    width: 90px;
+    height: 48px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* ── Loan rate radio group ──────────────────────────────────── */
+.rate-group {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.rate-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 66px;
+    height: 48px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: all var(--transition);
+    user-select: none;
+    -webkit-user-select: none;
+}
+.rate-option input[type="radio"] { display: none; }
+.rate-option.active {
+    border-color: var(--primary);
+    background: var(--primary-dim);
+    color: var(--primary);
+}
+.rate-option:hover:not(.active) { background: var(--surface-3); color: var(--text); }
+
+.settings-footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
+}
+.settings-note {
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+/* ── Rebuy list ─────────────────────────────────────────────── */
+.rebuy-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rebuy-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-height: 68px;
+}
+
+.rebuy-cover { flex-shrink: 0; }
+.rebuy-cover img {
+    width: 38px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 3px;
+    display: block;
+}
+
+.rebuy-info { flex: 1; min-width: 0; }
+.rebuy-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.rebuy-book-link {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+}
+.rebuy-book-link:hover { text-decoration: underline; }
+.rebuy-copy {
+    font-size: 12px;
+    color: var(--text-dim);
+}
+.rebuy-reason {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.rebuy-date {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+.rebuy-action { flex-shrink: 0; }
+
+/* ── User QR codes ──────────────────────────────────────────── */
+.user-qr-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 4px;
+    background: #1a1a2e;
+    flex-shrink: 0;
+}
+.acct-qr-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0 4px;
+}
+.acct-qr-img {
+    width: 160px;
+    height: 160px;
+    border-radius: var(--radius);
+    background: #1a1a2e;
+    flex-shrink: 0;
+}
+.acct-qr-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* ── Account top-up ─────────────────────────────────────────── */
+.topup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.topup-presets {
+    display: flex;
+    gap: 8px;
+}
+.topup-btn {
+    flex: 1;
+    height: 52px;
+    font-size: 18px;
+    font-weight: 800;
+}
+.topup-custom {
+    display: flex;
+    gap: 8px;
+}
+.topup-input {
+    flex: 1;
+    height: 48px;
+    font-size: 16px;
+    text-align: center;
+}
+.topup-submit {
+    height: 48px;
+    padding: 0 20px;
+    font-size: 15px;
+}
+.topup-hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding-top: 2px;
+}
+
+/* ── Take-out rate picker ───────────────────────────────────── */
+.takeout-rate-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+.takeout-rate-group { margin-bottom: 10px; max-width: 420px; }
+
+/* ── Phase 7: Touch polish & 800×480 kiosk refinements ──────── */
+
+/* Prevent pull-to-refresh and over-scroll bounce */
+html { overscroll-behavior: none; }
+.app-main { overscroll-behavior: contain; }
+
+/* Thin dark scrollbar (Chromium/WebKit) */
+::-webkit-scrollbar            { width: 4px; height: 4px; }
+::-webkit-scrollbar-track      { background: transparent; }
+::-webkit-scrollbar-thumb      { background: var(--surface-3); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover{ background: var(--text-dim); }
+
+/* Keep focus rings only for keyboard nav; suppress for touch/mouse */
+:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+/* Inputs already use box-shadow on focus — keep their own style */
+.form-input:focus-visible { outline: none; }
+
+/* Larger small buttons on touch (min 44 px tap target) */
+.btn-sm {
+    height: 44px;
+    padding: 0 16px;
+    font-size: 14px;
+}
+
+/* Admin nav tabs — slightly taller for easier tap */
+.admin-nav-item { height: 48px; font-size: 15px; }
+
+/* Adjust form inputs — slightly taller */
+.adjust-amount,
+.adjust-reason { height: 48px; }
+
+/* Prevent text selection on interactive elements */
+.btn, .admin-nav-item, .rate-option,
+.pinpad-key, .book-row, .picker-item {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Subtle active-press feedback for list rows */
+.book-row:active   { background: var(--surface-3) !important; }
+.picker-item:active{ background: var(--surface-3) !important; }
+
+/* Ensure the number input stepper arrows don't appear (kiosk — PIN numpad used) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+/* ── Logo hex ───────────────────────────────────────────────── */
+.logo-hex { color: var(--primary); font-size: 0.85em; margin-right: -2px; }
+
+/* ── Auth welcome heading ───────────────────────────────────── */
+.auth-welcome {
+    font-size: 38px;
+    font-weight: 900;
+    text-align: center;
+    color: var(--text);
+    letter-spacing: -1px;
+    line-height: 1.1;
+}
+.auth-welcome span     { color: var(--primary); }
+.auth-welcome-hex      { color: var(--primary); }
+.auth-card             { max-width: 540px; }
+
+/* ── Hint bracket style ─────────────────────────────────────── */
+.hint {
+    position: relative;
+    padding: 4px 40px;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.55;
+}
+.hint::before,
+.hint::after {
+    position: absolute;
+    top: -20px; bottom: -20px;   /* extend well beyond the text block */
+    display: flex;
+    align-items: center;
+    font-size: 5.5em;             /* brackets taller than the text */
+    font-weight: 100;
+    line-height: 1;
+    color: var(--primary);
+    opacity: 0.5;
+    font-style: normal;
+    pointer-events: none;
+}
+.hint::before { content: '['; left:  0; }
+.hint::after  { content: ']'; right: 0; }
+
+/* ── Hint aside row: content left, hint right ───────────────── */
+/*
+ * hint-aside-row: two-column layout where the main content is
+ * truly centered (as if the hint didn't exist), and the hint
+ * floats in a separate column to its right.
+ *
+ * Grid: [1fr spacer] [auto: main content] [1fr: hint]
+ * Equal 1fr columns on both sides keep the auto center
+ * column perfectly centered on the page at all widths.
+ */
+.hint-aside-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: 100%;
+}
+.hint-aside-row > :first-child {
+    grid-column: 2;
+}
+.hint-aside-row > .hint {
+    grid-column: 3;
+    padding-left: 28px;
+    font-size: 14px;
+    align-self: center;
+}
+
+/* Scan center column inside hint-aside-row */
+.scan-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+
+/* ── Field row: input left, hint right ──────────────────────── */
+.field-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+}
+.field-row .form-group { flex: 1; min-width: 0; }
+.field-row .field-hint {
+    width: 150px;
+    flex-shrink: 0;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+/* ── Language switcher ──────────────────────────────────────── */
+.lang-switcher-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.lang-switcher-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.lang-switcher { display: flex; gap: 6px; }
+.lang-btn {
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all var(--transition);
+}
+.lang-btn.active {
+    background: var(--primary-dim);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.lang-btn:hover { background: var(--surface-3); color: var(--text); }
+
+/* ── Admin section label ────────────────────────────────────── */
+.admin-section-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--admin-gold);
+    padding: 10px 16px 2px;
+}
+
+/* ── Phone nav bar (shown on phone-scan page) ───────────────── */
+.phone-nav {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+}
+.phone-nav a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    transition: color var(--transition), background var(--transition);
+}
+.phone-nav a:active { background: var(--surface-2); color: var(--text); }
+.phone-nav a svg { width: 22px; height: 22px; }
+.phone-nav a.active { color: var(--primary); }
+
+/* ── Mobile camera button on scan page ─────────────────────── */
+.mobile-cam-btn { display: none; }
+
+/* ── Mobile responsive overrides (phones ≤ 640px) ──────────── */
+@media (max-width: 640px) {
+
+    /* Allow normal page scrolling instead of kiosk fixed layout */
+    html, body { overflow: auto; height: auto; overscroll-behavior: auto; }
+    .app-main {
+        position: static;
+        overflow: visible;
+        height: auto;
+    }
+
+    /* Header becomes sticky */
+    .app-header { position: sticky; top: 0; z-index: 100; }
+
+    /* Show camera button, hide QR (phone is the scanner) */
+    .mobile-cam-btn { display: flex !important; }
+    .scan-qr-box    { display: none; }
+
+    /* Scan nav: stack vertically */
+    .scan-nav { flex-direction: column; align-items: stretch; max-width: 360px; width: 100%; }
+    .scan-nav .btn { width: 100%; }
+
+    /* Book list: allow normal scroll */
+    .list-page, .book-list { overflow: visible; height: auto; }
+
+    /* Book detail: stack cover + info vertically */
+    .detail-page  { overflow: visible; }
+    .detail-body  { flex-direction: column; overflow: visible; height: auto; }
+    .page-hint    { display: none; }
+    .detail-cover-wrap {
+        width: 100%;
+        padding: 16px;
+        justify-content: center;
+    }
+    .detail-info  { overflow: visible; padding-bottom: 24px; }
+    .detail-action-btn { align-self: stretch; }
+
+    /* Account page */
+    .acct-page, .acct-body { overflow: visible; }
+    .acct-qr-row { flex-direction: column; align-items: center; }
+
+    /* Admin pages */
+    .admin-page { overflow: visible; }
+    .admin-body { overflow: visible; }
+    .users-table { font-size: 13px; }
+    .users-table th, .users-table td { padding: 8px 10px; }
+
+    /* Auth */
+    .auth-card, .auth-register-card { padding: 22px 18px; }
+    .auth-welcome { font-size: 26px; }
+    .field-row { flex-direction: column; gap: 4px; }
+    .field-row .field-hint { width: 100%; margin-bottom: 0; }
+    /* Header: hide admin/logout on mobile to prevent overflow */
+    .header-right .btn-ghost { display: none; }
+    .header-right form.inline-form { display: none; }
+
+    /* Hint aside: stack on mobile */
+    .hint-aside-row { grid-template-columns: 1fr; }
+    .hint-aside-row > :first-child { grid-column: 1; }
+    .hint-aside-row > .hint { display: none; }
+    .scan-center { width: 100%; }
+}
+
+/* ── Text size upgrades (kiosk + mobile readable) ───────────── */
+
+/* Raise all the 10-11px decorative labels to 13px minimum */
+.badge-admin           { font-size: 12px; }
+.detail-admin-label,
+.borrower-names,
+.form-label,
+.loan-borrower,
+.scan-qr-label,
+.admin-nav-item,
+.user-since,
+.txn-type              { font-size: 14px; }
+.acct-section-title    { font-size: 17px; font-weight: 700; }
+
+/* Raise 12-13px body/meta text to 15px */
+.flash,
+.book-row-author,
+.detail-meta,
+.detail-author,
+.auth-subtitle,
+.auth-footer,
+.status-badge,
+.loan-row,
+.txn-date,
+.txn-desc,
+.txn-amount,
+.balance-hint,
+.balance-label,
+.scan-instruction,
+.scan-balance-warn,
+.detail-isbn,
+.page-topbar-title,
+.admin-subtitle,
+.users-table,
+.rebuy-isbn,
+.rebuy-reason,
+.overdue-meta,
+.setting-desc,
+.phone-scan-prompt-msg,
+.phone-scan-manual-msg,
+.phone-scan-hint        { font-size: 18px; }
+
+/* Raise 14px secondary text to 16px */
+.user-badge,
+.btn-sm,
+.search-input,
+.auth-title,
+.detail-title,
+.loan-card-meta,
+.loan-card-due          { font-size: 16px; }
+
+.topup-hint,
+.acct-qr-hint           { font-size: 15px; }
+
+/* Buttons stay at 17px (already set), btn-sm raised above */
+/* Primary text (titles) already 20px+ — leave alone */

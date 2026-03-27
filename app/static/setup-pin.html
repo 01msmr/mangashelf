@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore — Set PIN</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-title">Set Your PIN</div>
+        <div class="auth-subtitle">Choose a 4-digit PIN (not 0000)</div>
+        <div class="setup-notice">You must set a new PIN before continuing.</div>
+        <div id="error-box" class="auth-error" style="display:none"></div>
+        <div class="auth-form">
+            <div class="form-group">
+                <label class="form-label">New PIN</label>
+                <input type="password" id="pin" class="form-input" inputmode="numeric" maxlength="4">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirm PIN</label>
+                <input type="password" id="pin-confirm" class="form-input" inputmode="numeric" maxlength="4">
+            </div>
+            <button class="btn btn-primary btn-block" id="btn-set">Set PIN</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/api.js"></script>
+<script>
+const errorBox = document.getElementById('error-box');
+
+document.getElementById('btn-set').addEventListener('click', async () => {
+    hideError(errorBox);
+    const pin         = document.getElementById('pin').value.trim();
+    const pin_confirm = document.getElementById('pin-confirm').value.trim();
+    try {
+        await API.post('/api/auth/setup-pin', { pin, pin_confirm });
+        window.location.href = '/index.html';
+    } catch (err) {
+        showError(errorBox, err.detail || 'Failed to set PIN.');
+    }
+});
+</script>
+</body>
+</html>

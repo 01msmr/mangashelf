@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    {% block viewport %}<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">{% endblock %}
+    <title>{% block title %}MangaStore{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+<header class="app-header">
+    <div class="header-left">
+        <a href="{{ url_for('books.scan') }}" style="text-decoration:none">
+            <span class="app-logo"><span class="logo-hex">⬡</span> Toolbox Manga<span>Store</span></span>
+        </a>
+    </div>
+    <div class="header-right">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('account.account_page') }}" class="user-badge" style="text-decoration:none">
+                {{ current_user.username }}
+                {% if current_user.is_admin %}
+                    <span class="badge-admin">Admin</span>
+                {% endif %}
+            </a>
+            {% if current_user.is_admin %}
+                <a href="{{ url_for('admin.users') }}" class="btn btn-ghost btn-sm">
+                    {{ _t('admin.section') }}
+                </a>
+            {% endif %}
+            <form method="post" action="{{ url_for('auth.logout') }}" class="inline-form">
+                <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+            </form>
+        {% endif %}
+    </div>
+</header>
+
+<main class="app-main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<!--
+    Global barcode scanner capture.
+    The hidden input is always in the DOM; scanner.js keeps it focused
+    when no real user input is active.  The hidden form posts to /scan.
+-->
+<input type="text"
+       id="scan-input"
+       class="scan-input-hidden"
+       autocomplete="off"
+       autocorrect="off"
+       autocapitalize="off"
+       spellcheck="false"
+       aria-hidden="true"
+       tabindex="-1">
+
+{% if current_user.is_authenticated %}
+<form id="scan-form"
+      method="post"
+      action="{{ url_for('loans.scan_handler') }}"
+      style="display:none">
+    <input type="hidden" name="isbn" id="scan-isbn-hidden">
+</form>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/pin.js') }}"></script>
+<script src="{{ url_for('static', filename='js/scanner.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

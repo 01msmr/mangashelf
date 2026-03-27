@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaStore</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="list-page">
+        <div class="list-header">
+            <div class="search-form">
+                <input type="text" id="search" class="form-input search-input" placeholder="Search…" autofocus>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btn-search">Search</button>
+            <input type="text" id="isbn-input" class="form-input scan-bar-input"
+                   placeholder="Scan or type ISBN…" inputmode="numeric">
+            <button class="btn btn-primary btn-sm" id="btn-go">Go</button>
+            <button class="btn btn-ghost btn-sm" id="btn-camera">📷</button>
+            <a id="btn-add" href="/admin/add-book.html" class="btn btn-ghost btn-sm" style="display:none">+ Add</a>
+        </div>
+        <div id="scan-msg" class="scan-msg" style="display:none"></div>
+        <div id="book-list" class="book-list">
+            <div class="empty-state">Loading…</div>
+        </div>
+    </div>
+</main>
+
+<!-- Camera scanner overlay -->
+<div id="scanner-overlay" style="display:none; position:fixed; inset:0; background:#000; z-index:200; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+    <video id="scanner-video" style="width:100%; max-width:500px; border-radius:8px;"></video>
+    <button class="btn btn-ghost" id="btn-close-scanner">Close</button>
+</div>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/nav.js"></script>
+<script src="/static/js/zxing-browser.min.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let currentUser = null;
+let openBookId  = null;
+
+async function init() {
+    currentUser = await initPage().catch(() => null);
+    if (!currentUser) return;
+    if (currentUser.is_admin) document.getElementById('btn-add').style.display = 'inline-flex';
+    const urlQ = new URLSearchParams(location.search).get('q') || '';
+    if (urlQ) document.getElementById('search').value = urlQ;
+    loadBooks(urlQ);
+}
+
+/* ── Book list ──────────────────────────────────────────────── */
+async function loadBooks(q = '') {
+    openBookId = null;
+    const list = document.getElementById('book-list');
+    try {
+        const books = await API.get(`/api/books?q=${encodeURIComponent(q)}`);
+        if (!books.length) {
+            list.innerHTML = '<div class="empty-state">No books found.</div>';
+            return;
+        }
+        list.innerHTML = books.map(b => {
+            const cover = b.cover_path
+                ? `<div class="book-row-cover"><img src="/static/${esc(b.cover_path)}" alt=""></div>`
+                : `<div class="book-row-cover"><div class="cover-placeholder cover-sm">📖</div></div>`;
+            const badge = b.available > 0
+                ? `<span class="status-badge status-available">${b.available} available</span>`
+                : `<span class="status-badge status-loaned">All loaned</span>`;
+            return `
+                <div class="book-row-wrap" id="wrap-${b.id}">
+                    <div class="book-row" onclick="toggleBook(${b.id}, '${esc(b.isbn)}')">
+                        ${cover}
+                        <div class="book-row-info">
+                            <div class="book-row-title">${esc(b.title)}</div>
+                            <div class="book-row-author">${esc(b.author || '')}</div>
+                        </div>
+                        <div class="book-row-status">${badge}</div>
+                    </div>
+                    <div class="book-panel" id="panel-${b.id}"></div>
+                </div>`;
+        }).join('');
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        list.innerHTML = `<div class="empty-state">${esc(err.detail || 'Failed to load books.')}</div>`;
+    }
+}
+
+/* ── Inline book expand / collapse ──────────────────────────── */
+async function toggleBook(bookId, isbn) {
+    const wrap  = document.getElementById(`wrap-${bookId}`);
+    const panel = document.getElementById(`panel-${bookId}`);
+
+    // Collapse if already open
+    if (openBookId === bookId) {
+        panel.classList.remove('open');
+        wrap.classList.remove('expanded');
+        openBookId = null;
+        return;
+    }
+
+    // Close previously open panel
+    if (openBookId !== null) {
+        const prevPanel = document.getElementById(`panel-${openBookId}`);
+        const prevWrap  = document.getElementById(`wrap-${openBookId}`);
+        if (prevPanel) prevPanel.classList.remove('open');
+        if (prevWrap)  prevWrap.classList.remove('expanded');
+    }
+
+    openBookId = bookId;
+    wrap.classList.add('expanded');
+    panel.innerHTML = '<div style="padding:10px;font-size:13px;color:var(--text-muted)">Loading…</div>';
+    panel.classList.add('open');
+
+    try {
+        const book = await API.get(`/api/books/${encodeURIComponent(isbn)}`);
+        renderBookPanel(panel, book, bookId, isbn);
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        panel.innerHTML = `<div style="padding:10px;font-size:13px" class="text-danger">${esc(err.detail || 'Error')}</div>`;
+    }
+}
+
+function renderBookPanel(panel, book, bookId, isbn) {
+    const coverHtml = book.cover_path
+        ? `<img src="/static/${esc(book.cover_path)}" alt="">`
+        : `<div class="book-panel-cover-placeholder">📖</div>`;
+
+    const avail = book.available > 0;
+    const statusBadge = avail
+        ? `<span class="status-badge status-available">${book.available} available</span>`
+        : `<span class="status-badge status-loaned">All loaned</span>`;
+
+    let actionHtml = '';
+    if (book.user_loan_id) {
+        actionHtml = `<a href="/return.html?loan_id=${book.user_loan_id}" class="btn btn-primary btn-sm">Return</a>`;
+    } else if (book.available > 0 && book.borrow_allowed) {
+        actionHtml = `<a href="/borrow.html?isbn=${encodeURIComponent(isbn)}" class="btn btn-primary btn-sm">Borrow</a>`;
+    } else if (!book.borrow_allowed && book.borrow_reason) {
+        const msg = book.borrow_reason === 'balance_low' ? 'Balance too low' : 'Loan limit reached';
+        actionHtml = `<span style="font-size:13px" class="text-warning">${esc(msg)}</span>`;
+    }
+
+    let loansHtml = '';
+    if (book.loans_info && book.loans_info.length) {
+        loansHtml = `<div class="book-panel-loans">` +
+            book.loans_info.map(l => `
+                <div class="book-panel-loan-row">
+                    Copy #${l.copy_num} — due ${esc(fmtDate(l.due_date))}
+                    ${currentUser.is_admin && l.borrower ? `<span style="color:var(--text-dim)"> (${esc(l.borrower)})</span>` : ''}
+                </div>`
+            ).join('') + `</div>`;
+    }
+
+    let adminHtml = '';
+    if (currentUser.is_admin && book.copies && book.copies.length) {
+        const opts = book.copies.filter(c => c.status !== 'broken').map(c =>
+            `<option value="${c.id}">Copy #${c.copy_num} (${c.status})</option>`
+        ).join('');
+        if (opts) {
+            adminHtml = `
+                <div class="book-panel-admin">
+                    <div class="book-panel-admin-label">Admin</div>
+                    <div class="book-panel-broken-row">
+                        <select id="bc-sel-${bookId}" class="form-input form-select" style="height:36px;font-size:13px;flex:1;width:auto">${opts}</select>
+                        <input type="text" id="bc-note-${bookId}" class="form-input" placeholder="Note" style="height:36px;font-size:13px;flex:1;width:auto">
+                        <button class="btn btn-danger btn-sm" onclick="markBroken(${bookId}, '${esc(isbn)}')">Broken</button>
+                    </div>
+                    <div class="book-panel-msg text-danger" id="bc-msg-${bookId}"></div>
+                </div>`;
+        }
+    }
+
+    panel.innerHTML = `
+        <div class="book-panel-cover">
+            ${coverHtml}
+            <div class="book-panel-isbn">${esc(isbn)}</div>
+        </div>
+        <div class="book-panel-info">
+            <div class="book-panel-status">
+                ${statusBadge}
+                <span style="font-size:13px;color:var(--text-muted)">${(book.loan_rate||0.5).toFixed(2)} €/loan</span>
+            </div>
+            <div class="book-panel-actions">${actionHtml}</div>
+            ${loansHtml}
+            ${adminHtml}
+        </div>`;
+}
+
+async function markBroken(bookId, isbn) {
+    const copyId = document.getElementById(`bc-sel-${bookId}`).value;
+    const note   = document.getElementById(`bc-note-${bookId}`).value;
+    const msgEl  = document.getElementById(`bc-msg-${bookId}`);
+    msgEl.style.display = 'none';
+    try {
+        const res = await API.post(`/api/copies/${copyId}/broken`, { broken_note: note });
+        if (res.book_removed) {
+            openBookId = null;
+            loadBooks(searchEl.value);
+        } else {
+            // Re-fetch and redraw the panel
+            const book  = await API.get(`/api/books/${encodeURIComponent(isbn)}`);
+            const panel = document.getElementById(`panel-${bookId}`);
+            renderBookPanel(panel, book, bookId, isbn);
+        }
+    } catch (err) {
+        msgEl.textContent   = err.detail || 'Failed';
+        msgEl.style.display = 'block';
+    }
+}
+
+const searchEl  = document.getElementById('search');
+const isbnInput = document.getElementById('isbn-input');
+const msgBox    = document.getElementById('scan-msg');
+
+document.getElementById('btn-search').addEventListener('click', () => loadBooks(searchEl.value));
+searchEl.addEventListener('keydown', e => { if (e.key === 'Enter') loadBooks(searchEl.value); });
+
+/* ── Scan / ISBN handling ───────────────────────────────────── */
+function setMsg(text, type = '') {
+    msgBox.textContent = text;
+    msgBox.className   = 'scan-msg' + (type ? ' ' + type : '');
+    msgBox.style.display = 'block';
+    if (type !== 'error') setTimeout(() => { msgBox.style.display = 'none'; }, 3000);
+}
+
+async function handleIsbn(isbn) {
+    isbn = isbn.trim();
+    if (!isbn) return;
+    isbnInput.value = '';
+    try {
+        const res = await API.get(`/api/scan?isbn=${encodeURIComponent(isbn)}`);
+        if (res.action === 'borrow') {
+            window.location.href = `/borrow.html?isbn=${encodeURIComponent(isbn)}`;
+        } else if (res.action === 'return') {
+            window.location.href = `/return.html?loan_id=${res.loan_id}`;
+        } else if (res.action === 'return_pick') {
+            window.location.href = `/return-pick.html?isbn=${encodeURIComponent(isbn)}`;
+        } else if (res.action === 'add') {
+            window.location.href = `/admin/add-book.html?isbn=${encodeURIComponent(isbn)}`;
+        }
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        setMsg(err.detail || 'Unknown error', 'error');
+    }
+}
+
+document.getElementById('btn-go').addEventListener('click', () => handleIsbn(isbnInput.value));
+isbnInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleIsbn(isbnInput.value); });
+
+// Auto-submit on barcode scanner input (rapid keypresses → Enter)
+let scanBuffer = '', scanTimer;
+document.addEventListener('keypress', e => {
+    if (document.activeElement === isbnInput || document.activeElement === searchEl) return;
+    if (e.key === 'Enter') {
+        if (scanBuffer.length > 5) handleIsbn(scanBuffer);
+        scanBuffer = '';
+        clearTimeout(scanTimer);
+    } else {
+        scanBuffer += e.key;
+        clearTimeout(scanTimer);
+        scanTimer = setTimeout(() => { scanBuffer = ''; }, 500);
+    }
+});
+
+/* ── Camera scanner ─────────────────────────────────────────── */
+let codeReader;
+document.getElementById('btn-camera').addEventListener('click', async () => {
+    document.getElementById('scanner-overlay').style.display = 'flex';
+    const { BrowserMultiFormatReader } = ZXingBrowser;
+    codeReader = new BrowserMultiFormatReader();
+    const video = document.getElementById('scanner-video');
+    try {
+        await codeReader.decodeFromVideoDevice(null, video, (result) => {
+            if (result) { closeScanner(); handleIsbn(result.getText()); }
+        });
+    } catch (e) {
+        closeScanner();
+        setMsg('Camera not available', 'error');
+    }
+});
+
+function closeScanner() {
+    document.getElementById('scanner-overlay').style.display = 'none';
+    if (codeReader) { codeReader.reset(); codeReader = null; }
+}
+document.getElementById('btn-close-scanner').addEventListener('click', closeScanner);
+
+init();
+</script>
+</body>
+</html>
