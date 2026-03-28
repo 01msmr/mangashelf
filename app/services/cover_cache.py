@@ -8,7 +8,7 @@ logger    = logging.getLogger(__name__)
 COVER_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', 'static', 'covers')
 )
-_HEADERS  = {'User-Agent': 'MangaStore/1.0 (manga-library-management)'}
+_HEADERS  = {'User-Agent': 'MangaShelf/1.0 (manga-library-management)'}
 _TIMEOUT  = 10
 
 

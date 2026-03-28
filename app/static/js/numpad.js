@@ -1,8 +1,7 @@
 // attachNumpad(inputEl, toggleBtnEl?, options?)
-// options: { decimal: true } adds a comma key left of 0
-// options: { keepFocus: true } re-focuses input if nothing else takes focus
+// options: { decimal: true }   — comma key left of 0
+// options: { keepFocus: true } — re-focus input if nothing else takes focus (login screens)
 function attachNumpad(inputEl, toggleBtnEl, options = {}) {
-    const noHwKeyboard = window.matchMedia('(pointer: coarse)').matches;
 
     const numpad = document.createElement('div');
     numpad.style.cssText = 'display:none;flex-direction:column;gap:6px;position:fixed;z-index:9100;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px;box-shadow:0 4px 20px rgba(0,0,0,0.5)';
@@ -37,7 +36,6 @@ function attachNumpad(inputEl, toggleBtnEl, options = {}) {
         const rect = inputEl.getBoundingClientRect();
         const padW = Math.max(rect.width, 180);
         numpad.style.width = padW + 'px';
-        // Prefer below; flip above if not enough space
         const spaceBelow = window.innerHeight - rect.bottom;
         if (spaceBelow >= 200 || spaceBelow > rect.top) {
             numpad.style.top  = (rect.bottom + 4) + 'px';
@@ -52,24 +50,28 @@ function attachNumpad(inputEl, toggleBtnEl, options = {}) {
     function show() { positionNumpad(); numpad.style.display = 'flex'; }
     function hide() { numpad.style.display = 'none'; }
 
-    if (noHwKeyboard) {
-        inputEl.addEventListener('focus', show);
-        inputEl.addEventListener('blur', () => {
-            setTimeout(() => {
-                const a = document.activeElement;
-                if (options.keepFocus && (!a || a === document.body)) {
-                    inputEl.focus();
-                } else {
-                    hide();
-                }
-            }, 150);
-        });
-    }
+    // Always auto-show on focus — needed for inputmode="none" inputs on all devices
+    inputEl.addEventListener('focus', show);
+    inputEl.addEventListener('blur', () => {
+        setTimeout(() => {
+            const a = document.activeElement;
+            // keepFocus: re-engage if nothing took focus (login/PIN screens)
+            if (options.keepFocus && (!a || a === document.body)) {
+                inputEl.focus();
+            } else {
+                hide();
+            }
+        }, 200);
+    });
 
     if (toggleBtnEl) {
+        toggleBtnEl.addEventListener('pointerdown', e => {
+            // Prevent blur from firing on the input when toggle is tapped
+            e.preventDefault();
+        });
         toggleBtnEl.addEventListener('click', () => {
             const visible = numpad.style.display === 'flex';
-            if (visible) { hide(); } else { show(); inputEl.focus(); }
+            if (visible) { hide(); inputEl.blur(); } else { show(); inputEl.focus(); }
         });
     }
 }

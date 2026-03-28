@@ -1,4 +1,4 @@
-# MangaStore
+# MangaShelf
 
 A self-hosted manga/book lending kiosk built for a Raspberry Pi touchscreen.
 Users browse books, borrow and return them, top up a balance, and manage their account — all from a 800 × 480 touch display without a keyboard.
@@ -53,7 +53,7 @@ Users browse books, borrow and return them, top up a balance, and manage their a
 ```bash
 # 1. Clone and enter the project
 git clone <repo-url>
-cd mangastore
+cd mangashelf
 
 # 2. Create virtualenv and install dependencies
 python3 -m venv venv
@@ -61,7 +61,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # 3. Seed the database with an admin user
-python seed.py        # creates mangastore.db, default admin: admin / PIN 0000
+python seed.py        # creates mangashelf.db, default admin: admin / PIN 0000
 
 # 4. Generate a self-signed certificate (HTTPS is required for session cookies)
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes \
@@ -79,7 +79,7 @@ Default credentials: **admin** / PIN **0000** — you will be asked to change th
 | Variable | Default | Description |
 |---|---|---|
 | `SECRET_KEY` | `dev-secret-change-in-production` | Session signing key — **change this in production** |
-| `DATABASE_URL` | `sqlite:///mangastore.db` | SQLAlchemy database URL |
+| `DATABASE_URL` | `sqlite:///mangashelf.db` | SQLAlchemy database URL |
 
 Put them in a `.env` file in the project root; `python-dotenv` loads it automatically.
 
@@ -90,7 +90,7 @@ Put them in a `.env` file in the project root; `python-dotenv` loads it automati
 Tested on Raspberry Pi OS Bookworm/Bullseye with a 800 × 480 HDMI display.
 
 ```bash
-# On the Pi, clone the project to /home/pi/mangastore, then:
+# On the Pi, clone the project to /home/pi/mangashelf, then:
 sudo bash deploy/install.sh
 sudo reboot
 ```
@@ -98,8 +98,8 @@ sudo reboot
 The installer:
 1. Installs system packages (`chromium-browser`, `unclutter`, `xdotool`)
 2. Creates a Python virtualenv and installs Python dependencies
-3. Seeds the database (only if `mangastore.db` does not exist yet)
-4. Installs and starts a **systemd service** (`mangastore.service`)
+3. Seeds the database (only if `mangashelf.db` does not exist yet)
+4. Installs and starts a **systemd service** (`mangashelf.service`)
 5. Configures **Chromium kiosk mode** via LXDE autostart (launches on boot, full-screen, no cursor after 3 s, `--enable-virtual-keyboard` for system OSK on text fields)
 6. Enables desktop auto-login for the `pi` user
 
@@ -109,14 +109,14 @@ After reboot the kiosk opens automatically at `http://localhost:5000`.
 
 ```bash
 # Service management
-sudo systemctl status mangastore
-sudo systemctl restart mangastore
-journalctl -u mangastore -f          # live logs
+sudo systemctl status mangashelf
+sudo systemctl restart mangashelf
+journalctl -u mangashelf -f          # live logs
 
 # Update the app
-cd /home/pi/mangastore
+cd /home/pi/mangashelf
 git pull
-sudo systemctl restart mangastore
+sudo systemctl restart mangashelf
 ```
 
 ---
@@ -124,7 +124,7 @@ sudo systemctl restart mangastore
 ## Project Structure
 
 ```
-mangastore/
+mangashelf/
 ├── app/
 │   ├── main.py              # FastAPI app factory
 │   ├── models.py            # SQLAlchemy models (User, Book, Copy, Loan, …)
@@ -148,7 +148,7 @@ mangastore/
 │       └── fonts/           # Local Font Awesome + Permanent Marker (no CDN)
 ├── deploy/
 │   ├── install.sh           # One-shot Raspberry Pi installer
-│   ├── mangastore.service   # systemd unit file
+│   ├── mangashelf.service   # systemd unit file
 │   └── autostart            # LXDE kiosk autostart config
 ├── requirements.txt
 ├── seed.py                  # Populate DB with default admin user

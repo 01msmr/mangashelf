@@ -10,7 +10,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-_HEADERS = {'User-Agent': 'MangaStore/1.0 (manga-library-management)'}
+_HEADERS = {'User-Agent': 'MangaShelf/1.0 (manga-library-management)'}
 _TIMEOUT = 6
 
 

@@ -3,96 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MangaStore — Login</title>
+    <title>MangaShelf — Login</title>
     <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        body { overflow: auto; }
 
-        /* ── Register button — top right ─────────── */
-        .register-corner {
-            position: fixed; top: 10px; right: 14px; z-index: 10;
-        }
-
-        /* ── User selection screen ───────────────── */
-        .login-screen {
-            min-height: 100vh;
-            display: flex; flex-direction: column;
-            align-items: center; padding: 32px 20px 20px;
-            gap: 24px;
-        }
-        .login-title { font-size: calc(var(--text-xl) * 1.2); font-weight: 800; text-align: center; }
-        .login-title .logo-badge { transform: skewX(-15deg) scale(1.8); }
-        .login-title span { color: var(--primary); }
-        .login-subtitle { color: var(--text-muted); font-size: 14px; margin-top: -12px; }
-
-        .user-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-            width: 100%; max-width: 720px;
-        }
-        .user-tile {
-            background: var(--surface); border: 2px solid var(--border);
-            border-radius: var(--radius-xl); padding: 20px 12px;
-            text-align: center; cursor: pointer;
-            transition: border-color var(--transition), background var(--transition);
-            user-select: none; -webkit-user-select: none;
-        }
-        .user-tile:hover, .user-tile:active { border-color: var(--primary); background: var(--primary-dim); }
-        .user-tile .avatar {
-            width: 52px; height: 52px; border-radius: 50%;
-            background: var(--surface-3); margin: 0 auto 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: 700; color: var(--primary);
-        }
-        .user-tile .name { font-weight: 600; font-size: var(--text-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-        /* ── PIN entry overlay ───────────────────── */
-        .pin-overlay {
-            display: none;
-            position: fixed; inset: 0; z-index: 300;
-            background: rgba(13,13,26,.92);
-            align-items: center; justify-content: center;
-            flex-direction: column; gap: 20px;
-        }
-        .pin-overlay.active { display: flex; }
-
-        /* ── Shared PIN card (also used by nav.js) ─ */
-        .pin-card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius-xl); padding: 28px 28px 22px;
-            width: 100%; max-width: 320px; text-align: center;
-            box-shadow: var(--shadow);
-        }
-        .pin-card-label {
-            font-size: 13px; font-weight: 700; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 4px;
-        }
-        .pin-card-user { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
-        .pin-error {
-            background: rgba(230,57,70,.15); border: 1px solid var(--primary);
-            color: var(--primary); border-radius: var(--radius);
-            padding: 9px 14px; font-size: 13px; margin-bottom: 12px;
-            display: none; min-width: 220px; font-variant-numeric: tabular-nums;
-        }
-        /* Masked PIN text input */
-        .pin-text-input {
-            width: 100%; height: 52px;
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius); color: var(--text);
-            font-size: 28px; letter-spacing: 14px; text-align: center;
-            outline: none; font-family: inherit; caret-color: transparent;
-            margin-bottom: 14px; transition: border-color var(--transition);
-        }
-        .pin-text-input:focus { border-color: var(--primary); }
-
-        /* Numpad — match main page button size */
-        .pinpad-key { height: 56px; padding: 0; font-size: var(--text-base); }
-        .pinpad-key:hover, .pinpad-key:active { background: var(--surface-3); border-color: var(--primary); }
-        .pinpad-key:disabled { opacity: 0.4; pointer-events: none; }
-    </style>
 </head>
-<body>
+<body class="login-page">
 
 <!-- Register button — top right corner -->
 <div class="register-corner">
@@ -102,7 +17,7 @@
 
 <!-- User selection -->
 <div id="screen-select" class="login-screen">
-    <div class="login-title"><span class="logo-badge"><img src="/static/img/kinoko.svg" style="width:38px;height:38px"></span>Manga<span>Store</span></div>
+    <div class="login-title"><span class="logo-badge"><img src="/static/img/kinoko.svg" style="width:38px;height:38px"></span>Manga<span>Shelf</span></div>
     <div class="login-subtitle">Tap your name to log in</div>
     <div id="user-grid" class="user-grid">
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px">Loading users…</div>

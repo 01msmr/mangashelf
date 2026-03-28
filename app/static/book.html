@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MangaStore — Book</title>
+    <title>MangaShelf — Book</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -48,7 +48,7 @@ async function init() {
 
     const coverHtml = book.cover_path
         ? `<img class="detail-cover-img" src="/static/${esc(book.cover_path)}" alt="">`
-        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal" style="color:#aaa;font-size:2.5em"></i></div>`;
+        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal cover-icon"></i></div>`;
 
     const avail = book.available > 0;
     const statusBadge = avail

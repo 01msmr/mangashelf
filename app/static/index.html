@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MangaStore</title>
+    <title>MangaShelf</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -59,7 +59,7 @@ async function loadBooks(q = '') {
         list.innerHTML = books.map(b => {
             const cover = b.cover_path
                 ? `<div class="book-row-cover"><img src="/static/${esc(b.cover_path)}" alt=""></div>`
-                : `<div class="book-row-cover"><div class="cover-placeholder cover-sm"><i class="fa-solid fa-book fa-flip-horizontal" style="color:#aaa;font-size:1.2em"></i></div></div>`;
+                : `<div class="book-row-cover"><div class="cover-placeholder cover-sm"><i class="fa-solid fa-book fa-flip-horizontal cover-icon-sm"></i></div></div>`;
             const badge = b.available > 0
                 ? `<span class="status-badge status-available">available</span>`
                 : `<span class="status-badge status-loaned">All loaned</span>`;

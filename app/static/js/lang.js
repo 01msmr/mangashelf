@@ -5,7 +5,7 @@
  */
 const Lang = (() => {
     let _strings = null;
-    let _current = localStorage.getItem('mangastore_lang') || 'de';
+    let _current = localStorage.getItem('mangashelf_lang') || 'de';
 
     return {
         get current() { return _current; },
@@ -30,7 +30,7 @@ const Lang = (() => {
         /** Persist language selection to localStorage. */
         set(lang) {
             _current = lang;
-            localStorage.setItem('mangastore_lang', lang);
+            localStorage.setItem('mangashelf_lang', lang);
         },
     };
 })();

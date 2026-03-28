@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MangaStore — Users</title>
+    <title>MangaShelf — Users</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -98,18 +98,18 @@ async function loadUsers() {
                     </div>
                     <div class="user-adjust">
                         <div class="adjust-form" style="justify-content:flex-end">
-                            <div style="position:relative;display:inline-flex;align-items:center">
+                            <div class="input-with-btn">
                                 <input type="number" step="0.01" placeholder="± amount" id="adj-${u.id}"
                                        class="form-input adjust-amount" inputmode="none">
-                                <button type="button" id="btn-numpad-adj-${u.id}" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:2px"><i class="fa-solid fa-keyboard"></i></button>
+                                <button type="button" id="btn-numpad-adj-${u.id}" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                             </div>
                             <input type="text" placeholder="Reason" id="reason-${u.id}"
                                    class="form-input adjust-reason">
                             <button class="btn btn-ghost btn-sm" style="margin-right:auto" onclick="adjust(${u.id})">Adjust</button>
-                            <div style="position:relative;display:inline-flex;align-items:center">
+                            <div class="input-with-btn">
                                 <input type="text" inputmode="none" maxlength="4" placeholder="PIN"
-                                       id="pin-${u.id}" class="form-input adjust-amount" style="letter-spacing:4px;text-align:center;-webkit-text-security:disc;padding-right:32px">
-                                <button type="button" id="btn-numpad-pin-${u.id}" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:2px"><i class="fa-solid fa-keyboard"></i></button>
+                                       id="pin-${u.id}" class="form-input adjust-amount pin-admin-input">
+                                <button type="button" id="btn-numpad-pin-${u.id}" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                             </div>
                             <button class="btn btn-ghost btn-sm" onclick="setPin(${u.id}, ${JSON.stringify(u.username)})">Set PIN</button>
                             <button class="btn btn-ghost btn-sm" onclick="forcePin(${u.id}, ${JSON.stringify(u.username)})">Force PIN</button>
@@ -124,7 +124,7 @@ async function loadUsers() {
         userIds.forEach(uid => {
             const pinInput = document.getElementById(`pin-${uid}`);
             const numpadBtn = document.getElementById(`btn-numpad-pin-${uid}`);
-            if (pinInput && numpadBtn) attachNumpad(pinInput, numpadBtn, { keepFocus: true });
+            if (pinInput && numpadBtn) attachNumpad(pinInput, numpadBtn, {});
             const adjInput = document.getElementById(`adj-${uid}`);
             const adjBtn = document.getElementById(`btn-numpad-adj-${uid}`);
             if (adjInput && adjBtn) attachNumpad(adjInput, adjBtn, { decimal: true });

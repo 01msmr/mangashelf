@@ -17,7 +17,7 @@ def _generate_cert():
         'openssl', 'req', '-x509', '-newkey', 'rsa:2048',
         '-keyout', KEY_FILE, '-out', CERT_FILE,
         '-days', '3650', '-nodes',
-        '-subj', '/CN=mangastore.local',
+        '-subj', '/CN=mangashelf.local',
     ], check=True, capture_output=True)
     print('Self-signed certificate generated.')
 

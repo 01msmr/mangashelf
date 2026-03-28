@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MangaStore — Settings</title>
+    <title>MangaShelf — Settings</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -41,6 +41,19 @@
                         <button class="btn btn-primary" id="btn-save">Save Settings</button>
                         <div id="msg" class="fetch-status mt-2" style="display:none"></div>
                         <hr class="divider" style="margin-top:20px">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Admin PIN</label>
+                            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:8px">4-digit shared PIN used as the second half of admin access (Your PIN + Admin PIN).</div>
+                            <div style="display:flex;gap:8px;align-items:center">
+                                <div class="input-with-btn" style="flex:1">
+                                    <input type="password" id="new-admin-pin" class="form-input pin-admin-input" inputmode="none" maxlength="4" placeholder="••••">
+                                    <button type="button" id="btn-numpad-admin-pin" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
+                                </div>
+                                <button class="btn btn-ghost btn-sm" id="btn-set-admin-pin">Set PIN</button>
+                            </div>
+                            <div id="admin-pin-msg" class="fetch-status mt-1" style="display:none"></div>
+                        </div>
+                        <hr class="divider">
                         <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">Remove all books from the database where every copy is broken or missing.</div>
                         <button class="btn btn-danger btn-sm" id="btn-purge">Purge Empty Books</button>
                         <div id="purge-msg" class="fetch-status mt-2" style="display:none"></div>
@@ -58,6 +71,7 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/numpad.js"></script>
 <script>
 async function init() {
     await initPage();
@@ -95,6 +109,25 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     }
 });
 
+document.getElementById('btn-set-admin-pin').addEventListener('click', async () => {
+    const pin   = document.getElementById('new-admin-pin').value.trim();
+    const msgEl = document.getElementById('admin-pin-msg');
+    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+        msgEl.className = 'fetch-status text-danger'; msgEl.textContent = 'Enter a 4-digit PIN first.';
+        msgEl.style.display = 'block'; return;
+    }
+    try {
+        const res = await API.post('/api/admin/set-admin-pin', { new_pin: pin });
+        document.getElementById('new-admin-pin').value = '';
+        msgEl.className = 'fetch-status text-success'; msgEl.textContent = res.message;
+        msgEl.style.display = 'block';
+        setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
+    } catch (err) {
+        msgEl.className = 'fetch-status text-danger'; msgEl.textContent = err.detail || 'Failed.';
+        msgEl.style.display = 'block';
+    }
+});
+
 document.getElementById('btn-purge').addEventListener('click', async () => {
     const msgEl = document.getElementById('purge-msg');
     if (!confirm('Delete all books with no usable copies from the database?')) return;
@@ -110,7 +143,9 @@ document.getElementById('btn-purge').addEventListener('click', async () => {
     }
 });
 
-init();
+init().then(() => {
+    attachNumpad(document.getElementById('new-admin-pin'), document.getElementById('btn-numpad-admin-pin'), {});
+});
 </script>
 </body>
 </html>

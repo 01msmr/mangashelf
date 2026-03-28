@@ -47,12 +47,38 @@ def admin_verified(request: Request, admin: User = Depends(get_current_admin)):
 
 @router.post('/verify')
 def admin_verify(body: AdminVerifyRequest, request: Request,
-                 admin: User = Depends(get_current_admin)):
-    """Verify PIN to unlock the admin section."""
-    if not admin.check_pin(body.pin.strip()):
-        raise HTTPException(401, 'Incorrect PIN.')
+                 admin: User = Depends(get_current_admin),
+                 db: Session = Depends(get_db)):
+    """Verify combined PIN (first 4 = user PIN, last 4 = admin PIN) to unlock admin section."""
+    combined = body.pin.strip()
+    if len(combined) != 8 or not combined.isdigit():
+        raise HTTPException(401, 'Enter your 4-digit PIN followed by the 4-digit admin PIN.')
+    user_pin  = combined[:4]
+    admin_pin = combined[4:]
+    stored_admin_pin = Setting.get(db, 'admin_pin', '0369')
+    if not admin.check_pin(user_pin) or admin_pin != stored_admin_pin:
+        raise HTTPException(401, 'Incorrect PIN combination.')
     _set_admin_verified(request, admin.id)
     return {'ok': True}
+
+
+class SetAdminPinRequest(BaseModel):
+    new_pin: str
+
+
+@router.post('/set-admin-pin')
+def set_admin_pin(body: SetAdminPinRequest, request: Request,
+                  admin: User = Depends(get_current_admin),
+                  db: Session = Depends(get_db)):
+    """Change the shared admin PIN. Requires admin section to already be verified."""
+    if not _is_admin_verified(request, admin.id):
+        raise HTTPException(403, 'Admin PIN verification required.')
+    pin = body.new_pin.strip()
+    if len(pin) != 4 or not pin.isdigit():
+        raise HTTPException(400, 'Admin PIN must be exactly 4 digits.')
+    Setting.set(db, 'admin_pin', pin)
+    db.commit()
+    return {'ok': True, 'message': 'Admin PIN updated.'}
 
 LOAN_RATES = ['0.50', '1.00', '1.50', '2.00']
 

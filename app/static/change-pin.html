@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MangaStore — Change PIN</title>
+    <title>MangaShelf — Change PIN</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -13,27 +13,27 @@
         <div class="hint-aside-row">
             <div class="auth-card">
                 <div class="auth-title">Change PIN</div>
-                <div style="min-height:44px"><div id="error-box" class="auth-error" style="display:none"></div></div>
+                <div class="error-spacer"><div id="error-box" class="auth-error" style="display:none"></div></div>
                 <div class="auth-form">
                     <div class="form-group">
                         <label class="form-label">Current PIN</label>
-                        <div style="position:relative;display:flex;align-items:center">
+                        <div class="input-with-btn">
                             <input type="password" id="current-pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
-                            <button type="button" id="btn-numpad-current" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:4px"><i class="fa-solid fa-keyboard"></i></button>
+                            <button type="button" id="btn-numpad-current" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">New PIN</label>
-                        <div style="position:relative;display:flex;align-items:center">
+                        <div class="input-with-btn">
                             <input type="password" id="new-pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
-                            <button type="button" id="btn-numpad-new" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:4px"><i class="fa-solid fa-keyboard"></i></button>
+                            <button type="button" id="btn-numpad-new" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Confirm New PIN</label>
-                        <div style="position:relative;display:flex;align-items:center">
+                        <div class="input-with-btn">
                             <input type="password" id="pin-confirm" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
-                            <button type="button" id="btn-numpad-confirm" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:4px"><i class="fa-solid fa-keyboard"></i></button>
+                            <button type="button" id="btn-numpad-confirm" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                         </div>
                     </div>
                     <div style="display:flex;gap:10px">

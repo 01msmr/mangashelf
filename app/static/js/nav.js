@@ -12,7 +12,7 @@ function renderNav(user) {
     header.innerHTML = `
         <a href="/account.html" class="btn btn-ghost btn-sm user-badge">${esc(user.username)}</a>${adminBadge}
         <div class="header-left">
-            <a href="/index.html" class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg" style="width:32px;height:32px"></span>Manga<span>Store</span></a>
+            <a href="/index.html" class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg" style="width:32px;height:32px"></span>Manga<span>Shelf</span></a>
         </div>
         <div class="header-right">
             ${adminLink}
@@ -90,11 +90,22 @@ function _showAdminPinPrompt(onVerified) {
         'position:fixed;inset:0;background:rgba(13,13,26,.92);z-index:9000;' +
         'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)';
     overlay.innerHTML = `
-        <div class="pin-card" style="max-width:320px;width:100%">
-            <div class="pin-card-label">Admin PIN</div>
+        <div class="pin-card" style="max-width:340px;width:100%">
+            <div class="pin-card-label">Admin Access</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:14px;text-align:center;letter-spacing:0.5px">
+                Your PIN &nbsp;+&nbsp; Admin PIN
+            </div>
             <div id="ap-error" class="pin-error"></div>
+            <div id="ap-dots" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:16px">
+                <div id="apd-0" class="dot"></div><div id="apd-1" class="dot"></div>
+                <div id="apd-2" class="dot"></div><div id="apd-3" class="dot"></div>
+                <div style="width:14px;height:2px;background:var(--border);border-radius:1px;margin:0 2px"></div>
+                <div id="apd-4" class="dot"></div><div id="apd-5" class="dot"></div>
+                <div id="apd-6" class="dot"></div><div id="apd-7" class="dot"></div>
+            </div>
             <input type="password" id="ap-input" class="pin-text-input"
-                   inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+                   inputmode="numeric" maxlength="8" placeholder="••••••••" autocomplete="off"
+                   style="letter-spacing:10px;font-size:var(--text-base)">
             <div class="pinpad-grid">
                 <button class="pinpad-key" data-ap="1">1</button>
                 <button class="pinpad-key" data-ap="2">2</button>
@@ -119,10 +130,16 @@ function _showAdminPinPrompt(onVerified) {
     const errEl  = overlay.querySelector('#ap-error');
     let apPin = '';
 
-    function updateInput() { input.value = apPin; }
+    function updateDots() {
+        for (let i = 0; i < 8; i++) {
+            const dot = overlay.querySelector(`#apd-${i}`);
+            if (dot) dot.classList.toggle('filled', i < apPin.length);
+        }
+        input.value = apPin;
+    }
 
     async function doVerify() {
-        if (apPin.length !== 4) return;
+        if (apPin.length !== 8) return;
         errEl.style.display = 'none';
         try {
             await API.post('/api/admin/verify', { pin: apPin });
@@ -131,7 +148,7 @@ function _showAdminPinPrompt(onVerified) {
         } catch (err) {
             errEl.textContent = err.detail || 'Incorrect PIN.';
             errEl.style.display = 'block';
-            apPin = ''; updateInput();
+            apPin = ''; updateDots();
             input.focus();
         }
     }
@@ -142,16 +159,16 @@ function _showAdminPinPrompt(onVerified) {
             const k = btn.dataset.ap;
             if (k === 'back')       { apPin = apPin.slice(0, -1); }
             else if (k === 'clear') { apPin = ''; }
-            else if (apPin.length < 4) { apPin += k; }
-            updateInput();
-            if (apPin.length === 4) setTimeout(doVerify, 150);
+            else if (apPin.length < 8) { apPin += k; }
+            updateDots();
+            if (apPin.length === 8) setTimeout(doVerify, 150);
         });
     });
 
     input.addEventListener('input', function() {
-        const v = this.value.replace(/\D/g, '').slice(0, 4);
-        apPin = v; this.value = v;
-        if (apPin.length === 4) setTimeout(doVerify, 150);
+        const v = this.value.replace(/\D/g, '').slice(0, 8);
+        apPin = v; updateDots();
+        if (apPin.length === 8) setTimeout(doVerify, 150);
     });
 
     overlay.querySelector('#ap-cancel').addEventListener('click', () => {

@@ -34,7 +34,7 @@ def scan_go():
 
 @loans_bp.route('/mobile')
 def mobile():
-    """Entry point for users accessing MangaStore directly from their phone."""
+    """Entry point for users accessing MangaShelf directly from their phone."""
     if not current_user.is_authenticated:
         return redirect(url_for('auth.login', next=url_for('loans.phone_scan')))
     return redirect(url_for('loans.phone_scan'))

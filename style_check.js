@@ -1,5 +1,5 @@
 /**
- * style_check.js — Puppeteer visual style auditor for MangaStore
+ * style_check.js — Puppeteer visual style auditor for MangaShelf
  *
  * Usage:
  *   node style_check.js [--host https://localhost:5001] [--screenshots]
