@@ -48,7 +48,7 @@ async function init() {
 
     const coverHtml = book.cover_path
         ? `<img class="detail-cover-img" src="/static/${esc(book.cover_path)}" alt="">`
-        : `<div class="cover-placeholder cover-xl">📖</div>`;
+        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal" style="color:#aaa;font-size:2.5em"></i></div>`;
 
     const avail = book.available > 0;
     const statusBadge = avail

@@ -47,11 +47,7 @@ async function init() {
 
     const coverHtml = info.book.cover_path
         ? `<img class="detail-cover-img" src="/static/${esc(info.book.cover_path)}" alt="">`
-        : `<div class="cover-placeholder cover-xl">📖</div>`;
-
-    const donorBadge = info.is_donor
-        ? `<div class="status-badge status-available" style="margin-bottom:8px">Your donated copy — Free!</div>`
-        : '';
+        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal" style="color:#aaa;font-size:2.5em"></i></div>`;
 
     const rateHtml = info.is_donor ? '' : `
         <div class="takeout-rate-label">Loan rate</div>
@@ -69,13 +65,17 @@ async function init() {
         <div class="action-panel">
             <div class="action-title">${esc(info.book.title)}</div>
             <div class="action-subtitle">${esc(info.book.author || '')}</div>
-            ${donorBadge}
             ${rateHtml}
             <div class="action-details">
                 <div class="detail-row">
                     <span class="dr-label">Balance</span>
                     <span class="dr-value">${info.guthaben.toFixed(2)} €</span>
                 </div>
+                ${info.is_donor ? `
+                <div class="detail-row">
+                    <span class="dr-label">Cost</span>
+                    <span class="dr-value" style="color:var(--success)">Free — your donated copy</span>
+                </div>` : ''}
                 <div class="detail-row">
                     <span class="dr-label">Due date</span>
                     <span class="dr-value">${esc(info.due_date)}</span>

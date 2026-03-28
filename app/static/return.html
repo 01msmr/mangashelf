@@ -44,7 +44,7 @@ async function init() {
 
     const coverHtml = info.book.cover_path
         ? `<img class="detail-cover-img" src="/static/${esc(info.book.cover_path)}" alt="">`
-        : `<div class="cover-placeholder cover-xl">📖</div>`;
+        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal" style="color:#aaa;font-size:2.5em"></i></div>`;
 
     const now = new Date().toISOString();
     const overdue = info.due_date < now;

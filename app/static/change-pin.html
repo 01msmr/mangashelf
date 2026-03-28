@@ -13,19 +13,28 @@
         <div class="hint-aside-row">
             <div class="auth-card">
                 <div class="auth-title">Change PIN</div>
-                <div id="error-box" class="auth-error" style="display:none"></div>
+                <div style="min-height:44px"><div id="error-box" class="auth-error" style="display:none"></div></div>
                 <div class="auth-form">
                     <div class="form-group">
                         <label class="form-label">Current PIN</label>
-                        <input type="password" id="current-pin" class="form-input" inputmode="numeric" maxlength="4">
+                        <div style="position:relative;display:flex;align-items:center">
+                            <input type="password" id="current-pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
+                            <button type="button" id="btn-numpad-current" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:4px"><i class="fa-solid fa-keyboard"></i></button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">New PIN</label>
-                        <input type="password" id="new-pin" class="form-input" inputmode="numeric" maxlength="4">
+                        <div style="position:relative;display:flex;align-items:center">
+                            <input type="password" id="new-pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
+                            <button type="button" id="btn-numpad-new" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:4px"><i class="fa-solid fa-keyboard"></i></button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Confirm New PIN</label>
-                        <input type="password" id="pin-confirm" class="form-input" inputmode="numeric" maxlength="4">
+                        <div style="position:relative;display:flex;align-items:center">
+                            <input type="password" id="pin-confirm" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
+                            <button type="button" id="btn-numpad-confirm" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:4px"><i class="fa-solid fa-keyboard"></i></button>
+                        </div>
                     </div>
                     <div style="display:flex;gap:10px">
                         <button class="btn btn-primary" style="flex:1" id="btn-save">Save</button>
@@ -43,8 +52,13 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/numpad.js"></script>
 <script>
 const errorBox = document.getElementById('error-box');
+
+attachNumpad(document.getElementById('current-pin'), document.getElementById('btn-numpad-current'), { keepFocus: true });
+attachNumpad(document.getElementById('new-pin'), document.getElementById('btn-numpad-new'), { keepFocus: true });
+attachNumpad(document.getElementById('pin-confirm'), document.getElementById('btn-numpad-confirm'), { keepFocus: true });
 
 document.getElementById('btn-save').addEventListener('click', async () => {
     hideError(errorBox);

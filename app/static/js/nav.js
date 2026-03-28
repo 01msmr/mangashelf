@@ -7,17 +7,16 @@ function renderNav(user) {
     if (!header) return;
 
     const adminBadge = user.is_admin ? '<span class="badge-admin">Admin</span>' : '';
-    const adminLink  = user.is_admin ? `<a href="/admin/users.html" class="btn btn-ghost btn-sm">Admin</a>` : '';
+    const adminLink  = user.is_admin ? `<a href="/admin/users.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-shield-halved"></i> admin section</a>` : '';
 
     header.innerHTML = `
+        <a href="/account.html" class="btn btn-ghost btn-sm user-badge">${esc(user.username)}</a>${adminBadge}
         <div class="header-left">
-            <a href="/index.html" class="app-logo">Manga<span>Store</span></a>
+            <a href="/index.html" class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg" style="width:32px;height:32px"></span>Manga<span>Store</span></a>
         </div>
         <div class="header-right">
-            <span class="user-badge">${esc(user.username)} ${adminBadge}</span>
-            <a href="/account.html" class="btn btn-ghost btn-sm">Account</a>
             ${adminLink}
-            <button class="btn btn-ghost btn-sm" id="nav-logout">Logout</button>
+            <button class="btn btn-ghost btn-sm" id="nav-logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
         </div>
     `;
 
@@ -88,53 +87,78 @@ function _showAdminPinPrompt(onVerified) {
     const overlay = document.createElement('div');
     overlay.id = 'admin-pin-overlay';
     overlay.style.cssText =
-        'position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9000;' +
+        'position:fixed;inset:0;background:rgba(13,13,26,.92);z-index:9000;' +
         'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)';
     overlay.innerHTML = `
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
-                    padding:28px 28px 24px;width:300px;box-shadow:var(--shadow)">
-            <div style="font-size:13px;font-weight:700;color:var(--text-muted);text-align:center;
-                        margin-bottom:16px;text-transform:uppercase;letter-spacing:0.7px">
-                Admin PIN
+        <div class="pin-card" style="max-width:320px;width:100%">
+            <div class="pin-card-label">Admin PIN</div>
+            <div id="ap-error" class="pin-error"></div>
+            <input type="password" id="ap-input" class="pin-text-input"
+                   inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+            <div class="pinpad-grid">
+                <button class="pinpad-key" data-ap="1">1</button>
+                <button class="pinpad-key" data-ap="2">2</button>
+                <button class="pinpad-key" data-ap="3">3</button>
+                <button class="pinpad-key" data-ap="4">4</button>
+                <button class="pinpad-key" data-ap="5">5</button>
+                <button class="pinpad-key" data-ap="6">6</button>
+                <button class="pinpad-key" data-ap="7">7</button>
+                <button class="pinpad-key" data-ap="8">8</button>
+                <button class="pinpad-key" data-ap="9">9</button>
+                <button class="pinpad-key" data-ap="clear">C</button>
+                <button class="pinpad-key" data-ap="0">0</button>
+                <button class="pinpad-key" data-ap="back">⌫</button>
             </div>
-            <input type="password" id="ap-input" inputmode="numeric" maxlength="4"
-                   placeholder="••••" autocomplete="off"
-                   style="width:100%;height:56px;background:var(--surface-2);
-                          border:1px solid var(--border);border-radius:8px;
-                          color:var(--text);font-size:24px;letter-spacing:12px;
-                          text-align:center;outline:none;margin-bottom:10px;
-                          font-family:inherit;caret-color:transparent">
-            <div id="ap-error" style="display:none;background:var(--primary-dim);
-                 border:1px solid var(--primary);border-radius:8px;color:var(--primary);
-                 font-size:14px;font-weight:600;padding:8px 12px;text-align:center;
-                 margin-bottom:10px"></div>
-            <button id="ap-confirm" style="width:100%;height:48px;background:var(--primary);
-                    color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;
-                    cursor:pointer">Confirm</button>
+            <div class="pin-actions">
+                <button class="btn btn-ghost" id="ap-cancel">Cancel</button>
+            </div>
         </div>`;
     document.body.appendChild(overlay);
 
     const input  = overlay.querySelector('#ap-input');
     const errEl  = overlay.querySelector('#ap-error');
-    const btnOk  = overlay.querySelector('#ap-confirm');
-    input.focus();
+    let apPin = '';
+
+    function updateInput() { input.value = apPin; }
 
     async function doVerify() {
-        const pin = input.value.trim();
+        if (apPin.length !== 4) return;
         errEl.style.display = 'none';
         try {
-            await API.post('/api/admin/verify', { pin });
+            await API.post('/api/admin/verify', { pin: apPin });
             overlay.remove();
             onVerified();
         } catch (err) {
             errEl.textContent = err.detail || 'Incorrect PIN.';
             errEl.style.display = 'block';
-            input.value = '';
+            apPin = ''; updateInput();
             input.focus();
         }
     }
 
-    btnOk.addEventListener('click', doVerify);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
-    input.addEventListener('input', () => { if (input.value.length === 4) setTimeout(doVerify, 150); });
+    overlay.querySelectorAll('.pinpad-key').forEach(btn => {
+        btn.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            const k = btn.dataset.ap;
+            if (k === 'back')       { apPin = apPin.slice(0, -1); }
+            else if (k === 'clear') { apPin = ''; }
+            else if (apPin.length < 4) { apPin += k; }
+            updateInput();
+            if (apPin.length === 4) setTimeout(doVerify, 150);
+        });
+    });
+
+    input.addEventListener('input', function() {
+        const v = this.value.replace(/\D/g, '').slice(0, 4);
+        apPin = v; this.value = v;
+        if (apPin.length === 4) setTimeout(doVerify, 150);
+    });
+
+    overlay.querySelector('#ap-cancel').addEventListener('click', () => {
+        overlay.remove();
+        window.location.href = '/index.html';
+    });
+
+    input.addEventListener('keydown', e => { if (e.key === 'Escape') { overlay.remove(); window.location.href = '/index.html'; } });
+    input.focus();
 }

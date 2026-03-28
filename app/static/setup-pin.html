@@ -12,15 +12,21 @@
         <div class="auth-title">Set Your PIN</div>
         <div class="auth-subtitle">Choose a 4-digit PIN (not 0000)</div>
         <div class="setup-notice">You must set a new PIN before continuing.</div>
-        <div id="error-box" class="auth-error" style="display:none"></div>
+        <div style="min-height:44px"><div id="error-box" class="auth-error" style="display:none"></div></div>
         <div class="auth-form">
             <div class="form-group">
                 <label class="form-label">New PIN</label>
-                <input type="password" id="pin" class="form-input" inputmode="numeric" maxlength="4">
+                <div style="position:relative;display:flex;align-items:center">
+                    <input type="password" id="pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
+                    <button type="button" id="btn-numpad-pin" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:4px"><i class="fa-solid fa-keyboard"></i></button>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Confirm PIN</label>
-                <input type="password" id="pin-confirm" class="form-input" inputmode="numeric" maxlength="4">
+                <div style="position:relative;display:flex;align-items:center">
+                    <input type="password" id="pin-confirm" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
+                    <button type="button" id="btn-numpad-pin-confirm" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:4px"><i class="fa-solid fa-keyboard"></i></button>
+                </div>
             </div>
             <button class="btn btn-primary btn-block" id="btn-set">Set PIN</button>
         </div>
@@ -28,8 +34,12 @@
 </div>
 
 <script src="/static/js/api.js"></script>
+<script src="/static/js/numpad.js"></script>
 <script>
 const errorBox = document.getElementById('error-box');
+
+attachNumpad(document.getElementById('pin'), document.getElementById('btn-numpad-pin'), { keepFocus: true });
+attachNumpad(document.getElementById('pin-confirm'), document.getElementById('btn-numpad-pin-confirm'), { keepFocus: true });
 
 document.getElementById('btn-set').addEventListener('click', async () => {
     hideError(errorBox);

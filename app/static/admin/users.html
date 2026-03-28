@@ -11,10 +11,10 @@
 <main class="app-main">
     <div class="admin-page">
         <nav class="admin-nav">
-            <a href="/admin/users.html" class="admin-nav-item active">Users</a>
-            <a href="/admin/overdue.html" class="admin-nav-item">Overdue</a>
-            <a href="/admin/rebuy.html" class="admin-nav-item">Rebuy</a>
-            <a href="/admin/settings.html" class="admin-nav-item">Settings</a>
+            <a href="/admin/users.html" class="admin-nav-item active"><i class="fa-solid fa-users"></i> Users</a>
+            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Overdue</a>
+            <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> Rebuy</a>
+            <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
         </nav>
         <div class="admin-body">
             <div id="user-list" class="user-list">
@@ -26,8 +26,21 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/numpad.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function showQr(src) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;' +
+        'display:flex;align-items:center;justify-content:center;cursor:pointer';
+    overlay.innerHTML = `<img src="${src}" style="max-width:80vw;max-height:80vh;border-radius:8px;background:#fff;padding:14px;box-shadow:0 0 40px rgba(0,0,0,0.8)">`;
+    overlay.addEventListener('click', () => overlay.remove());
+    document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
+    });
+    document.body.appendChild(overlay);
+}
 
 let currentUserId = null;
 
@@ -39,6 +52,7 @@ async function loadUsers() {
             list.innerHTML = '<div class="empty-state">No users.</div>';
             return;
         }
+        const userIds = users.map(u => u.id);
         list.innerHTML = users.map(u => {
             const balClass   = u.guthaben > 10 ? 'bal-ok' : u.guthaben > 0 ? 'bal-warn' : 'bal-danger';
             const inactiveBadge = !u.active ? '<span class="badge-inactive">Inactive</span>' : '';
@@ -74,19 +88,29 @@ async function loadUsers() {
                             ${promoteBtn}
                         </div>
                         <div class="user-actions">
-                            <img class="user-qr-thumb" src="/user-qr/${u.id}.png" alt="QR"
-                                 title="Phone scanner QR" onclick="window.open(this.src,'_blank')" style="cursor:pointer">
+                            <button class="btn btn-ghost" onclick="showQr('/user-qr/${u.id}.png')"
+                                    title="Show QR code"
+                                    style="height:52px;padding:0 14px 0 12px;gap:12px;display:flex;align-items:center">
+                                <span style="font-size:13px;color:var(--text-muted);white-space:nowrap">fast user login:</span>
+                                <i class="fa-solid fa-qrcode" style="font-size:38px;color:#fff"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="user-adjust">
                         <div class="adjust-form" style="justify-content:flex-end">
-                            <input type="number" step="0.01" placeholder="±amount" id="adj-${u.id}"
-                                   class="form-input adjust-amount">
+                            <div style="position:relative;display:inline-flex;align-items:center">
+                                <input type="number" step="0.01" placeholder="± amount" id="adj-${u.id}"
+                                       class="form-input adjust-amount" inputmode="none">
+                                <button type="button" id="btn-numpad-adj-${u.id}" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:2px"><i class="fa-solid fa-keyboard"></i></button>
+                            </div>
                             <input type="text" placeholder="Reason" id="reason-${u.id}"
                                    class="form-input adjust-reason">
                             <button class="btn btn-ghost btn-sm" style="margin-right:auto" onclick="adjust(${u.id})">Adjust</button>
-                            <input type="password" inputmode="numeric" maxlength="4" placeholder="PIN"
-                                   id="pin-${u.id}" class="form-input adjust-amount" style="letter-spacing:4px;text-align:center">
+                            <div style="position:relative;display:inline-flex;align-items:center">
+                                <input type="text" inputmode="none" maxlength="4" placeholder="PIN"
+                                       id="pin-${u.id}" class="form-input adjust-amount" style="letter-spacing:4px;text-align:center;-webkit-text-security:disc;padding-right:32px">
+                                <button type="button" id="btn-numpad-pin-${u.id}" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad" style="position:absolute;right:2px"><i class="fa-solid fa-keyboard"></i></button>
+                            </div>
                             <button class="btn btn-ghost btn-sm" onclick="setPin(${u.id}, ${JSON.stringify(u.username)})">Set PIN</button>
                             <button class="btn btn-ghost btn-sm" onclick="forcePin(${u.id}, ${JSON.stringify(u.username)})">Force PIN</button>
                             ${deactivateBtn}
@@ -97,6 +121,14 @@ async function loadUsers() {
                 </div>
             `;
         }).join('');
+        userIds.forEach(uid => {
+            const pinInput = document.getElementById(`pin-${uid}`);
+            const numpadBtn = document.getElementById(`btn-numpad-pin-${uid}`);
+            if (pinInput && numpadBtn) attachNumpad(pinInput, numpadBtn, { keepFocus: true });
+            const adjInput = document.getElementById(`adj-${uid}`);
+            const adjBtn = document.getElementById(`btn-numpad-adj-${uid}`);
+            if (adjInput && adjBtn) attachNumpad(adjInput, adjBtn, { decimal: true });
+        });
     } catch (err) {
         if (handleAuthError(err)) return;
         list.innerHTML = `<p class="text-danger">${esc(err.detail)}</p>`;
@@ -108,13 +140,10 @@ function showMsg(uid, text, ok) {
     el.className = `fetch-status ${ok ? 'text-success' : 'text-danger'}`;
     el.textContent = text;
     el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function promote(uid, isAdmin, username) {
-    const msg = isAdmin
-        ? `Remove admin rights from "${username}"?\n\nThis will prevent them from accessing the admin area.`
-        : `Make "${username}" an admin?\n\nThey will have full access to the admin area.`;
-    if (!confirm(msg)) return;
     try {
         const res = await API.post(`/api/admin/users/${uid}/promote`);
         showMsg(uid, res.message, true);
@@ -123,10 +152,6 @@ async function promote(uid, isAdmin, username) {
 }
 
 async function deactivate(uid, active, username) {
-    const msg = active
-        ? `Deactivate "${username}"?\n\nThey will no longer be able to log in.`
-        : `Activate "${username}" again?`;
-    if (!confirm(msg)) return;
     try {
         const res = await API.post(`/api/admin/users/${uid}/deactivate`);
         showMsg(uid, res.message, true);
@@ -135,7 +160,6 @@ async function deactivate(uid, active, username) {
 }
 
 async function deleteUser(uid, username) {
-    if (!confirm(`Permanently delete "${username}"?\n\nThis cannot be undone.`)) return;
     try {
         const res = await API.delete(`/api/admin/users/${uid}`);
         showMsg(uid, res.message, true);
@@ -148,7 +172,6 @@ async function setPin(uid, username) {
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
         showMsg(uid, 'Enter a 4-digit PIN first.', false); return;
     }
-    if (!confirm(`Set PIN "${pin}" for "${username}"?`)) return;
     try {
         const res = await API.post(`/api/admin/users/${uid}/set-pin`, { pin });
         document.getElementById(`pin-${uid}`).value = '';
@@ -157,7 +180,6 @@ async function setPin(uid, username) {
 }
 
 async function forcePin(uid, username) {
-    if (!confirm(`Force "${username}" to set a new PIN on next login?`)) return;
     try {
         const res = await API.post(`/api/admin/users/${uid}/force-pin`);
         showMsg(uid, res.message, true);

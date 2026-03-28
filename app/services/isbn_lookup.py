@@ -17,12 +17,44 @@ _TIMEOUT = 6
 def lookup_isbn(isbn):
     """
     Return dict {title, author, publisher, published, cover_url} or None.
-    Uses OpenLibrary first, Google Books as fallback.
+    Tries OpenLibrary then Google Books, for both ISBN-13 and ISBN-10 forms.
     """
-    result = _openlibrary(isbn)
-    if not result or not result.get('title'):
-        result = _google_books(isbn)
-    return result
+    for candidate in _isbn_variants(isbn):
+        result = _openlibrary(candidate)
+        if not result or not result.get('title'):
+            result = _google_books(candidate)
+        if result and result.get('title'):
+            return result
+    return None
+
+
+def _isbn_variants(isbn):
+    """Return [isbn, alternate_form] trying both ISBN-13 and ISBN-10."""
+    isbn = isbn.replace('-', '').replace(' ', '')
+    variants = [isbn]
+    if len(isbn) == 13 and isbn.startswith('978'):
+        alt = _isbn13_to_isbn10(isbn)
+        if alt:
+            variants.append(alt)
+    elif len(isbn) == 10:
+        alt = _isbn10_to_isbn13(isbn)
+        if alt:
+            variants.insert(0, alt)  # prefer ISBN-13
+    return variants
+
+
+def _isbn13_to_isbn10(isbn13):
+    core = isbn13[3:12]
+    total = sum((10 - i) * int(d) for i, d in enumerate(core))
+    check = (11 - (total % 11)) % 11
+    return core + ('X' if check == 10 else str(check))
+
+
+def _isbn10_to_isbn13(isbn10):
+    core = '978' + isbn10[:9]
+    total = sum(int(d) * (1 if i % 2 == 0 else 3) for i, d in enumerate(core))
+    check = (10 - (total % 10)) % 10
+    return core + str(check)
 
 
 # ── OpenLibrary ──────────────────────────────────────────────────────────────

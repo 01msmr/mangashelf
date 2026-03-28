@@ -12,6 +12,7 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/lang.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -41,7 +42,7 @@ function renderVerify() {
                     <div id="verify-error" class="auth-error" style="display:none"></div>
                     <div class="auth-form">
                         <input type="password" id="verify-pin" class="form-input form-input-pin"
-                               inputmode="numeric" maxlength="4" placeholder="••••">
+                               inputmode="none" maxlength="4" placeholder="••••">
                         <button class="btn btn-primary btn-block" id="btn-verify">Confirm</button>
                     </div>
                 </div>
@@ -129,7 +130,7 @@ function renderAccount(data) {
         : '<div class="acct-empty">No transactions yet.</div>';
 
     const langBtns = ['en', 'de', 'schwaebisch'].map(l =>
-        `<button class="lang-btn${data.lang===l?' active':''}" data-lang="${l}">${l === 'schwaebisch' ? 'SCHWÄB' : l.toUpperCase()}</button>`
+        `<button class="lang-btn${data.lang===l?' active':''}" data-lang="${l}">${l === 'schwaebisch' ? 'Schwob' : l.toUpperCase()}</button>`
     ).join('');
 
     document.getElementById('main-content').innerHTML = `
@@ -215,6 +216,7 @@ function renderAccount(data) {
 
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
+            Lang.set(btn.dataset.lang);
             await API.post(`/api/account/language/${btn.dataset.lang}`).catch(() => {});
             tryLoadAccount();
         });

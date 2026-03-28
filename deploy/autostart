@@ -21,4 +21,5 @@
     --disable-restore-session-state \
     --no-first-run \
     --check-for-update-interval=31536000 \
+    --enable-virtual-keyboard \
     http://localhost:5000
