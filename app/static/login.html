@@ -9,6 +9,9 @@
 </head>
 <body class="login-page">
 
+<!-- Language switcher — bottom right corner -->
+<div style="position:fixed;bottom:16px;right:16px;z-index:100;display:flex;gap:6px" id="login-lang-switcher"></div>
+
 <!-- Register button — top right corner -->
 <div class="register-corner">
     <span id="no-account-label" style="font-size:13px;color:var(--text-muted);margin-right:10px"></span>
@@ -63,6 +66,20 @@ function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 // Auto-redirect if already logged in
 API.get('/api/auth/me').then(() => { window.location.href = '/index.html'; }).catch(() => {});
 
+function renderLangSwitcher() {
+    const switcher = document.getElementById('login-lang-switcher');
+    switcher.innerHTML = ['en', 'de', 'schwaebisch'].map(l =>
+        `<button class="lang-btn${Lang.current === l ? ' active' : ''}" data-lang="${l}">${l === 'schwaebisch' ? 'Schwob' : l.toUpperCase()}</button>`
+    ).join('');
+    switcher.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            Lang.set(btn.dataset.lang);
+            renderLangSwitcher();
+            applyTranslations();
+        });
+    });
+}
+
 async function applyTranslations() {
     await Lang.load();
     document.getElementById('logo-shelf-login').textContent = Lang.t('logo.shelf');
@@ -72,6 +89,7 @@ async function applyTranslations() {
     document.getElementById('users-loading-msg').textContent = Lang.t('login.loadingUsers');
     document.getElementById('pin-card-label').textContent   = Lang.t('login.enterPin');
     document.getElementById('btn-cancel').textContent       = Lang.t('login.cancel');
+    renderLangSwitcher();
 }
 
 async function loadUsers() {
@@ -149,6 +167,7 @@ async function submitPin() {
     errEl.style.display = 'none';
     try {
         const data = await API.post('/api/auth/login', { username: activeUser, pin: pinValue });
+        await API.post(`/api/account/language/${Lang.current}`).catch(() => {});
         closePinOverlay();
         if (data.setup_required) { window.location.href = '/setup-pin.html'; }
         else { window.location.href = '/index.html'; }
