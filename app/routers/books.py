@@ -20,13 +20,15 @@ router = APIRouter(tags=['books'])
 # ── Book list ─────────────────────────────────────────────────────────────────
 
 @router.get('/books')
-def book_list(q: str = '', db: Session = Depends(get_db),
+def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db),
               user: User = Depends(get_current_user)):
     query = db.query(Book)
     if q:
         like = f'%{q}%'
         query = query.filter(or_(Book.title.ilike(like), Book.author.ilike(like)))
     books = query.order_by(Book.title).all()
+    if available:
+        books = [b for b in books if b.available_copies]
 
     result = []
     for book in books:

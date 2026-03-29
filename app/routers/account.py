@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Loan, Copy, Transaction, User
 from ..dependencies import get_current_user
+from ..services.finance import BORROW_MIN, DEPOSIT
 
 router = APIRouter(tags=['account'])
 
@@ -73,9 +74,9 @@ def account_info(request: Request, db: Session = Depends(get_db),
         .all()
     )
 
-    if user.guthaben > 10.00:
+    if user.guthaben >= BORROW_MIN:
         balance_status = 'ok'
-    elif user.guthaben > 0:
+    elif user.guthaben > DEPOSIT:
         balance_status = 'warn'
     else:
         balance_status = 'danger'
@@ -84,6 +85,7 @@ def account_info(request: Request, db: Session = Depends(get_db),
         'username':      user.username,
         'guthaben':      user.guthaben,
         'balance_status': balance_status,
+        'borrow_min':    BORROW_MIN,
         'now_iso':       now_iso,
         'active_loans':  [
             {

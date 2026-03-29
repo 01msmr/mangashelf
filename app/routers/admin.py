@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User, Loan, Copy, Book, Transaction, RebuyItem, Setting
 from ..dependencies import get_current_admin, get_current_user
+from ..services.finance import LOAN_RATES, DEPOSIT
 
 router = APIRouter(tags=['admin'])
 
@@ -80,7 +81,6 @@ def set_admin_pin(body: SetAdminPinRequest, request: Request,
     db.commit()
     return {'ok': True, 'message': 'Admin PIN updated.'}
 
-LOAN_RATES = ['0.50', '1.00', '1.50', '2.00']
 
 
 # ── User management ───────────────────────────────────────────────────────────
@@ -143,6 +143,7 @@ def user_delete(user_id: int, db: Session = Depends(get_db),
     open_loans = db.query(Loan).filter_by(user_id=user.id).count()
     if open_loans:
         raise HTTPException(400, f'Cannot delete "{user.username}" — they have {open_loans} open loan(s).')
+    db.query(Transaction).filter_by(user_id=user.id).delete()
     db.delete(user)
     db.commit()
     return {'ok': True, 'message': f'"{user.username}" deleted.'}

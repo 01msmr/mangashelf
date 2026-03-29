@@ -74,4 +74,13 @@ function attachNumpad(inputEl, toggleBtnEl, options = {}) {
             if (visible) { hide(); inputEl.blur(); } else { show(); inputEl.focus(); }
         });
     }
+
+    // Close numpad immediately on any tap outside the numpad / input / toggle
+    document.addEventListener('pointerdown', function outsideHandler(e) {
+        if (numpad.style.display !== 'flex') return;
+        if (numpad.contains(e.target)) return;
+        if (e.target === inputEl) return;
+        if (toggleBtnEl && toggleBtnEl.contains(e.target)) return;
+        hide();
+    }, { capture: true });
 }

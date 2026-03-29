@@ -17,14 +17,15 @@ const Lang = (() => {
             _strings = await resp.json();
         },
 
-        /** Translate key; falls back to English, then the raw key. */
-        t(key) {
+        /** Translate key with optional {{var}} substitution; falls back to English, then the raw key. */
+        t(key, vars = {}) {
             if (!_strings) return key;
-            return (_strings[_current] && _strings[_current][key] !== undefined)
+            let str = (_strings[_current] && _strings[_current][key] !== undefined)
                 ? _strings[_current][key]
                 : (_strings['en'] && _strings['en'][key] !== undefined)
                     ? _strings['en'][key]
                     : key;
+            return str.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] !== undefined ? vars[k] : `{{${k}}}`);
         },
 
         /** Persist language selection to localStorage. */

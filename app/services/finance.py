@@ -6,9 +6,13 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 from app.models import Transaction, Loan, Setting
 
+DEPOSIT: float = 10.00
+LOAN_RATES: list[str] = ['0.50', '1.00', '1.50', '2.00']
+BORROW_MIN: float = DEPOSIT + min(float(r) for r in LOAN_RATES)
+
 
 def can_borrow(db: Session, user) -> tuple[bool, str | None]:
-    if user.guthaben <= 10.00:
+    if user.guthaben < BORROW_MIN:
         return False, 'balance_low'
     max_books = Setting.get_int(db, 'max_books_per_user', 3)
     active = db.query(Loan).filter_by(user_id=user.id).count()
@@ -36,7 +40,7 @@ def charge_loan_fee(db: Session, user, book, is_donor: bool = False, rate: float
         return 0.0
 
     fee = rate if rate is not None else book.loan_rate
-    max_debit = round(user.guthaben - 0.01, 2)
+    max_debit = round(user.guthaben - DEPOSIT, 2)
     if fee > max_debit:
         fee = max_debit
     if fee <= 0:

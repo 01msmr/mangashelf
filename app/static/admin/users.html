@@ -61,22 +61,23 @@ async function loadUsers() {
             const promoteBtn = isSelf ? '' : `
                 <button class="btn-promote ${u.is_admin ? 'is-admin' : 'not-admin'}"
                         title="${u.is_admin ? 'Remove admin rights' : 'Make admin'}"
-                        onclick="promote(${u.id}, ${u.is_admin}, ${JSON.stringify(u.username)})">
+                        onclick="promote(${u.id}, ${u.is_admin})">
                     <span class="lbl-normal">${u.is_admin ? 'Admin' : 'A'}</span>
                     <span class="lbl-hover">${u.is_admin ? '—' : 'A'}</span>
                 </button>`;
 
             const deactivateBtn = isSelf ? '' : `
-                <button class="btn btn-ghost btn-sm" onclick="deactivate(${u.id}, ${u.active}, ${JSON.stringify(u.username)})">
+                <button class="btn btn-ghost btn-sm" onclick="deactivate(${u.id}, ${u.active})">
                     ${u.active ? 'Deactivate' : 'Activate'}
                 </button>`;
 
             const deleteBtn = isSelf ? '' : `
-                <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, ${JSON.stringify(u.username)})">
+                <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">
                     Delete
                 </button>`;
 
             return `
+                <div id="wrap-${u.id}">
                 <div class="user-row" id="user-${u.id}">
                     <div class="user-main">
                         <div class="user-info">
@@ -106,18 +107,17 @@ async function loadUsers() {
                             <input type="text" placeholder="Reason" id="reason-${u.id}"
                                    class="form-input adjust-reason">
                             <button class="btn btn-ghost btn-sm" style="margin-right:auto" onclick="adjust(${u.id})">Adjust</button>
-                            <div class="input-with-btn">
-                                <input type="text" inputmode="none" maxlength="4" placeholder="PIN"
-                                       id="pin-${u.id}" class="form-input adjust-amount pin-admin-input">
-                                <button type="button" id="btn-numpad-pin-${u.id}" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                            </div>
-                            <button class="btn btn-ghost btn-sm" onclick="setPin(${u.id}, ${JSON.stringify(u.username)})">Set PIN</button>
-                            <button class="btn btn-ghost btn-sm" onclick="forcePin(${u.id}, ${JSON.stringify(u.username)})">Force PIN</button>
+                            <button type="button" id="btn-numpad-pin-${u.id}" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
+                            <input type="text" inputmode="none" maxlength="4" placeholder="PIN"
+                                   id="pin-${u.id}" class="form-input adjust-amount pin-admin-input">
+                            <button class="btn btn-ghost btn-sm" onclick="setPin(${u.id})">Set PIN</button>
+                            <button class="btn btn-ghost btn-sm" onclick="forcePin(${u.id})">Force PIN</button>
                             ${deactivateBtn}
                             ${deleteBtn}
                         </div>
-                        <div id="msg-${u.id}" class="fetch-status" style="display:none"></div>
                     </div>
+                </div>
+                <div id="msg-${u.id}" class="fetch-status" style="display:none;padding:4px 14px 6px"></div>
                 </div>
             `;
         }).join('');
@@ -143,7 +143,7 @@ function showMsg(uid, text, ok) {
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-async function promote(uid, isAdmin, username) {
+async function promote(uid, isAdmin) {
     try {
         const res = await API.post(`/api/admin/users/${uid}/promote`);
         showMsg(uid, res.message, true);
@@ -151,7 +151,7 @@ async function promote(uid, isAdmin, username) {
     } catch (err) { showMsg(uid, err.detail || 'Failed', false); }
 }
 
-async function deactivate(uid, active, username) {
+async function deactivate(uid, active) {
     try {
         const res = await API.post(`/api/admin/users/${uid}/deactivate`);
         showMsg(uid, res.message, true);
@@ -159,15 +159,26 @@ async function deactivate(uid, active, username) {
     } catch (err) { showMsg(uid, err.detail || 'Failed', false); }
 }
 
-async function deleteUser(uid, username) {
+function deleteUser(uid) {
+    const btn = document.querySelector(`#wrap-${uid} .btn-danger`);
+    if (!btn) return;
+    btn.outerHTML = `
+        <span id="del-confirm-${uid}" style="display:inline-flex;align-items:center;gap:6px">
+            <span style="font-size:13px;color:var(--text-muted)">Really delete?</span>
+            <button class="btn btn-danger btn-sm" onclick="deleteUserConfirmed(${uid})">Yes</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadUsers()">No</button>
+        </span>`;
+}
+
+async function deleteUserConfirmed(uid) {
     try {
         const res = await API.delete(`/api/admin/users/${uid}`);
         showMsg(uid, res.message, true);
-        setTimeout(loadUsers, 1000);
+        setTimeout(loadUsers, 3000);
     } catch (err) { showMsg(uid, err.detail || 'Failed', false); }
 }
 
-async function setPin(uid, username) {
+async function setPin(uid) {
     const pin = document.getElementById(`pin-${uid}`).value.trim();
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
         showMsg(uid, 'Enter a 4-digit PIN first.', false); return;
@@ -179,7 +190,7 @@ async function setPin(uid, username) {
     } catch (err) { showMsg(uid, err.detail || 'Failed', false); }
 }
 
-async function forcePin(uid, username) {
+async function forcePin(uid) {
     try {
         const res = await API.post(`/api/admin/users/${uid}/force-pin`);
         showMsg(uid, res.message, true);

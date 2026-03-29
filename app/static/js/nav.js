@@ -12,7 +12,7 @@ function renderNav(user) {
     header.innerHTML = `
         <a href="/account.html" class="btn btn-ghost btn-sm user-badge">${esc(user.username)}</a>${adminBadge}
         <div class="header-left">
-            <a href="/index.html" class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg" style="width:32px;height:32px"></span>Manga<span>Shelf</span></a>
+            <a href="/index.html" class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span>Shelf</span></a>
         </div>
         <div class="header-right">
             ${adminLink}

@@ -80,9 +80,9 @@ function renderAccount(data) {
     const balClass = data.balance_status === 'ok' ? 'balance-ok'
                    : data.balance_status === 'warn' ? 'balance-warn'
                    : 'balance-danger';
-    const balHint  = data.balance_status === 'ok'   ? 'You can borrow books.'
-                   : data.balance_status === 'warn'  ? 'Add funds — you need more than 10.00 € to borrow.'
-                   : 'Account empty — please contact an admin.';
+    const balHint  = data.balance_status === 'ok'  ? Lang.t('acct.canBorrow')
+                   : data.balance_status === 'warn' ? Lang.t('acct.warnFunds', { min: data.borrow_min.toFixed(2) })
+                   : Lang.t('acct.empty');
 
     const topupBtns = [1, 2, 5, 10, 20].map(a =>
         `<button class="btn topup-btn" data-amount="${a}">${a} €</button>`
@@ -108,7 +108,7 @@ function renderAccount(data) {
                 </div>
             `;
         }).join('')
-        : '<div class="acct-empty">No books currently borrowed.</div>';
+        : `<div class="acct-empty">${Lang.t('acct.noLoans')}</div>`;
 
     const txnsHtml = data.recent_txns.length
         ? `<div class="txn-list">${data.recent_txns.map(t => {
@@ -127,7 +127,7 @@ function renderAccount(data) {
                 </div>
             `;
         }).join('')}</div>`
-        : '<div class="acct-empty">No transactions yet.</div>';
+        : `<div class="acct-empty">${Lang.t('acct.noTxns')}</div>`;
 
     const langBtns = ['en', 'de', 'schwaebisch'].map(l =>
         `<button class="lang-btn${data.lang===l?' active':''}" data-lang="${l}">${l === 'schwaebisch' ? 'Schwob' : l.toUpperCase()}</button>`
@@ -139,23 +139,23 @@ function renderAccount(data) {
                 <span class="page-topbar-title">${esc(data.username)}</span>
             </div>
             <div class="lang-switcher-row">
-                <span class="lang-switcher-label">Language</span>
+                <span class="lang-switcher-label">${Lang.t('acct.language')}</span>
                 <div class="lang-switcher">${langBtns}</div>
             </div>
             <div class="acct-body">
                 <div class="acct-section">
-                    <div class="acct-section-title">Balance</div>
+                    <div class="acct-section-title">${Lang.t('acct.balance')}</div>
                     <div class="balance-card ${balClass}">
-                        <span class="balance-label">Balance</span>
+                        <span class="balance-label">${Lang.t('acct.balance')}</span>
                         <span class="balance-amount">${data.guthaben.toFixed(2)} €</span>
                         <span class="balance-hint">${balHint}</span>
                     </div>
                 </div>
 
                 <div class="acct-section">
-                    <div class="acct-section-title">Add Funds</div>
+                    <div class="acct-section-title">${Lang.t('acct.addFunds')}</div>
                     <div class="topup-form">
-                        <div class="topup-hint">Put cash in the box, then tap the amount:</div>
+                        <div class="topup-hint">${Lang.t('acct.cashHint')}</div>
                         <div class="topup-presets">${topupBtns}</div>
                         <div id="topup-msg" style="font-size:13px;display:none"></div>
                     </div>
@@ -163,7 +163,7 @@ function renderAccount(data) {
 
                 <div class="acct-section">
                     <div class="acct-section-title">
-                        Active Loans
+                        ${Lang.t('acct.loans')}
                         ${data.active_loans.length ? `<span class="acct-count">${data.active_loans.length}</span>` : ''}
                     </div>
                     <div class="loan-list">${loansHtml}</div>
@@ -171,25 +171,25 @@ function renderAccount(data) {
 
                 <div class="acct-section">
                     <div class="acct-section-title">
-                        Recent Activity
+                        ${Lang.t('acct.activity')}
                         ${data.recent_txns.length ? `<span class="acct-count">${data.recent_txns.length}</span>` : ''}
                     </div>
                     ${txnsHtml}
                 </div>
 
                 <div class="acct-section">
-                    <div class="acct-section-title">Phone Scanner</div>
+                    <div class="acct-section-title">${Lang.t('acct.phone')}</div>
                     <div class="acct-qr-row">
                         <img class="acct-qr-img" src="/user-qr/${encodeURIComponent(data.username)}.png" alt="QR"
                              onerror="this.style.display='none'">
-                        <span class="acct-qr-hint">Scan with your phone to use its camera as a barcode scanner.</span>
+                        <span class="acct-qr-hint">${Lang.t('acct.qrHint')}</span>
                     </div>
                 </div>
 
                 <div class="acct-section">
-                    <div class="acct-section-title">Settings</div>
+                    <div class="acct-section-title">${Lang.t('acct.settings')}</div>
                     <div style="display:flex;gap:12px;flex-wrap:wrap;padding:8px 0">
-                        <a href="/change-pin.html" class="btn btn-ghost btn-sm">Change PIN</a>
+                        <a href="/change-pin.html" class="btn btn-ghost btn-sm">${Lang.t('acct.changePin')}</a>
                     </div>
                 </div>
             </div>
@@ -225,6 +225,7 @@ function renderAccount(data) {
 
 async function init() {
     await initPage();
+    await Lang.load();
     tryLoadAccount();
 }
 

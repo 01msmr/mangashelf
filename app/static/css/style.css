@@ -86,9 +86,11 @@ html, body {
 .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
 
 .app-logo {
+    display: inline-flex;
+    align-items: center;
     font-size: var(--text-xl);
     font-weight: 800;
-    letter-spacing: -0.5px;
+    letter-spacing: 1px;
     color: var(--text);
     text-decoration: none;
 }
@@ -96,17 +98,18 @@ html, body {
     display: inline-flex;
     align-items: flex-end;
     justify-content: center;
+    height: .5em;
     background: var(--primary);
     border-radius: 0;
-    padding: 0px 5px;
-    margin-right: 16px;
-    vertical-align: text-bottom;
+    padding: 0.01em 0;
+    margin-right: 0.25em;
+    flex-shrink: 0;
     overflow: visible;
-    clip-path: inset(-14px 0 0 0);
+    clip-path: inset(-0.8em 0 0.02em 0);
     transform: skewX(-15deg) scale(1.5);
     transform-origin: center;
 }
-.logo-badge img { filter: brightness(0) invert(1); margin-top: -14px; transform: translateY(8px) translateX(-4px) scale(1.1); transform-origin: bottom center; }
+.logo-badge img { width: 1.05em; height: 1.05em; filter: brightness(0) invert(1); margin-top: -0.55em; transform: translateY(0.33em) translateX(-0.1em) scale(1.02); transform-origin: bottom center; }
 .app-logo span { color: var(--primary); }
 
 .app-main {
@@ -504,6 +507,7 @@ html, body {
 }
 .search-form  { flex: 1; }
 .search-input { height: 44px; font-size: var(--text-sm); }
+.available-filter-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap; cursor: pointer; user-select: none; }
 
 .book-list {
     flex: 1;
@@ -1238,9 +1242,8 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .login-page { overflow: auto; }
 .register-corner { position: fixed; top: 10px; right: 14px; z-index: 10; }
 .login-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 20px 20px; gap: 24px; }
-.login-title { font-size: calc(var(--text-xl) * 1.2); font-weight: 800; text-align: center; }
-.login-title .logo-badge { position: relative; top: -16px; }
-.login-title span { color: var(--primary); }
+.login-title { text-align: center; }
+.login-title .app-logo { font-size: calc(var(--text-xl) * 2); }
 .login-subtitle { color: var(--text-muted); font-size: var(--text-sm); margin-top: -12px; }
 .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; width: 100%; max-width: 720px; }
 .user-tile { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-xl); padding: 20px 12px; text-align: center; cursor: pointer; transition: border-color var(--transition), background var(--transition); user-select: none; -webkit-user-select: none; }
@@ -1257,7 +1260,7 @@ body.phone-scan { width: 100%; height: 100%; background: var(--bg); color: var(-
 body.phone-scan .page { position: fixed; inset: 0; display: flex; flex-direction: column; }
 body.phone-scan .page.hidden { display: none; }
 body.phone-scan #prompt-screen { align-items: center; justify-content: center; gap: 0; padding: 32px 28px; background: var(--bg); }
-body.phone-scan .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); margin-bottom: 32px; }
+body.phone-scan .logo { font-size: 22px; font-weight: 800; letter-spacing: 1px; color: var(--text); margin-bottom: 32px; }
 body.phone-scan .logo span { color: var(--primary); }
 body.phone-scan .scanner-icon { width: 96px; height: 96px; background: var(--primary-dim); border: 2px solid rgba(230,57,70,0.35); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 0 40px rgba(230,57,70,0.2); }
 body.phone-scan .scanner-icon svg { width: 52px; height: 52px; fill: var(--primary); }

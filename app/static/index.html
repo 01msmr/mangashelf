@@ -19,6 +19,9 @@
                 </button>
             </div>
             <button class="btn btn-ghost btn-sm" id="btn-search">Search</button>
+            <label class="available-filter-label">
+                <input type="checkbox" id="chk-available"> Available
+            </label>
             <a id="btn-add" href="/admin/add-book.html" class="btn btn-ghost btn-sm" style="display:none;margin-left:auto"><i class="fa-solid fa-plus"></i> add Book</a>
         </div>
 <div id="book-list" class="book-list">
@@ -50,8 +53,9 @@ async function init() {
 async function loadBooks(q = '') {
     openBookId = null;
     const list = document.getElementById('book-list');
+    const availOnly = document.getElementById('chk-available').checked;
     try {
-        const books = await API.get(`/api/books?q=${encodeURIComponent(q)}`);
+        const books = await API.get(`/api/books?q=${encodeURIComponent(q)}&available=${availOnly}`);
         if (!books.length) {
             list.innerHTML = '<div class="empty-state">No books found.</div>';
             return;
@@ -210,6 +214,7 @@ async function markBroken(bookId, isbn) {
 const searchEl = document.getElementById('search');
 
 document.getElementById('btn-search').addEventListener('click', () => loadBooks(searchEl.value));
+document.getElementById('chk-available').addEventListener('change', () => loadBooks(searchEl.value));
 searchEl.addEventListener('keydown', e => { if (e.key === 'Enter') loadBooks(searchEl.value); });
 
 const btnClear = document.getElementById('btn-clear-search');

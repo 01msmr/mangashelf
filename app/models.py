@@ -15,7 +15,7 @@ class User(Base):
     pin_hash       = Column(Text, nullable=False)
     is_admin       = Column(Integer, default=0)
     setup_required = Column(Integer, default=0)
-    guthaben       = Column(Float, default=10.00)
+    guthaben       = Column(Float, default=0.00)
     active         = Column(Integer, default=1)
     created_at     = Column(Text, default=lambda: datetime.now(timezone.utc).isoformat())
 
@@ -28,9 +28,6 @@ class User(Base):
     def check_pin(self, pin: str) -> bool:
         return bcrypt.checkpw(pin.encode(), self.pin_hash.encode())
 
-    @property
-    def can_borrow(self) -> bool:
-        return self.guthaben > 10.00
 
 
 class Book(Base):

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import User, Transaction
+from ..models import User
 from ..dependencies import get_current_user
 
 router = APIRouter(tags=['auth'])
@@ -101,18 +101,10 @@ def register(body: RegisterRequest, request: Request, db: Session = Depends(get_
     user = User(username=username)
     user.set_pin(pin)
     db.add(user)
-    db.flush()
-
-    db.add(Transaction(
-        user_id=user.id,
-        amount=10.00,
-        type='entry_fee',
-        description='Entry fee credited on account creation.',
-    ))
     db.commit()
 
     request.session['user_id'] = str(user.id)
-    return {'ok': True, 'message': 'Account created! 10.00 € entry fee added.'}
+    return {'ok': True, 'message': 'Account created. Please pay your 10.00 € deposit at the kiosk.'}
 
 
 # ── Setup PIN (admin first-login) ─────────────────────────────────────────────
