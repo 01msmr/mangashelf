@@ -16,9 +16,13 @@
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+let _cachedAccountData = null;
+let _cachedUser = null;
+
 async function tryLoadAccount() {
     try {
         const data = await API.get('/api/account');
+        _cachedAccountData = data;
         renderAccount(data);
     } catch (err) {
         if (err.status === 403) {
@@ -142,7 +146,7 @@ function renderAccount(data) {
         : `<div class="acct-empty">${Lang.t('acct.noTxns')}</div>`;
 
     const langBtns = ['en', 'de', 'schwaebisch'].map(l =>
-        `<button class="lang-btn${data.lang===l?' active':''}" data-lang="${l}">${l === 'schwaebisch' ? 'Schwob' : l.toUpperCase()}</button>`
+        `<button class="lang-btn${Lang.current===l?' active':''}" data-lang="${l}">${l === 'schwaebisch' ? 'Schwob' : l.toUpperCase()}</button>`
     ).join('');
 
     document.getElementById('main-content').innerHTML = `
@@ -229,15 +233,16 @@ function renderAccount(data) {
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             Lang.set(btn.dataset.lang);
+            if (_cachedUser) renderNav(_cachedUser);
+            if (_cachedAccountData) renderAccount(_cachedAccountData);
             await API.post(`/api/account/language/${btn.dataset.lang}`).catch(() => {});
-            tryLoadAccount();
         });
     });
 }
 
 async function init() {
     await Lang.load();
-    await initPage();
+    _cachedUser = await initPage();
     tryLoadAccount();
 }
 
