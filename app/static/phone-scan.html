@@ -16,11 +16,11 @@
             <path d="M2 4h2v16H2V4zm4 0h1v16H6V4zm2 0h2v16H8V4zm3 0h1v16h-1V4zm2 0h2v16h-2V4zm3 0h1v16h-1V4zm2 0h2v16h-2V4z"/>
         </svg>
     </div>
-    <div class="prompt-title">Phone Scanner</div>
-    <div class="prompt-msg">Tap the button below to start your camera and scan a barcode.</div>
+    <div class="prompt-title" id="prompt-title"></div>
+    <div class="prompt-msg" id="prompt-msg"></div>
     <div class="result-box" id="scan-result"></div>
-    <button class="btn btn-primary" id="btn-start">Start Camera</button>
-    <a href="/index.html" class="btn btn-ghost">Go to main screen</a>
+    <button class="btn btn-primary" id="btn-start"></button>
+    <a href="/index.html" class="btn btn-ghost" id="btn-main-screen"></a>
 </div>
 
 <!-- Viewfinder screen -->
@@ -30,12 +30,13 @@
         <div class="reticle">
             <div class="scan-line"></div>
         </div>
-        <div class="vf-hint">Point at a barcode</div>
+        <div class="vf-hint" id="vf-hint"></div>
     </div>
-    <button class="btn-close" id="btn-close">✕ Cancel</button>
+    <button class="btn-close" id="btn-close"></button>
 </div>
 
 <script src="/static/js/api.js"></script>
+<script src="/static/js/lang.js"></script>
 <script src="/static/js/zxing-browser.min.js"></script>
 <script>
 // Handle token login from QR
@@ -49,6 +50,16 @@ if (token) {
 
 let codeReader;
 const resultEl = document.getElementById('scan-result');
+
+async function applyTranslations() {
+    await Lang.load();
+    document.getElementById('prompt-title').textContent   = Lang.t('phoneScan.title');
+    document.getElementById('prompt-msg').textContent     = Lang.t('phoneScan.prompt');
+    document.getElementById('btn-start').textContent      = Lang.t('phoneScan.startBtn');
+    document.getElementById('btn-main-screen').textContent = Lang.t('phoneScan.mainScreen');
+    document.getElementById('vf-hint').textContent        = Lang.t('phoneScan.vfHint');
+    document.getElementById('btn-close').textContent      = Lang.t('phoneScan.cancel');
+}
 
 function showResult(msg, type) {
     resultEl.textContent = msg;
@@ -77,13 +88,13 @@ async function handleIsbn(isbn) {
             const rRes = await API.post(`/api/return/${res.loan_id}`);
             showResult(rRes.message, 'success');
         } else if (res.action === 'add') {
-            showResult(`ISBN ${isbn} not in library — use the main screen to add it.`, 'error');
+            showResult(Lang.t('phoneScan.notInLibrary', { isbn }), 'error');
         } else if (res.action === 'return_pick') {
-            showResult('Multiple copies — use the main screen to choose.', 'error');
+            showResult(Lang.t('phoneScan.multiCopy'), 'error');
         }
     } catch (err) {
         if (err.status === 401) { window.location.href = '/login.html'; return; }
-        showResult(err.detail || 'Error', 'error');
+        showResult(err.detail || Lang.t('phoneScan.cameraError'), 'error');
     }
 }
 
@@ -103,7 +114,7 @@ document.getElementById('btn-start').addEventListener('click', async () => {
         });
     } catch (e) {
         showPrompt();
-        showResult('Camera not available', 'error');
+        showResult(Lang.t('phoneScan.cameraError'), 'error');
     }
 });
 
@@ -111,6 +122,8 @@ document.getElementById('btn-close').addEventListener('click', () => {
     if (codeReader) { codeReader.reset(); codeReader = null; }
     showPrompt();
 });
+
+applyTranslations();
 </script>
 </body>
 </html>

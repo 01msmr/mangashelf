@@ -11,26 +11,26 @@
 <main class="app-main">
     <div class="admin-page">
         <nav class="admin-nav">
-            <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> Users</a>
-            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Overdue</a>
-            <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> Rebuy</a>
-            <a href="/admin/settings.html" class="admin-nav-item active"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
+            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span></a>
+            <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> <span class="nav-label-rebuy"></span></a>
+            <a href="/admin/settings.html" class="admin-nav-item active"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
         </nav>
         <div class="admin-body">
             <div class="hint-aside-row" style="align-items:start;padding-top:8px">
                 <div class="card" style="max-width:420px">
-                    <div class="card-header">Library Settings</div>
+                    <div class="card-header" id="card-title"></div>
                     <div class="card-body">
                         <div class="form-group mb-3">
-                            <label class="form-label">Max books per user</label>
+                            <label class="form-label" id="label-max-books"></label>
                             <input type="number" id="max-books" class="form-input" min="1" max="20" value="3">
                         </div>
                         <div class="form-group mb-3">
-                            <label class="form-label">Max loan days</label>
+                            <label class="form-label" id="label-max-days"></label>
                             <input type="number" id="max-days" class="form-input" min="7" max="365" value="60">
                         </div>
                         <div class="form-group mb-3">
-                            <label class="form-label">Default loan rate (€)</label>
+                            <label class="form-label" id="label-default-rate"></label>
                             <select id="default-rate" class="form-input form-select">
                                 <option value="0.50">0.50 €</option>
                                 <option value="1.00">1.00 €</option>
@@ -38,32 +38,28 @@
                                 <option value="2.00">2.00 €</option>
                             </select>
                         </div>
-                        <button class="btn btn-primary" id="btn-save">Save Settings</button>
+                        <button class="btn btn-primary" id="btn-save"></button>
                         <div id="msg" class="fetch-status mt-2" style="display:none"></div>
                         <hr class="divider" style="margin-top:20px">
                         <div class="form-group mb-3">
-                            <label class="form-label">Admin PIN</label>
-                            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:8px">4-digit shared PIN used as the second half of admin access (Your PIN + Admin PIN).</div>
+                            <label class="form-label" id="label-admin-pin"></label>
+                            <div id="admin-pin-desc" style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:8px"></div>
                             <div style="display:flex;gap:8px;align-items:center">
                                 <div class="input-with-btn" style="flex:1">
                                     <input type="password" id="new-admin-pin" class="form-input pin-admin-input" inputmode="none" maxlength="4" placeholder="••••">
                                     <button type="button" id="btn-numpad-admin-pin" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                                 </div>
-                                <button class="btn btn-ghost btn-sm" id="btn-set-admin-pin">Set PIN</button>
+                                <button class="btn btn-ghost btn-sm" id="btn-set-admin-pin"></button>
                             </div>
                             <div id="admin-pin-msg" class="fetch-status mt-1" style="display:none"></div>
                         </div>
                         <hr class="divider">
-                        <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">Remove all books from the database where every copy is broken or missing.</div>
-                        <button class="btn btn-danger btn-sm" id="btn-purge">Purge Empty Books</button>
+                        <div id="purge-desc" style="font-size:13px;color:var(--text-muted);margin-bottom:8px"></div>
+                        <button class="btn btn-danger btn-sm" id="btn-purge"></button>
                         <div id="purge-msg" class="fetch-status mt-2" style="display:none"></div>
                     </div>
                 </div>
-                <div class="hint text-muted">
-                    <p><strong>Max books</strong><br>How many books a user can borrow at once.</p>
-                    <p><strong>Loan days</strong><br>How many days until a book is due.</p>
-                    <p><strong>Default rate</strong><br>The pre-selected loan fee per book.</p>
-                </div>
+                <div class="hint text-muted" id="hint-aside"></div>
             </div>
         </div>
     </div>
@@ -71,9 +67,34 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/lang.js"></script>
 <script src="/static/js/numpad.js"></script>
 <script>
+function applyTranslations() {
+    document.querySelector('.nav-label-users').textContent    = Lang.t('admin.users');
+    document.querySelector('.nav-label-overdue').textContent  = Lang.t('admin.overdue');
+    document.querySelector('.nav-label-rebuy').textContent    = Lang.t('admin.rebuy');
+    document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
+    document.getElementById('card-title').textContent         = Lang.t('adminSettings.cardTitle');
+    document.getElementById('label-max-books').textContent    = Lang.t('adminSettings.maxBooks');
+    document.getElementById('label-max-days').textContent     = Lang.t('adminSettings.maxDays');
+    document.getElementById('label-default-rate').textContent = Lang.t('adminSettings.defaultRate');
+    document.getElementById('btn-save').textContent           = Lang.t('adminSettings.saveBtn');
+    document.getElementById('label-admin-pin').textContent    = Lang.t('adminSettings.adminPinLabel');
+    document.getElementById('admin-pin-desc').textContent     = Lang.t('adminSettings.adminPinDesc');
+    document.getElementById('btn-set-admin-pin').textContent  = Lang.t('adminSettings.setPinBtn');
+    document.getElementById('purge-desc').textContent         = Lang.t('adminSettings.purgeDesc');
+    document.getElementById('btn-purge').textContent          = Lang.t('adminSettings.purgeBtn');
+    document.getElementById('hint-aside').innerHTML = `
+        <p><strong>${Lang.t('adminSettings.maxBooks')}</strong><br>${Lang.t('adminSettings.hintMaxBooks')}</p>
+        <p><strong>${Lang.t('adminSettings.maxDays')}</strong><br>${Lang.t('adminSettings.hintLoanDays')}</p>
+        <p><strong>${Lang.t('adminSettings.defaultRate')}</strong><br>${Lang.t('adminSettings.hintDefaultRate')}</p>
+    `;
+}
+
 async function init() {
+    await Lang.load();
+    applyTranslations();
     await initPage();
     requireAdminPin(loadContent);
 }
@@ -99,7 +120,7 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     try {
         await API.post('/api/admin/settings', body);
         msgEl.className = 'fetch-status text-success';
-        msgEl.textContent = 'Settings saved.';
+        msgEl.textContent = Lang.t('adminSettings.saved');
         msgEl.style.display = 'block';
         setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
     } catch (err) {
@@ -113,7 +134,8 @@ document.getElementById('btn-set-admin-pin').addEventListener('click', async () 
     const pin   = document.getElementById('new-admin-pin').value.trim();
     const msgEl = document.getElementById('admin-pin-msg');
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        msgEl.className = 'fetch-status text-danger'; msgEl.textContent = 'Enter a 4-digit PIN first.';
+        msgEl.className = 'fetch-status text-danger';
+        msgEl.textContent = Lang.t('adminSettings.enter4Pin');
         msgEl.style.display = 'block'; return;
     }
     try {
@@ -130,7 +152,7 @@ document.getElementById('btn-set-admin-pin').addEventListener('click', async () 
 
 document.getElementById('btn-purge').addEventListener('click', async () => {
     const msgEl = document.getElementById('purge-msg');
-    if (!confirm('Delete all books with no usable copies from the database?')) return;
+    if (!confirm(Lang.t('adminSettings.purgeConfirm'))) return;
     try {
         const res = await API.post('/api/admin/purge-empty-books');
         msgEl.className = 'fetch-status text-success';

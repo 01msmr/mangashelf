@@ -12,7 +12,7 @@ function renderNav(user) {
     header.innerHTML = `
         <a href="/account.html" class="btn btn-ghost btn-sm user-badge">${esc(user.username)}</a>${adminBadge}
         <div class="header-left">
-            <a href="/index.html" class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span>Shelf</span></a>
+            <a href="/index.html" class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span class="logo-shelf">${(typeof Lang !== 'undefined' && Lang.t) ? Lang.t('logo.shelf') : 'Shelf'}</span></a>
         </div>
         <div class="header-right">
             ${adminLink}

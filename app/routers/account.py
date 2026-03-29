@@ -82,6 +82,7 @@ def account_info(request: Request, db: Session = Depends(get_db),
         balance_status = 'danger'
 
     return {
+        'id':            user.id,
         'username':      user.username,
         'guthaben':      user.guthaben,
         'balance_status': balance_status,

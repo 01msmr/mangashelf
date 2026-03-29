@@ -11,16 +11,16 @@
 <main class="app-main">
     <div class="admin-page">
         <nav class="admin-nav">
-            <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> Users</a>
+            <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
             <a href="/admin/overdue.html" class="admin-nav-item active">
-                <i class="fa-solid fa-clock-rotate-left"></i> Overdue <span class="nav-badge" id="overdue-badge" style="display:none"></span>
+                <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span> <span class="nav-badge" id="overdue-badge" style="display:none"></span>
             </a>
-            <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> Rebuy</a>
-            <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> <span class="nav-label-rebuy"></span></a>
+            <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
         </nav>
         <div class="admin-body">
             <div id="list" class="overdue-list">
-                <div class="empty-state">Loading…</div>
+                <div class="empty-state" id="initial-loading"></div>
             </div>
         </div>
     </div>
@@ -28,10 +28,21 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/lang.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+function applyNavLabels() {
+    document.querySelector('.nav-label-users').textContent    = Lang.t('admin.users');
+    document.querySelector('.nav-label-overdue').textContent  = Lang.t('admin.overdue');
+    document.querySelector('.nav-label-rebuy').textContent    = Lang.t('admin.rebuy');
+    document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
+    document.getElementById('initial-loading').textContent    = Lang.t('empty.loading');
+}
+
 async function init() {
+    await Lang.load();
+    applyNavLabels();
     await initPage();
     requireAdminPin(loadContent);
 }
@@ -41,7 +52,7 @@ async function loadContent() {
     try {
         const items = await API.get('/api/admin/overdue');
         if (!items.length) {
-            list.innerHTML = '<div class="empty-state">No overdue loans. 🎉</div>';
+            list.innerHTML = `<div class="empty-state">${Lang.t('adminOverdue.none')}</div>`;
             return;
         }
         document.getElementById('overdue-badge').textContent = items.length;
@@ -59,11 +70,11 @@ async function loadContent() {
                         </div>
                         <div class="overdue-meta">
                             <span class="overdue-borrower">${esc(i.username)}</span>
-                            <span class="overdue-due">Due ${esc(fmtDate(i.due_date))}</span>
+                            <span class="overdue-due">${Lang.t('adminOverdue.due')} ${esc(fmtDate(i.due_date))}</span>
                         </div>
                     </div>
                     <div class="overdue-right">
-                        <span class="overdue-days-badge">${i.days_overdue}d overdue</span>
+                        <span class="overdue-days-badge">${Lang.t('adminOverdue.daysOverdue', { n: i.days_overdue })}</span>
                     </div>
                 </div>
             `;

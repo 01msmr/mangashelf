@@ -12,39 +12,37 @@
     <div class="auth-page">
         <div class="hint-aside-row">
             <div class="auth-card">
-                <div class="auth-title">Change PIN</div>
+                <div class="auth-title" id="change-pin-title"></div>
                 <div class="error-spacer"><div id="error-box" class="auth-error" style="display:none"></div></div>
                 <div class="auth-form">
                     <div class="form-group">
-                        <label class="form-label">Current PIN</label>
+                        <label class="form-label" id="label-current-pin"></label>
                         <div class="input-with-btn">
                             <input type="password" id="current-pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
                             <button type="button" id="btn-numpad-current" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">New PIN</label>
+                        <label class="form-label" id="label-new-pin"></label>
                         <div class="input-with-btn">
                             <input type="password" id="new-pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
                             <button type="button" id="btn-numpad-new" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Confirm New PIN</label>
+                        <label class="form-label" id="label-confirm-pin"></label>
                         <div class="input-with-btn">
                             <input type="password" id="pin-confirm" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
                             <button type="button" id="btn-numpad-confirm" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                         </div>
                     </div>
                     <div style="display:flex;gap:10px">
-                        <button class="btn btn-primary" style="flex:1" id="btn-save">Save</button>
-                        <a href="/account.html" class="btn btn-ghost">Cancel</a>
+                        <button class="btn btn-primary" style="flex:1" id="btn-save"></button>
+                        <a href="/account.html" class="btn btn-ghost" id="btn-cancel-link"></a>
                     </div>
                 </div>
             </div>
-            <div class="hint text-muted">
-                <p>Choose a 4-digit PIN.</p>
-                <p>Your PIN must be different from the current one.</p>
+            <div class="hint text-muted" id="hint-aside">
             </div>
         </div>
     </div>
@@ -52,9 +50,24 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/lang.js"></script>
 <script src="/static/js/numpad.js"></script>
 <script>
 const errorBox = document.getElementById('error-box');
+
+async function applyTranslations() {
+    await Lang.load();
+    document.getElementById('change-pin-title').textContent  = Lang.t('changePin.title');
+    document.getElementById('label-current-pin').textContent = Lang.t('changePin.currentLabel');
+    document.getElementById('label-new-pin').textContent     = Lang.t('changePin.newLabel');
+    document.getElementById('label-confirm-pin').textContent = Lang.t('changePin.confirmLabel');
+    document.getElementById('btn-save').textContent          = Lang.t('changePin.saveBtn');
+    document.getElementById('btn-cancel-link').textContent   = Lang.t('changePin.cancelBtn');
+    document.getElementById('hint-aside').innerHTML = `
+        <p>${Lang.t('changePin.hint1')}</p>
+        <p>${Lang.t('changePin.hint2')}</p>
+    `;
+}
 
 attachNumpad(document.getElementById('current-pin'), document.getElementById('btn-numpad-current'), { keepFocus: true });
 attachNumpad(document.getElementById('new-pin'), document.getElementById('btn-numpad-new'), { keepFocus: true });
@@ -70,10 +83,11 @@ document.getElementById('btn-save').addEventListener('click', async () => {
         window.location.href = '/account.html';
     } catch (err) {
         if (handleAuthError(err)) return;
-        showError(errorBox, err.detail || 'Failed.');
+        showError(errorBox, err.detail || Lang.t('changePin.saveBtn'));
     }
 });
 
+applyTranslations();
 initPage();
 </script>
 </body>

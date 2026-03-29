@@ -11,12 +11,12 @@
 <main class="app-main">
     <div class="detail-page" id="page-root">
         <div class="detail-topbar">
-            <a href="/index.html" class="btn btn-ghost btn-sm">← All Books</a>
+            <a href="/index.html" class="btn btn-ghost btn-sm" id="topbar-back"></a>
             <span class="detail-isbn" id="topbar-isbn"></span>
         </div>
         <div class="detail-body" id="detail-body">
             <div class="detail-info">
-                <div class="text-muted">Loading…</div>
+                <div class="text-muted" id="initial-loading"></div>
             </div>
         </div>
     </div>
@@ -24,14 +24,18 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/lang.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 async function init() {
+    await Lang.load();
+    document.getElementById('topbar-back').textContent     = Lang.t('nav.allBooks');
+    document.getElementById('initial-loading').textContent = Lang.t('empty.loading');
     const user = await initPage();
     const isbn = new URLSearchParams(location.search).get('isbn');
     if (!isbn) {
-        document.getElementById('detail-body').innerHTML = '<div class="detail-info"><p>No ISBN specified.</p></div>';
+        document.getElementById('detail-body').innerHTML = `<div class="detail-info"><p>${Lang.t('borrow.noIsbn')}</p></div>`;
         return;
     }
     document.getElementById('topbar-isbn').textContent = isbn;
@@ -52,16 +56,16 @@ async function init() {
 
     const avail = book.available > 0;
     const statusBadge = avail
-        ? `<span class="status-badge status-available status-lg">${book.available} available</span>`
-        : `<span class="status-badge status-loaned status-lg">All loaned</span>`;
+        ? `<span class="status-badge status-available status-lg">${book.available} ${Lang.t('book.available')}</span>`
+        : `<span class="status-badge status-loaned status-lg">${Lang.t('book.allLoaned')}</span>`;
 
     let actionHtml = '';
     if (book.user_loan_id) {
-        actionHtml = `<a href="/return.html?loan_id=${book.user_loan_id}" class="btn btn-primary detail-action-btn">Return this book</a>`;
+        actionHtml = `<a href="/return.html?loan_id=${book.user_loan_id}" class="btn btn-primary detail-action-btn">${Lang.t('book.returnThis')}</a>`;
     } else if (book.available > 0 && book.borrow_allowed) {
-        actionHtml = `<a href="/borrow.html?isbn=${encodeURIComponent(isbn)}" class="btn btn-primary detail-action-btn">Borrow</a>`;
+        actionHtml = `<a href="/borrow.html?isbn=${encodeURIComponent(isbn)}" class="btn btn-primary detail-action-btn">${Lang.t('book.borrow')}</a>`;
     } else if (!book.borrow_allowed && book.borrow_reason) {
-        const msg = book.borrow_reason === 'balance_low' ? 'Balance too low to borrow' : 'Loan limit reached';
+        const msg = book.borrow_reason === 'balance_low' ? Lang.t('book.balanceLowLong') : Lang.t('book.loanLimit');
         actionHtml = `<div class="detail-borrow-blocked">${esc(msg)}</div>`;
     }
 
@@ -69,8 +73,8 @@ async function init() {
     if (book.loans_info && book.loans_info.length) {
         const rows = book.loans_info.map(l => `
             <div class="loan-row">
-                <span class="loan-copy">Copy #${l.copy_num}</span>
-                <span class="loan-due">Due ${esc(fmtDate(l.due_date))}</span>
+                <span class="loan-copy">${Lang.t('book.copyNum')} #${l.copy_num}</span>
+                <span class="loan-due">${Lang.t('book.due')} ${esc(fmtDate(l.due_date))}</span>
                 ${user.is_admin && l.borrower ? `<span class="loan-borrower">${esc(l.borrower)}</span>` : ''}
             </div>
         `).join('');
@@ -80,17 +84,17 @@ async function init() {
     let brokenHtml = '';
     if (user.is_admin && book.copies && book.copies.length) {
         const opts = book.copies.filter(c => c.status !== 'broken').map(c =>
-            `<option value="${c.id}">Copy #${c.copy_num} (${c.status})</option>`
+            `<option value="${c.id}">${Lang.t('book.copyNum')} #${c.copy_num} (${c.status})</option>`
         ).join('');
         if (opts) {
             brokenHtml = `
                 <div class="detail-admin">
-                    <div class="detail-admin-label">Admin</div>
+                    <div class="detail-admin-label">${Lang.t('book.admin')}</div>
                     <div class="broken-form">
                         <select id="broken-copy" class="form-input form-select" style="height:44px;font-size:14px">${opts}</select>
-                        <input type="text" id="broken-note" class="form-input" placeholder="Note (optional)" style="height:44px;font-size:14px">
+                        <input type="text" id="broken-note" class="form-input" placeholder="${Lang.t('book.noteHint')}" style="height:44px;font-size:14px">
                         <div class="broken-form-btns">
-                            <button class="btn btn-danger" id="btn-broken">Mark Broken</button>
+                            <button class="btn btn-danger" id="btn-broken">${Lang.t('book.markBroken')}</button>
                         </div>
                         <div id="broken-msg" class="text-danger" style="font-size:13px;display:none"></div>
                     </div>
@@ -108,15 +112,15 @@ async function init() {
             <div class="detail-title">${esc(book.title)}</div>
             <div class="detail-author">${esc(book.author || '')}</div>
             <div class="detail-meta">${book.publisher ? esc(book.publisher) + (book.published ? ' · ' + esc(book.published) : '') : ''}</div>
-            <div class="detail-meta">Loan rate: ${(book.loan_rate || 0.5).toFixed(2)} €</div>
+            <div class="detail-meta">${Lang.t('book.loanRateLabel')} ${(book.loan_rate || 0.5).toFixed(2)} €</div>
             <div class="detail-availability">${statusBadge}</div>
             ${actionHtml}
             ${loansHtml}
             ${brokenHtml}
         </div>
         <div class="page-hint text-muted">
-            <p>Borrow a copy to take it home.</p>
-            <p>Return before the due date to avoid overdue fees.</p>
+            <p>${Lang.t('book.borrowHint1')}</p>
+            <p>${Lang.t('book.borrowHint2')}</p>
         </div>
     `;
 

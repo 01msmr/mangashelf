@@ -37,18 +37,18 @@ function renderVerify() {
         <div class="auth-page">
             <div class="hint-aside-row">
                 <div class="auth-card">
-                    <div class="auth-title">Enter PIN</div>
-                    <div class="auth-subtitle">Confirm your identity to view account details.</div>
+                    <div class="auth-title">${Lang.t('acct.verify.title')}</div>
+                    <div class="auth-subtitle">${Lang.t('acct.verify.subtitle')}</div>
                     <div id="verify-error" class="auth-error" style="display:none"></div>
                     <div class="auth-form">
                         <input type="password" id="verify-pin" class="form-input form-input-pin"
                                inputmode="none" maxlength="4" placeholder="••••">
-                        <button class="btn btn-primary btn-block" id="btn-verify">Confirm</button>
+                        <button class="btn btn-primary btn-block" id="btn-verify">${Lang.t('acct.verify.btn')}</button>
                     </div>
                 </div>
                 <div class="hint text-muted">
-                    <p>This kiosk is shared. Enter your PIN to view account details.</p>
-                    <p>Access stays open for 5 minutes.</p>
+                    <p>${Lang.t('acct.verify.hint1')}</p>
+                    <p>${Lang.t('acct.verify.hint2')}</p>
                 </div>
             </div>
         </div>
@@ -65,7 +65,7 @@ function renderVerify() {
             await API.post('/api/account/verify', { pin });
             tryLoadAccount();
         } catch (err) {
-            showError(errEl, err.detail || 'Incorrect PIN.');
+            showError(errEl, err.detail || Lang.t('acct.verify.wrongPin'));
             pinEl.value = '';
             pinEl.focus();
         }
@@ -74,6 +74,18 @@ function renderVerify() {
     document.getElementById('btn-verify').addEventListener('click', doVerify);
     pinEl.addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
     pinEl.addEventListener('input', () => { if (pinEl.value.length === 4) setTimeout(doVerify, 150); });
+}
+
+function showQr(src) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;' +
+        'display:flex;align-items:center;justify-content:center;cursor:pointer';
+    overlay.innerHTML = `<img src="${src}" style="max-width:80vw;max-height:80vh;border-radius:8px;background:#fff;padding:14px;box-shadow:0 0 40px rgba(0,0,0,0.8)">`;
+    overlay.addEventListener('click', () => overlay.remove());
+    document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
+    });
+    document.body.appendChild(overlay);
 }
 
 function renderAccount(data) {
@@ -100,10 +112,10 @@ function renderAccount(data) {
                     </div>
                     <div class="loan-card-right">
                         <div class="loan-card-due${overdue ? ' text-danger' : ''}">
-                            ${overdue ? '⚠ ' : ''}Due ${esc(fmtDate(l.due_date))}
+                            ${overdue ? '⚠ ' : ''}${Lang.t('acct.due')} ${esc(fmtDate(l.due_date))}
                         </div>
-                        ${overdue ? '<span class="overdue-badge">OVERDUE</span>' : ''}
-                        <a href="/return.html?loan_id=${l.id}" class="btn btn-ghost btn-sm" style="margin-top:4px">Return</a>
+                        ${overdue ? `<span class="overdue-badge">${Lang.t('return.overdue')}</span>` : ''}
+                        <a href="/return.html?loan_id=${l.id}" class="btn btn-ghost btn-sm" style="margin-top:4px">${Lang.t('book.return')}</a>
                     </div>
                 </div>
             `;
@@ -135,12 +147,12 @@ function renderAccount(data) {
 
     document.getElementById('main-content').innerHTML = `
         <div class="acct-page">
-            <div class="detail-topbar">
-                <span class="page-topbar-title">${esc(data.username)}</span>
-            </div>
             <div class="lang-switcher-row">
                 <span class="lang-switcher-label">${Lang.t('acct.language')}</span>
                 <div class="lang-switcher">${langBtns}</div>
+                <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="showQr('/user-qr/${data.id}.png')" title="Login QR">
+                    <i class="fa-solid fa-qrcode" style="font-size:22px"></i>
+                </button>
             </div>
             <div class="acct-body">
                 <div class="acct-section">
@@ -180,7 +192,7 @@ function renderAccount(data) {
                 <div class="acct-section">
                     <div class="acct-section-title">${Lang.t('acct.phone')}</div>
                     <div class="acct-qr-row">
-                        <img class="acct-qr-img" src="/user-qr/${encodeURIComponent(data.username)}.png" alt="QR"
+                        <img class="acct-qr-img" src="/user-qr/${data.id}.png" alt="QR"
                              onerror="this.style.display='none'">
                         <span class="acct-qr-hint">${Lang.t('acct.qrHint')}</span>
                     </div>
@@ -208,7 +220,7 @@ function renderAccount(data) {
                 setTimeout(() => tryLoadAccount(), 1500);
             } catch (err) {
                 msgEl.className = 'text-danger';
-                msgEl.textContent = err.detail || 'Top-up failed.';
+                msgEl.textContent = err.detail || Lang.t('acct.addFunds');
                 msgEl.style.display = 'block';
             }
         });
@@ -224,8 +236,8 @@ function renderAccount(data) {
 }
 
 async function init() {
-    await initPage();
     await Lang.load();
+    await initPage();
     tryLoadAccount();
 }
 

@@ -13,8 +13,9 @@ Users browse books, borrow and return them, top up a balance, and manage their a
 - **Barcode scanning** — hardware USB scanner (keypress buffer) and camera-based scanning via ZXing (for phone or USB webcam)
 - **Borrow / Return** — per-copy tracking, configurable loan period, per-book loan rate, overdue detection
 - **User accounts** — PIN authentication, balance (Guthaben), top-up, transaction history, active loan overview
+- **Deposit system** — new accounts start at 0 €; a 10 € deposit must be paid at the kiosk before borrowing is unlocked (minimum balance to borrow: deposit + smallest loan rate = 10.50 €)
 - **Admin panel**
-  - User management: promote/demote admin, activate/deactivate, set/force PIN, adjust balance
+  - User management: promote/demote admin, activate/deactivate, set/force PIN, adjust balance, delete with confirmation
   - Overdue list with day counts
   - Rebuy list (auto-populated when last copy is marked broken)
   - Settings: max books per user, max loan days, default loan rate
@@ -22,6 +23,7 @@ Users browse books, borrow and return them, top up a balance, and manage their a
 - **Phone scanner** — QR code on account page lets your phone act as a wireless barcode scanner
 - **Onscreen keyboard** — toggleable QWERTY/QWERTZ soft keyboard (switches with language)
 - **Multilingual** — English, German, Schwäbisch (easily extendable via `lang.json`)
+- **Auto-logout** — session expires after 90 seconds of inactivity
 - **Dark manga theme** — custom CSS design system, Permanent Marker font for titles, Font Awesome icons (all served locally, no CDN)
 
 ---
@@ -48,11 +50,128 @@ Users browse books, borrow and return them, top up a balance, and manage their a
 
 ---
 
+## Data Model
+
+```mermaid
+erDiagram
+    User {
+        int id PK
+        text username
+        text pin_hash
+        int is_admin
+        int setup_required
+        float guthaben
+        int active
+        text created_at
+    }
+    Book {
+        int id PK
+        text isbn
+        text title
+        text author
+        text publisher
+        text published
+        text cover_path
+        float loan_rate
+        int added_by FK
+        text added_at
+    }
+    Copy {
+        int id PK
+        int book_id FK
+        int copy_num
+        text status
+        int donated_by FK
+        text broken_at
+        text broken_note
+    }
+    Loan {
+        int id PK
+        int copy_id FK
+        int user_id FK
+        text taken_out_at
+        text due_date
+        float fee_charged
+        float overdue_fee
+    }
+    Transaction {
+        int id PK
+        int user_id FK
+        float amount
+        text type
+        text description
+        text created_at
+    }
+    RebuyItem {
+        int id PK
+        int book_id FK
+        int copy_id FK
+        text reason
+        text added_at
+        int resolved
+    }
+    Setting {
+        text key PK
+        text value
+    }
+
+    User ||--o{ Loan : "borrows"
+    User ||--o{ Transaction : "has"
+    Book ||--o{ Copy : "has"
+    Copy ||--o{ Loan : "is loaned via"
+    Copy ||--o{ RebuyItem : "triggers"
+    Book ||--o{ RebuyItem : "listed in"
+```
+
+---
+
+## Authentication Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Login as Login screen
+    participant API
+    participant Session
+
+    User->>Login: Tap username tile
+    Login->>User: Show PIN pad
+    User->>Login: Enter 4-digit PIN
+    Login->>API: POST /api/auth/login
+    API-->>Login: 401 Wrong PIN (max 5 attempts, then lockout)
+    API-->>Session: Set session cookie (HTTPS only)
+    Session-->>Login: 200 OK
+    Login->>User: Redirect → index / setup-PIN
+
+    Note over Session: Idle 90 s → auto-logout
+    Session->>Login: POST /api/auth/logout + redirect
+```
+
+---
+
+## Borrow Flow
+
+```mermaid
+flowchart TD
+    A([Scan ISBN / tap book]) --> B{Book available?}
+    B -- No --> Z([Show 'All loaned'])
+    B -- Yes --> C{Balance ≥ 10.50 €?}
+    C -- No --> Y([Show balance warning])
+    C -- Yes --> D{Loans < max per user?}
+    D -- No --> X([Show loan limit warning])
+    D -- Yes --> E([Borrow page — confirm])
+    E --> F[POST /api/loans/borrow]
+    F --> G[Loan record created\nBalance debited]
+    G --> H([Success — show due date])
+```
+
+---
+
 ## Quick Start (local development)
 
 ```bash
 # 1. Clone and enter the project
-git clone <repo-url>
+git clone https://github.com/01msmr/mangashelf.git
 cd mangashelf
 
 # 2. Create virtualenv and install dependencies
@@ -63,25 +182,20 @@ pip install -r requirements.txt
 # 3. Seed the database with an admin user
 python seed.py        # creates mangashelf.db, default admin: admin / PIN 0000
 
-# 4. Generate a self-signed certificate (HTTPS is required for session cookies)
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes \
-    -subj "/CN=localhost"
-
-# 5. Run
+# 4. Run  (self-signed TLS certificate is generated automatically on first start)
 python run.py
 ```
 
-Open **https://localhost:5000** (accept the self-signed cert warning).
+Open **https://localhost:5001** (accept the self-signed cert warning).
 Default credentials: **admin** / PIN **0000** — you will be asked to change the PIN on first login.
 
 ### Environment variables
 
 | Variable | Default | Description |
 |---|---|---|
-| `SECRET_KEY` | `dev-secret-change-in-production` | Session signing key — **change this in production** |
-| `DATABASE_URL` | `sqlite:///mangashelf.db` | SQLAlchemy database URL |
+| `SECRET_KEY` | `mangashelf-dev-secret-change-in-production` | Session signing key — **change this in production** |
 
-Put them in a `.env` file in the project root; `python-dotenv` loads it automatically.
+Put it in a `.env` file in the project root; `python-dotenv` loads it automatically.
 
 ---
 
@@ -103,7 +217,7 @@ The installer:
 5. Configures **Chromium kiosk mode** via LXDE autostart (launches on boot, full-screen, no cursor after 3 s, `--enable-virtual-keyboard` for system OSK on text fields)
 6. Enables desktop auto-login for the `pi` user
 
-After reboot the kiosk opens automatically at `http://localhost:5000`.
+After reboot the kiosk opens automatically at `https://localhost:5001`.
 
 ### Useful commands after deployment
 
@@ -133,7 +247,7 @@ mangashelf/
 │   ├── services/
 │   │   ├── isbn_lookup.py   # OpenLibrary + Google Books with ISBN-13/10 fallback
 │   │   ├── cover_cache.py   # Cover image download and caching
-│   │   ├── finance.py       # Balance / transaction helpers
+│   │   ├── finance.py       # Balance / fee helpers + DEPOSIT / LOAN_RATES / BORROW_MIN constants
 │   │   └── scheduler.py     # APScheduler jobs (overdue processing)
 │   └── static/
 │       ├── index.html       # Book list (main kiosk view)
@@ -141,8 +255,9 @@ mangashelf/
 │       ├── admin/           # Admin panel pages
 │       ├── js/
 │       │   ├── api.js       # Thin fetch wrapper
-│       │   ├── nav.js       # Header / navigation rendering
-│       │   └── lang.js      # i18n module (reads lang.json)
+│       │   ├── nav.js       # Header / navigation rendering + 90 s idle timer
+│       │   ├── numpad.js    # Floating numpad widget (PIN / amount inputs)
+│       │   └── lang.js      # i18n module (reads lang.json, supports {{var}} placeholders)
 │       ├── css/style.css    # Design system (dark manga theme)
 │       ├── lang.json        # Translation strings (en, de, schwaebisch)
 │       └── fonts/           # Local Font Awesome + Permanent Marker (no CDN)
@@ -152,7 +267,7 @@ mangashelf/
 │   └── autostart            # LXDE kiosk autostart config
 ├── requirements.txt
 ├── seed.py                  # Populate DB with default admin user
-└── run.py                   # Dev server entry point
+└── run.py                   # Entry point — auto-generates TLS cert, starts uvicorn on :5001
 ```
 
 ---
@@ -170,7 +285,7 @@ ISBN-13 and ISBN-10 are both tried automatically when lookup fails for one form.
 
 ## Extending Languages
 
-Edit `app/static/lang.json` and add a new top-level key with the same string keys as `"en"`. The language switcher on the account page picks it up automatically. Set `"_keyboard": "qwerty"` or `"qwertz"` to control the onscreen keyboard layout for that language.
+Edit `app/static/lang.json` and add a new top-level key with the same string keys as `"en"`. The language switcher on the account page picks it up automatically. Set `"_keyboard": "qwerty"` or `"qwertz"` to control the onscreen keyboard layout for that language. Strings support `{{var}}` placeholders that are resolved at render time (e.g. `{{min}}` for the minimum borrow balance).
 
 ---
 

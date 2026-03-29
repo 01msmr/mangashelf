@@ -19,13 +19,13 @@
                 </button>
             </div>
             <button class="btn btn-ghost btn-sm" id="btn-search">Search</button>
-            <label class="available-filter-label">
+            <label class="available-filter-label" id="chk-available-label">
                 <input type="checkbox" id="chk-available"> Available
             </label>
-            <a id="btn-add" href="/admin/add-book.html" class="btn btn-ghost btn-sm" style="display:none;margin-left:auto"><i class="fa-solid fa-plus"></i> add Book</a>
+            <a id="btn-add" href="/admin/add-book.html" class="btn btn-ghost btn-sm" style="display:none;margin-left:auto"><i class="fa-solid fa-plus"></i> <span id="btn-add-label">add Book</span></a>
         </div>
 <div id="book-list" class="book-list">
-            <div class="empty-state">Loading…</div>
+            <div class="empty-state" id="initial-loading">Loading…</div>
         </div>
     </div>
 </main>
@@ -41,9 +41,18 @@ let currentUser = null;
 let openBookId  = null;
 
 async function init() {
+    await Lang.load();
     currentUser = await initPage().catch(() => null);
     if (!currentUser) return;
     if (currentUser.is_admin) document.getElementById('btn-add').style.display = 'inline-flex';
+
+    // Apply translations to static elements
+    document.getElementById('btn-search').textContent = Lang.t('search.btn');
+    document.getElementById('search').placeholder = Lang.t('search.placeholder');
+    document.getElementById('btn-add-label').textContent = Lang.t('addBook.addBtn');
+    const chkLabel = document.getElementById('chk-available-label');
+    if (chkLabel) chkLabel.lastChild.textContent = ' ' + Lang.t('book.available');
+
     const urlQ = new URLSearchParams(location.search).get('q') || '';
     if (urlQ) document.getElementById('search').value = urlQ;
     loadBooks(urlQ);
@@ -54,10 +63,11 @@ async function loadBooks(q = '') {
     openBookId = null;
     const list = document.getElementById('book-list');
     const availOnly = document.getElementById('chk-available').checked;
+    list.innerHTML = `<div class="empty-state">${Lang.t('empty.loading')}</div>`;
     try {
         const books = await API.get(`/api/books?q=${encodeURIComponent(q)}&available=${availOnly}`);
         if (!books.length) {
-            list.innerHTML = '<div class="empty-state">No books found.</div>';
+            list.innerHTML = `<div class="empty-state">${Lang.t('empty.noBooks')}</div>`;
             return;
         }
         list.innerHTML = books.map(b => {
@@ -65,8 +75,8 @@ async function loadBooks(q = '') {
                 ? `<div class="book-row-cover"><img src="/static/${esc(b.cover_path)}" alt=""></div>`
                 : `<div class="book-row-cover"><div class="cover-placeholder cover-sm"><i class="fa-solid fa-book fa-flip-horizontal cover-icon-sm"></i></div></div>`;
             const badge = b.available > 0
-                ? `<span class="status-badge status-available">available</span>`
-                : `<span class="status-badge status-loaned">All loaned</span>`;
+                ? `<span class="status-badge status-available">${Lang.t('book.available')}</span>`
+                : `<span class="status-badge status-loaned">${Lang.t('book.allLoaned')}</span>`;
             return `
                 <div class="book-row-wrap" id="wrap-${b.id}">
                     <div class="book-row" onclick="toggleBook(${b.id}, '${esc(b.isbn)}')">
@@ -83,7 +93,7 @@ async function loadBooks(q = '') {
         }).join('');
     } catch (err) {
         if (handleAuthError(err)) return;
-        list.innerHTML = `<div class="empty-state">${esc(err.detail || 'Failed to load books.')}</div>`;
+        list.innerHTML = `<div class="empty-state">${esc(err.detail || Lang.t('empty.noBooks'))}</div>`;
     }
 }
 
@@ -110,7 +120,7 @@ async function toggleBook(bookId, isbn) {
 
     openBookId = bookId;
     wrap.classList.add('expanded');
-    panel.innerHTML = '<div style="padding:10px;font-size:13px;color:var(--text-muted)">Loading…</div>';
+    panel.innerHTML = `<div style="padding:10px;font-size:13px;color:var(--text-muted)">${Lang.t('empty.loading')}</div>`;
     panel.classList.add('open');
 
     try {
@@ -129,16 +139,16 @@ function renderBookPanel(panel, book, bookId, isbn) {
 
     const avail = book.available > 0;
     const statusBadge = avail
-        ? `<span class="status-badge status-available">${book.available} available</span>`
-        : `<span class="status-badge status-loaned">All loaned</span>`;
+        ? `<span class="status-badge status-available">${book.available} ${Lang.t('book.available')}</span>`
+        : `<span class="status-badge status-loaned">${Lang.t('book.allLoaned')}</span>`;
 
     let actionHtml = '';
     if (book.user_loan_id) {
-        actionHtml = `<a href="/return.html?loan_id=${book.user_loan_id}" class="btn btn-primary btn-sm">Return</a>`;
+        actionHtml = `<a href="/return.html?loan_id=${book.user_loan_id}" class="btn btn-primary btn-sm">${Lang.t('book.return')}</a>`;
     } else if (book.available > 0 && book.borrow_allowed) {
-        actionHtml = `<a href="/borrow.html?isbn=${encodeURIComponent(isbn)}" class="btn btn-primary btn-sm">Borrow</a>`;
+        actionHtml = `<a href="/borrow.html?isbn=${encodeURIComponent(isbn)}" class="btn btn-primary btn-sm">${Lang.t('book.borrow')}</a>`;
     } else if (!book.borrow_allowed && book.borrow_reason) {
-        const msg = book.borrow_reason === 'balance_low' ? 'Balance too low' : 'Loan limit reached';
+        const msg = book.borrow_reason === 'balance_low' ? Lang.t('book.balanceLow') : Lang.t('book.loanLimit');
         actionHtml = `<span style="font-size:13px" class="text-warning">${esc(msg)}</span>`;
     }
 
@@ -147,7 +157,7 @@ function renderBookPanel(panel, book, bookId, isbn) {
         loansHtml = `<div class="book-panel-loans">` +
             book.loans_info.map(l => `
                 <div class="book-panel-loan-row">
-                    Copy #${l.copy_num} — due ${esc(fmtDate(l.due_date))}
+                    ${Lang.t('book.copyNum')} #${l.copy_num} — ${Lang.t('book.due')} ${esc(fmtDate(l.due_date))}
                     ${currentUser.is_admin && l.borrower ? `<span style="color:var(--text-dim)"> (${esc(l.borrower)})</span>` : ''}
                 </div>`
             ).join('') + `</div>`;
@@ -156,16 +166,16 @@ function renderBookPanel(panel, book, bookId, isbn) {
     let adminHtml = '';
     if (currentUser.is_admin && book.copies && book.copies.length) {
         const opts = book.copies.filter(c => c.status !== 'broken').map(c =>
-            `<option value="${c.id}">Copy #${c.copy_num} (${c.status})</option>`
+            `<option value="${c.id}">${Lang.t('book.copyNum')} #${c.copy_num} (${c.status})</option>`
         ).join('');
         if (opts) {
             adminHtml = `
                 <div class="book-panel-admin">
-                    <div class="book-panel-admin-label">Admin</div>
+                    <div class="book-panel-admin-label">${Lang.t('book.admin')}</div>
                     <div class="book-panel-broken-row">
                         <select id="bc-sel-${bookId}" class="form-input form-select" style="height:36px;font-size:13px;flex:1;width:auto">${opts}</select>
-                        <input type="text" id="bc-note-${bookId}" class="form-input" placeholder="Note" style="height:36px;font-size:13px;flex:1;width:auto">
-                        <button class="btn btn-danger btn-sm" onclick="markBroken(${bookId}, '${esc(isbn)}')">Broken</button>
+                        <input type="text" id="bc-note-${bookId}" class="form-input" placeholder="${Lang.t('book.noteHint')}" style="height:36px;font-size:13px;flex:1;width:auto">
+                        <button class="btn btn-danger btn-sm" onclick="markBroken(${bookId}, '${esc(isbn)}')">${Lang.t('book.markBroken')}</button>
                     </div>
                     <div class="book-panel-msg text-danger" id="bc-msg-${bookId}"></div>
                 </div>`;
@@ -181,7 +191,7 @@ function renderBookPanel(panel, book, bookId, isbn) {
             <div class="book-panel-info">
                 ${loansHtml}
                 <div class="book-panel-actions" style="margin-top:auto;justify-content:flex-end">
-                    <span style="font-size:var(--text-sm);color:var(--text-muted)">${(book.loan_rate||0.5).toFixed(2)} €/loan</span>
+                    <span style="font-size:var(--text-sm);color:var(--text-muted)">${(book.loan_rate||0.5).toFixed(2)} ${Lang.t('book.loanRate')}</span>
                     ${actionHtml}
                 </div>
             </div>

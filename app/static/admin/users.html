@@ -11,14 +11,14 @@
 <main class="app-main">
     <div class="admin-page">
         <nav class="admin-nav">
-            <a href="/admin/users.html" class="admin-nav-item active"><i class="fa-solid fa-users"></i> Users</a>
-            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Overdue</a>
-            <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> Rebuy</a>
-            <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin/users.html" class="admin-nav-item active"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
+            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span></a>
+            <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> <span class="nav-label-rebuy"></span></a>
+            <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
         </nav>
         <div class="admin-body">
             <div id="user-list" class="user-list">
-                <div class="empty-state">Loading…</div>
+                <div class="empty-state" id="initial-loading"></div>
             </div>
         </div>
     </div>
@@ -26,9 +26,18 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/lang.js"></script>
 <script src="/static/js/numpad.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function applyNavLabels() {
+    document.querySelector('.nav-label-users').textContent    = Lang.t('admin.users');
+    document.querySelector('.nav-label-overdue').textContent  = Lang.t('admin.overdue');
+    document.querySelector('.nav-label-rebuy').textContent    = Lang.t('admin.rebuy');
+    document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
+    document.getElementById('initial-loading').textContent    = Lang.t('empty.loading');
+}
 
 function showQr(src) {
     const overlay = document.createElement('div');
@@ -49,13 +58,13 @@ async function loadUsers() {
     try {
         const users = await API.get('/api/admin/users');
         if (!users.length) {
-            list.innerHTML = '<div class="empty-state">No users.</div>';
+            list.innerHTML = `<div class="empty-state">${Lang.t('adminUsers.noUsers')}</div>`;
             return;
         }
         const userIds = users.map(u => u.id);
         list.innerHTML = users.map(u => {
             const balClass   = u.guthaben > 10 ? 'bal-ok' : u.guthaben > 0 ? 'bal-warn' : 'bal-danger';
-            const inactiveBadge = !u.active ? '<span class="badge-inactive">Inactive</span>' : '';
+            const inactiveBadge = !u.active ? `<span class="badge-inactive">${Lang.t('adminUsers.inactive')}</span>` : '';
             const isSelf     = u.id === currentUserId;
 
             const promoteBtn = isSelf ? '' : `
@@ -68,12 +77,12 @@ async function loadUsers() {
 
             const deactivateBtn = isSelf ? '' : `
                 <button class="btn btn-ghost btn-sm" onclick="deactivate(${u.id}, ${u.active})">
-                    ${u.active ? 'Deactivate' : 'Activate'}
+                    ${u.active ? Lang.t('adminUsers.deactivate') : Lang.t('adminUsers.activate')}
                 </button>`;
 
             const deleteBtn = isSelf ? '' : `
                 <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">
-                    Delete
+                    ${Lang.t('adminUsers.delete')}
                 </button>`;
 
             return `
@@ -89,12 +98,13 @@ async function loadUsers() {
                             ${promoteBtn}
                         </div>
                         <div class="user-actions">
+                            ${isSelf ? '' : `
                             <button class="btn btn-ghost" onclick="showQr('/user-qr/${u.id}.png')"
                                     title="Show QR code"
                                     style="height:52px;padding:0 14px 0 12px;gap:12px;display:flex;align-items:center">
-                                <span style="font-size:13px;color:var(--text-muted);white-space:nowrap">fast user login:</span>
+                                <span style="font-size:13px;color:var(--text-muted);white-space:nowrap">${Lang.t('adminUsers.fastLogin')}</span>
                                 <i class="fa-solid fa-qrcode" style="font-size:38px;color:#fff"></i>
-                            </button>
+                            </button>`}
                         </div>
                     </div>
                     <div class="user-adjust">
@@ -106,12 +116,12 @@ async function loadUsers() {
                             </div>
                             <input type="text" placeholder="Reason" id="reason-${u.id}"
                                    class="form-input adjust-reason">
-                            <button class="btn btn-ghost btn-sm" style="margin-right:auto" onclick="adjust(${u.id})">Adjust</button>
+                            <button class="btn btn-ghost btn-sm" style="margin-right:auto" onclick="adjust(${u.id})">${Lang.t('adminUsers.adjust')}</button>
                             <button type="button" id="btn-numpad-pin-${u.id}" class="btn btn-ghost btn-sm" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                             <input type="text" inputmode="none" maxlength="4" placeholder="PIN"
                                    id="pin-${u.id}" class="form-input adjust-amount pin-admin-input">
-                            <button class="btn btn-ghost btn-sm" onclick="setPin(${u.id})">Set PIN</button>
-                            <button class="btn btn-ghost btn-sm" onclick="forcePin(${u.id})">Force PIN</button>
+                            <button class="btn btn-ghost btn-sm" onclick="setPin(${u.id})">${Lang.t('adminUsers.setPin')}</button>
+                            <button class="btn btn-ghost btn-sm" onclick="forcePin(${u.id})">${Lang.t('adminUsers.forcePin')}</button>
                             ${deactivateBtn}
                             ${deleteBtn}
                         </div>
@@ -164,9 +174,9 @@ function deleteUser(uid) {
     if (!btn) return;
     btn.outerHTML = `
         <span id="del-confirm-${uid}" style="display:inline-flex;align-items:center;gap:6px">
-            <span style="font-size:13px;color:var(--text-muted)">Really delete?</span>
-            <button class="btn btn-danger btn-sm" onclick="deleteUserConfirmed(${uid})">Yes</button>
-            <button class="btn btn-ghost btn-sm" onclick="loadUsers()">No</button>
+            <span style="font-size:13px;color:var(--text-muted)">${Lang.t('adminUsers.confirmDelete')}</span>
+            <button class="btn btn-danger btn-sm" onclick="deleteUserConfirmed(${uid})">${Lang.t('adminUsers.confirmYes')}</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadUsers()">${Lang.t('adminUsers.confirmNo')}</button>
         </span>`;
 }
 
@@ -181,7 +191,7 @@ async function deleteUserConfirmed(uid) {
 async function setPin(uid) {
     const pin = document.getElementById(`pin-${uid}`).value.trim();
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        showMsg(uid, 'Enter a 4-digit PIN first.', false); return;
+        showMsg(uid, Lang.t('adminUsers.enter4Pin'), false); return;
     }
     try {
         const res = await API.post(`/api/admin/users/${uid}/set-pin`, { pin });
@@ -200,7 +210,7 @@ async function forcePin(uid) {
 async function adjust(uid) {
     const amount = parseFloat(document.getElementById(`adj-${uid}`).value);
     const reason = document.getElementById(`reason-${uid}`).value;
-    if (isNaN(amount)) { showMsg(uid, 'Enter an amount', false); return; }
+    if (isNaN(amount)) { showMsg(uid, Lang.t('adminUsers.enterAmount'), false); return; }
     try {
         const res = await API.post(`/api/admin/users/${uid}/adjust`, { amount, reason });
         showMsg(uid, res.message, true);
@@ -208,7 +218,10 @@ async function adjust(uid) {
     } catch (err) { showMsg(uid, err.detail || 'Failed', false); }
 }
 
-initPage().then(user => { currentUserId = user.id; requireAdminPin(loadUsers); });
+Lang.load().then(() => {
+    applyNavLabels();
+    initPage().then(user => { currentUserId = user.id; requireAdminPin(loadUsers); });
+});
 </script>
 </body>
 </html>

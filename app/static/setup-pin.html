@@ -9,34 +9,45 @@
 <body>
 <div class="auth-page">
     <div class="auth-card">
-        <div class="auth-title">Set Your PIN</div>
-        <div class="auth-subtitle">Choose a 4-digit PIN (not 0000)</div>
-        <div class="setup-notice">You must set a new PIN before continuing.</div>
+        <div class="auth-title" id="setup-title"></div>
+        <div class="auth-subtitle" id="setup-subtitle"></div>
+        <div class="setup-notice" id="setup-notice"></div>
         <div class="error-spacer"><div id="error-box" class="auth-error" style="display:none"></div></div>
         <div class="auth-form">
             <div class="form-group">
-                <label class="form-label">New PIN</label>
+                <label class="form-label" id="label-new-pin"></label>
                 <div class="input-with-btn">
                     <input type="password" id="pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
                     <button type="button" id="btn-numpad-pin" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Confirm PIN</label>
+                <label class="form-label" id="label-confirm-pin"></label>
                 <div class="input-with-btn">
                     <input type="password" id="pin-confirm" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
                     <button type="button" id="btn-numpad-pin-confirm" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                 </div>
             </div>
-            <button class="btn btn-primary btn-block" id="btn-set">Set PIN</button>
+            <button class="btn btn-primary btn-block" id="btn-set"></button>
         </div>
     </div>
 </div>
 
 <script src="/static/js/api.js"></script>
+<script src="/static/js/lang.js"></script>
 <script src="/static/js/numpad.js"></script>
 <script>
 const errorBox = document.getElementById('error-box');
+
+async function applyTranslations() {
+    await Lang.load();
+    document.getElementById('setup-title').textContent   = Lang.t('setupPin.title');
+    document.getElementById('setup-subtitle').textContent = Lang.t('setupPin.subtitle');
+    document.getElementById('setup-notice').textContent  = Lang.t('setupPin.notice');
+    document.getElementById('label-new-pin').textContent = Lang.t('setupPin.newPinLabel');
+    document.getElementById('label-confirm-pin').textContent = Lang.t('setupPin.confirmLabel');
+    document.getElementById('btn-set').textContent       = Lang.t('setupPin.btn');
+}
 
 attachNumpad(document.getElementById('pin'), document.getElementById('btn-numpad-pin'), { keepFocus: true });
 attachNumpad(document.getElementById('pin-confirm'), document.getElementById('btn-numpad-pin-confirm'), { keepFocus: true });
@@ -49,9 +60,11 @@ document.getElementById('btn-set').addEventListener('click', async () => {
         await API.post('/api/auth/setup-pin', { pin, pin_confirm });
         window.location.href = '/index.html';
     } catch (err) {
-        showError(errorBox, err.detail || 'Failed to set PIN.');
+        showError(errorBox, err.detail || Lang.t('setupPin.btn'));
     }
 });
+
+applyTranslations();
 </script>
 </body>
 </html>

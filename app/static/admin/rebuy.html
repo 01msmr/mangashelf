@@ -11,14 +11,14 @@
 <main class="app-main">
     <div class="admin-page">
         <nav class="admin-nav">
-            <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> Users</a>
-            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Overdue</a>
-            <a href="/admin/rebuy.html" class="admin-nav-item active"><i class="fa-solid fa-cart-shopping"></i> Rebuy</a>
-            <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
+            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span></a>
+            <a href="/admin/rebuy.html" class="admin-nav-item active"><i class="fa-solid fa-cart-shopping"></i> <span class="nav-label-rebuy"></span></a>
+            <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
         </nav>
         <div class="admin-body">
             <div id="list" class="rebuy-list">
-                <div class="empty-state">Loading…</div>
+                <div class="empty-state" id="initial-loading"></div>
             </div>
         </div>
     </div>
@@ -26,15 +26,24 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/lang.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function applyNavLabels() {
+    document.querySelector('.nav-label-users').textContent    = Lang.t('admin.users');
+    document.querySelector('.nav-label-overdue').textContent  = Lang.t('admin.overdue');
+    document.querySelector('.nav-label-rebuy').textContent    = Lang.t('admin.rebuy');
+    document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
+    document.getElementById('initial-loading').textContent    = Lang.t('empty.loading');
+}
 
 async function loadList() {
     const list = document.getElementById('list');
     try {
         const items = await API.get('/api/admin/rebuy');
         if (!items.length) {
-            list.innerHTML = '<div class="empty-state">No items to rebuy. 🎉</div>';
+            list.innerHTML = `<div class="empty-state">${Lang.t('adminRebuy.none')}</div>`;
             return;
         }
         list.innerHTML = items.map(i => {
@@ -47,13 +56,13 @@ async function loadList() {
                     <div class="rebuy-info">
                         <div class="rebuy-title">
                             <a href="/book.html?isbn=${encodeURIComponent(i.book_isbn)}" class="rebuy-book-link">${esc(i.book_title)}</a>
-                            ${i.copy_num ? `<span class="rebuy-copy">Copy #${i.copy_num}</span>` : ''}
+                            ${i.copy_num ? `<span class="rebuy-copy">${Lang.t('book.copyNum')} #${i.copy_num}</span>` : ''}
                         </div>
                         <div class="rebuy-reason">${esc(i.reason || '')}</div>
                         <div class="rebuy-date">${esc(fmtDate(i.added_at))}</div>
                     </div>
                     <div class="rebuy-action">
-                        <button class="btn btn-ghost btn-sm" onclick="resolve(${i.id})">Mark Resolved</button>
+                        <button class="btn btn-ghost btn-sm" onclick="resolve(${i.id})">${Lang.t('adminRebuy.markResolved')}</button>
                     </div>
                 </div>
             `;
@@ -69,14 +78,17 @@ async function resolve(id) {
         await API.post(`/api/admin/rebuy/${id}/resolve`);
         document.getElementById(`rebuy-${id}`).remove();
         if (!document.querySelector('.rebuy-row')) {
-            document.getElementById('list').innerHTML = '<div class="empty-state">No items to rebuy. 🎉</div>';
+            document.getElementById('list').innerHTML = `<div class="empty-state">${Lang.t('adminRebuy.none')}</div>`;
         }
     } catch (err) {
         alert(err.detail || 'Failed');
     }
 }
 
-initPage().then(() => requireAdminPin(loadList));
+Lang.load().then(() => {
+    applyNavLabels();
+    initPage().then(() => requireAdminPin(loadList));
+});
 </script>
 </body>
 </html>

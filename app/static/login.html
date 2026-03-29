@@ -11,23 +11,23 @@
 
 <!-- Register button — top right corner -->
 <div class="register-corner">
-    <span style="font-size:13px;color:var(--text-muted);margin-right:10px">No account yet?</span>
-    <a href="/register.html" class="btn btn-ghost btn-sm">Register</a>
+    <span id="no-account-label" style="font-size:13px;color:var(--text-muted);margin-right:10px"></span>
+    <a href="/register.html" class="btn btn-ghost btn-sm" id="register-link"></a>
 </div>
 
 <!-- User selection -->
 <div id="screen-select" class="login-screen">
-    <div class="login-title"><div class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span>Shelf</span></div></div>
-    <div class="login-subtitle">Tap your name to log in</div>
+    <div class="login-title"><div class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span id="logo-shelf-login">Shelf</span></div></div>
+    <div class="login-subtitle" id="login-subtitle"></div>
     <div id="user-grid" class="user-grid">
-        <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px">Loading users…</div>
+        <div id="users-loading-msg" style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px"></div>
     </div>
 </div>
 
 <!-- PIN entry overlay -->
 <div class="pin-overlay" id="pin-overlay">
     <div class="pin-card">
-        <div class="pin-card-label">Enter PIN</div>
+        <div class="pin-card-label" id="pin-card-label"></div>
         <div class="pin-card-user" id="pin-username"></div>
         <div style="min-height:36px"><div id="pin-error" class="pin-error"></div></div>
         <input type="password" id="pin-text-input" class="pin-text-input"
@@ -47,12 +47,13 @@
             <button class="pinpad-key" data-key="back" type="button">⌫</button>
         </div>
         <div class="pin-actions">
-            <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
+            <button class="btn btn-ghost" id="btn-cancel"></button>
         </div>
     </div>
 </div>
 
 <script src="/static/js/api.js"></script>
+<script src="/static/js/lang.js"></script>
 <script>
 let pinValue   = '';
 let activeUser = '';
@@ -62,20 +63,31 @@ function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 // Auto-redirect if already logged in
 API.get('/api/auth/me').then(() => { window.location.href = '/index.html'; }).catch(() => {});
 
+async function applyTranslations() {
+    await Lang.load();
+    document.getElementById('logo-shelf-login').textContent = Lang.t('logo.shelf');
+    document.getElementById('no-account-label').textContent = Lang.t('login.noAccount');
+    document.getElementById('register-link').textContent    = Lang.t('login.register');
+    document.getElementById('login-subtitle').textContent   = Lang.t('login.tapSubtitle');
+    document.getElementById('users-loading-msg').textContent = Lang.t('login.loadingUsers');
+    document.getElementById('pin-card-label').textContent   = Lang.t('login.enterPin');
+    document.getElementById('btn-cancel').textContent       = Lang.t('login.cancel');
+}
+
 async function loadUsers() {
     try {
         const users = await API.get('/api/users');
         renderUsers(users);
     } catch (e) {
         document.getElementById('user-grid').innerHTML =
-            '<div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px">Could not load users.</div>';
+            `<div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px">${Lang.t('login.loadFailed')}</div>`;
     }
 }
 
 function renderUsers(users) {
     const grid = document.getElementById('user-grid');
     if (!users.length) {
-        grid.innerHTML = '<div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px">No users yet.</div>';
+        grid.innerHTML = `<div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px">${Lang.t('login.noUsers')}</div>`;
         return;
     }
     grid.innerHTML = users.map(u => `
@@ -116,7 +128,7 @@ function startLockoutCountdown(seconds) {
     function tick() {
         const m = Math.floor(remaining / 60);
         const s = String(remaining % 60).padStart(2, '0');
-        errEl.textContent = `Wrong attempts — wait ${m}:${s}`;
+        errEl.textContent = Lang.t('login.waitTimer', { time: `${m}:${s}` });
         errEl.style.display = 'block';
         if (remaining <= 0) {
             document.querySelectorAll('.pinpad-key').forEach(k => k.disabled = false);
@@ -144,7 +156,7 @@ async function submitPin() {
         if (err.status === 429 && err.data?.wait_seconds) {
             startLockoutCountdown(err.data.wait_seconds);
         } else {
-            errEl.textContent = err.detail || 'Login failed.';
+            errEl.textContent = err.detail || Lang.t('login.failed');
             errEl.style.display = 'block';
         }
         pinValue = ''; updateInput();
@@ -183,7 +195,7 @@ document.getElementById('pin-overlay').addEventListener('pointerdown', e => {
     if (e.target === document.getElementById('pin-overlay')) closePinOverlay();
 });
 
-loadUsers();
+applyTranslations().then(loadUsers);
 </script>
 </body>
 </html>
