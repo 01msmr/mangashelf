@@ -1,15 +1,15 @@
 """Book CRUD and admin book management endpoints."""
 from __future__ import annotations
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Book, Copy, Loan, User, RebuyItem
+from ..models import Book, BookRating, Copy, Loan, User, RebuyItem, Setting
 from ..dependencies import get_current_user, get_current_admin
 from ..services.isbn_lookup import lookup_isbn
 from ..services.cover_cache import get_cover_path
@@ -22,6 +22,11 @@ router = APIRouter(tags=['books'])
 @router.get('/books')
 def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db),
               user: User = Depends(get_current_user)):
+    from ..services.finance import can_borrow
+    borrow_allowed, borrow_reason = can_borrow(db, user)
+    max_days     = Setting.get_int(db, 'max_loan_days', 60)
+    projected_due = (datetime.now(timezone.utc) + timedelta(days=max_days)).isoformat()
+
     query = db.query(Book)
     if q:
         like = f'%{q}%'
@@ -32,10 +37,10 @@ def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db
 
     result = []
     for book in books:
-        available  = len(book.available_copies)
-        loaned_cps = book.loaned_copies
-        latest_due = None
-        borrowers  = []
+        avail_count = len(book.available_copies)
+        loaned_cps  = book.loaned_copies
+        latest_due  = None
+        borrowers   = []
         for copy in loaned_cps:
             loan = db.query(Loan).filter_by(copy_id=copy.id).first()
             if loan:
@@ -43,17 +48,32 @@ def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db
                     latest_due = loan.due_date
                 if user.is_admin:
                     borrowers.append(loan.user.username)
+
+        user_loan = (
+            db.query(Loan)
+            .join(Copy)
+            .filter(Copy.book_id == book.id, Loan.user_id == user.id)
+            .first()
+        )
+
+        avg = db.query(func.avg(BookRating.rating)).filter(BookRating.book_id == book.id).scalar()
         result.append({
-            'id':         book.id,
-            'isbn':       book.isbn,
-            'title':      book.title,
-            'author':     book.author,
-            'cover_path': book.cover_path,
-            'loan_rate':  book.loan_rate,
-            'available':  available,
-            'loaned':     len(loaned_cps),
-            'latest_due': latest_due,
-            'borrowers':  borrowers,
+            'id':             book.id,
+            'isbn':           book.isbn,
+            'title':          book.title,
+            'author':         book.author,
+            'cover_path':     book.cover_path,
+            'loan_rate':      book.loan_rate,
+            'available':      avail_count,
+            'loaned':         len(loaned_cps),
+            'latest_due':     latest_due,
+            'borrowers':      borrowers,
+            'avg_rating':     round(avg, 1) if avg else None,
+            'user_loan_id':   user_loan.id if user_loan else None,
+            'user_loan_due':  user_loan.due_date.isoformat() if user_loan and user_loan.due_date else None,
+            'projected_due':  user_loan.due_date if user_loan else projected_due,
+            'borrow_allowed': borrow_allowed,
+            'borrow_reason':  borrow_reason,
         })
     return result
 
@@ -87,6 +107,9 @@ def book_detail(isbn: str, db: Session = Depends(get_db),
     from ..services.finance import can_borrow
     allowed, reason = can_borrow(db, user)
 
+    avg = db.query(func.avg(BookRating.rating)).filter(BookRating.book_id == book.id).scalar()
+    ur  = db.query(BookRating).filter_by(book_id=book.id, user_id=user.id).first()
+
     return {
         'id':             book.id,
         'isbn':           book.isbn,
@@ -103,6 +126,8 @@ def book_detail(isbn: str, db: Session = Depends(get_db),
         'user_loan_id':   user_loan.id if user_loan else None,
         'borrow_allowed': allowed,
         'borrow_reason':  reason,
+        'avg_rating':     round(avg, 1) if avg else None,
+        'user_rating':    ur.rating if ur else None,
     }
 
 
@@ -205,3 +230,35 @@ def copy_mark_broken(copy_id: int, body: BrokenRequest, db: Session = Depends(ge
 
     db.commit()
     return {'ok': True, 'book_removed': False, 'isbn': book_isbn}
+
+
+# ── Rate book ─────────────────────────────────────────────────────────────────
+
+class RateRequest(BaseModel):
+    rating: int   # 0 = clear existing, 1–9 = set / overwrite
+
+
+@router.post('/books/{isbn}/rate')
+def book_rate(isbn: str, body: RateRequest, db: Session = Depends(get_db),
+              user: User = Depends(get_current_user)):
+    if body.rating < 0 or body.rating > 9:
+        raise HTTPException(400, 'Rating must be 0–9')
+    book = db.query(Book).filter_by(isbn=isbn).first()
+    if not book:
+        raise HTTPException(404, 'Book not found')
+
+    existing = db.query(BookRating).filter_by(book_id=book.id, user_id=user.id).first()
+
+    if body.rating == 0:
+        if existing:
+            db.delete(existing)
+            db.commit()
+        return {'ok': True, 'rating': 0}
+
+    if existing:
+        existing.rating   = body.rating
+        existing.rated_at = datetime.now(timezone.utc).isoformat()
+    else:
+        db.add(BookRating(book_id=book.id, user_id=user.id, rating=body.rating))
+    db.commit()
+    return {'ok': True, 'rating': body.rating}

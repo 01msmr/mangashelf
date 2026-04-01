@@ -47,7 +47,7 @@ async function init() {
 
     const coverHtml = data.book && data.book.cover_path
         ? `<img class="detail-cover-img" src="/static/${esc(data.book.cover_path)}" alt="">`
-        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal" style="color:#aaa;font-size:2.5em"></i></div>`;
+        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal cover-icon" style="color:#aaa"></i></div>`;
 
     const items = data.loans.map(l => `
         <a class="picker-item" href="/return.html?loan_id=${l.id}">

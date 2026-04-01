@@ -33,8 +33,12 @@
         <div class="pin-card-label" id="pin-card-label"></div>
         <div class="pin-card-user" id="pin-username"></div>
         <div style="min-height:36px"><div id="pin-error" class="pin-error"></div></div>
-        <input type="password" id="pin-text-input" class="pin-text-input"
-               inputmode="none" maxlength="4" placeholder="••••" autocomplete="off">
+        <div class="pinpad-dots" id="pin-dots-display">
+            <div class="dot" id="pin-dot-0"></div>
+            <div class="dot" id="pin-dot-1"></div>
+            <div class="dot" id="pin-dot-2"></div>
+            <div class="dot" id="pin-dot-3"></div>
+        </div>
         <div class="pinpad-grid">
             <button class="pinpad-key" data-key="1" type="button">1</button>
             <button class="pinpad-key" data-key="2" type="button">2</button>
@@ -120,19 +124,20 @@ function openPin(username) {
     pinValue   = '';
     document.getElementById('pin-username').textContent = username;
     document.getElementById('pin-error').style.display = 'none';
-    document.getElementById('pin-text-input').value = '';
     document.getElementById('pin-overlay').classList.add('active');
-    document.getElementById('pin-text-input').focus();
+    updateInput();
 }
 
 function closePinOverlay() {
     document.getElementById('pin-overlay').classList.remove('active');
     pinValue = '';
-    document.getElementById('pin-text-input').value = '';
+    updateInput();
 }
 
 function updateInput() {
-    document.getElementById('pin-text-input').value = pinValue;
+    [0,1,2,3].forEach(i => {
+        document.getElementById(`pin-dot-${i}`).classList.toggle('filled', i < pinValue.length);
+    });
 }
 
 let lockoutTimer = null;
@@ -140,7 +145,6 @@ let lockoutTimer = null;
 function startLockoutCountdown(seconds) {
     const errEl = document.getElementById('pin-error');
     document.querySelectorAll('.pinpad-key').forEach(k => k.disabled = true);
-    document.getElementById('pin-text-input').disabled = true;
     // Round up to nearest 5s step
     let remaining = Math.ceil(seconds / 5) * 5;
     function tick() {
@@ -150,7 +154,6 @@ function startLockoutCountdown(seconds) {
         errEl.style.display = 'block';
         if (remaining <= 0) {
             document.querySelectorAll('.pinpad-key').forEach(k => k.disabled = false);
-            document.getElementById('pin-text-input').disabled = false;
             errEl.style.display = 'none';
             pinValue = ''; updateInput();
             return;
@@ -195,19 +198,21 @@ document.querySelectorAll('.pinpad-key').forEach(btn => {
     });
 });
 
-// Physical keyboard / direct input on the text field
-document.getElementById('pin-text-input').addEventListener('input', function() {
-    const v = this.value.replace(/\D/g, '').slice(0, 4);
-    pinValue = v;
-    this.value = v;
-    if (pinValue.length === 4) setTimeout(submitPin, 150);
-});
-
 document.getElementById('btn-cancel').addEventListener('click', closePinOverlay);
 
 document.addEventListener('keydown', e => {
     if (!document.getElementById('pin-overlay').classList.contains('active')) return;
-    if (e.key === 'Escape') closePinOverlay();
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === 'Escape') { closePinOverlay(); return; }
+    if (/^\d$/.test(e.key) && pinValue.length < 4) {
+        pinValue += e.key;
+        updateInput();
+        if (pinValue.length === 4) setTimeout(submitPin, 150);
+    } else if (e.key === 'Backspace') {
+        pinValue = pinValue.slice(0, -1);
+        updateInput();
+    }
 });
 
 document.getElementById('pin-overlay').addEventListener('pointerdown', e => {

@@ -17,8 +17,9 @@
             <a href="/admin/settings.html" class="admin-nav-item active"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
         </nav>
         <div class="admin-body">
-            <div class="hint-aside-row" style="align-items:start;padding-top:8px">
-                <div class="card" style="max-width:420px">
+            <div class="hint-aside-row" style="align-items:start;padding-top:8px;gap:16px;flex-wrap:wrap">
+                <!-- Card 1: Library settings -->
+                <div class="card" style="max-width:380px;flex:1;min-width:280px">
                     <div class="card-header" id="card-title"></div>
                     <div class="card-body">
                         <div class="form-group mb-3">
@@ -40,7 +41,12 @@
                         </div>
                         <button class="btn btn-primary" id="btn-save"></button>
                         <div id="msg" class="fetch-status mt-2" style="display:none"></div>
-                        <hr class="divider" style="margin-top:20px">
+                    </div>
+                </div>
+                <!-- Card 2: Admin actions -->
+                <div class="card" style="max-width:380px;flex:1;min-width:280px">
+                    <div class="card-header" id="card-title-actions"></div>
+                    <div class="card-body">
                         <div class="form-group mb-3">
                             <label class="form-label" id="label-admin-pin"></label>
                             <div id="admin-pin-desc" style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:8px"></div>
@@ -59,7 +65,6 @@
                         <div id="purge-msg" class="fetch-status mt-2" style="display:none"></div>
                     </div>
                 </div>
-                <div class="hint text-muted" id="hint-aside"></div>
             </div>
         </div>
     </div>
@@ -76,6 +81,7 @@ function applyTranslations() {
     document.querySelector('.nav-label-rebuy').textContent    = Lang.t('admin.rebuy');
     document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
     document.getElementById('card-title').textContent         = Lang.t('adminSettings.cardTitle');
+    document.getElementById('card-title-actions').textContent = Lang.t('adminSettings.actionsTitle');
     document.getElementById('label-max-books').textContent    = Lang.t('adminSettings.maxBooks');
     document.getElementById('label-max-days').textContent     = Lang.t('adminSettings.maxDays');
     document.getElementById('label-default-rate').textContent = Lang.t('adminSettings.defaultRate');

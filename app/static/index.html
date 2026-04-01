@@ -11,7 +11,7 @@
 <main class="app-main">
     <div class="list-page">
         <div class="list-header">
-<div class="search-form" style="position:relative;display:flex;align-items:center">
+            <div class="search-form" style="position:relative;display:flex;align-items:center">
                 <input type="text" id="search" class="form-input search-input" placeholder="Search for books" autofocus style="padding-right:36px">
                 <button id="btn-clear-search" type="button" class="btn btn-ghost btn-sm" tabindex="-1"
                         style="display:none;position:absolute;right:4px">
@@ -22,23 +22,30 @@
             <label class="available-filter-label" id="chk-available-label">
                 <input type="checkbox" id="chk-available"> Available
             </label>
-            <a id="btn-add" href="/admin/add-book.html" class="btn btn-ghost btn-sm" style="display:none;margin-left:auto"><i class="fa-solid fa-plus"></i> <span id="btn-add-label">add Book</span></a>
+            <a id="btn-add" href="/admin/add-book.html" class="btn btn-ghost btn-sm" style="display:none;margin-left:auto">
+                <i class="fa-solid fa-plus"></i> <span id="btn-add-label">Add book</span>
+            </a>
         </div>
-<div id="book-list" class="book-list">
+        <div id="book-list" class="book-list">
             <div class="empty-state" id="initial-loading">Loading…</div>
         </div>
     </div>
 </main>
-
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function starsHtml(avg) {
+    if (!avg) return '';
+    const n = Math.round(avg);
+    const s = Array.from({length: 9}, (_, i) => i < n ? '★' : '☆');
+    const gap = '<span style="display:inline-block;width:.22em"></span>';
+    return s.slice(0,3).join('') + gap + s.slice(3,6).join('') + gap + s.slice(6,9).join('');
+}
 
 let currentUser = null;
-let openBookId  = null;
 
 async function init() {
     await Lang.load();
@@ -46,7 +53,6 @@ async function init() {
     if (!currentUser) return;
     if (currentUser.is_admin) document.getElementById('btn-add').style.display = 'inline-flex';
 
-    // Apply translations to static elements
     document.getElementById('btn-search').textContent = Lang.t('search.btn');
     document.getElementById('search').placeholder = Lang.t('search.placeholder');
     document.getElementById('btn-add-label').textContent = Lang.t('addBook.addBtn');
@@ -60,7 +66,6 @@ async function init() {
 
 /* ── Book list ──────────────────────────────────────────────── */
 async function loadBooks(q = '') {
-    openBookId = null;
     const list = document.getElementById('book-list');
     const availOnly = document.getElementById('chk-available').checked;
     list.innerHTML = `<div class="empty-state">${Lang.t('empty.loading')}</div>`;
@@ -70,159 +75,232 @@ async function loadBooks(q = '') {
             list.innerHTML = `<div class="empty-state">${Lang.t('empty.noBooks')}</div>`;
             return;
         }
-        list.innerHTML = books.map(b => {
-            const cover = b.cover_path
-                ? `<div class="book-row-cover"><img src="/static/${esc(b.cover_path)}" alt=""></div>`
-                : `<div class="book-row-cover"><div class="cover-placeholder cover-sm"><i class="fa-solid fa-book fa-flip-horizontal cover-icon-sm"></i></div></div>`;
-            const badge = b.available > 0
-                ? `<span class="status-badge status-available">${Lang.t('book.available')}</span>`
-                : `<span class="status-badge status-loaned">${Lang.t('book.allLoaned')}</span>`;
-            return `
-                <div class="book-row-wrap" id="wrap-${b.id}">
-                    <div class="book-row" onclick="toggleBook(${b.id}, '${esc(b.isbn)}')">
-                        ${cover}
-                        <div class="book-row-info">
-                            <div class="book-row-title">${esc(b.title)}</div>
-                            <div class="book-row-author">${esc(b.author || '')}</div>
-                        </div>
-                        <div class="book-row-status">${badge}</div>
-                        <i class="fa-solid fa-chevron-down book-row-chevron"></i>
-                    </div>
-                    <div class="book-panel" id="panel-${b.id}"></div>
-                </div>`;
-        }).join('');
+        list.innerHTML = books.map(b => renderBook(b)).join('');
+
+        // Attach admin mark-broken handlers
+        if (currentUser.is_admin) {
+            books.forEach(b => {
+                const btn = document.getElementById(`btn-broken-${b.id}`);
+                if (btn) btn.addEventListener('click', () => markBroken(b.id, b.isbn));
+            });
+        }
     } catch (err) {
         if (handleAuthError(err)) return;
         list.innerHTML = `<div class="empty-state">${esc(err.detail || Lang.t('empty.noBooks'))}</div>`;
     }
 }
 
-/* ── Inline book expand / collapse ──────────────────────────── */
-async function toggleBook(bookId, isbn) {
-    const wrap  = document.getElementById(`wrap-${bookId}`);
-    const panel = document.getElementById(`panel-${bookId}`);
+function renderBook(b) {
+    const cover = b.cover_path
+        ? `<img src="/static/${esc(b.cover_path)}" alt="" class="be-cover-img">`
+        : `<div class="cover-placeholder cover-sm"><i class="fa-solid fa-book fa-flip-horizontal cover-icon-sm"></i></div>`;
 
-    // Collapse if already open
-    if (openBookId === bookId) {
-        panel.classList.remove('open');
-        wrap.classList.remove('expanded');
-        openBookId = null;
-        return;
-    }
+    const starsRow = b.avg_rating
+        ? `<div class="be-stars">
+               <span class="rating-badge" role="img" aria-label="Rating ${Math.round(b.avg_rating)} of 9">${starsHtml(b.avg_rating)}</span>
+           </div>`
+        : '';
 
-    // Close previously open panel
-    if (openBookId !== null) {
-        const prevPanel = document.getElementById(`panel-${openBookId}`);
-        const prevWrap  = document.getElementById(`wrap-${openBookId}`);
-        if (prevPanel) prevPanel.classList.remove('open');
-        if (prevWrap)  prevWrap.classList.remove('expanded');
-    }
-
-    openBookId = bookId;
-    wrap.classList.add('expanded');
-    panel.innerHTML = `<div style="padding:10px;font-size:13px;color:var(--text-muted)">${Lang.t('empty.loading')}</div>`;
-    panel.classList.add('open');
-
-    try {
-        const book = await API.get(`/api/books/${encodeURIComponent(isbn)}`);
-        renderBookPanel(panel, book, bookId, isbn);
-    } catch (err) {
-        if (handleAuthError(err)) return;
-        panel.innerHTML = `<div style="padding:10px;font-size:13px" class="text-danger">${esc(err.detail || 'Error')}</div>`;
-    }
-}
-
-function renderBookPanel(panel, book, bookId, isbn) {
-    const coverHtml = book.cover_path
-        ? `<img src="/static/${esc(book.cover_path)}" alt="">`
-        : `<div class="book-panel-cover-placeholder"><i class="fa-solid fa-book fa-flip-horizontal" style="color:#aaa;font-size:2em"></i></div>`;
-
-    const avail = book.available > 0;
-    const statusBadge = avail
-        ? `<span class="status-badge status-available">${book.available} ${Lang.t('book.available')}</span>`
+    const badge = b.available > 0
+        ? `<span class="status-badge status-available">${Lang.t('book.available')}</span>`
         : `<span class="status-badge status-loaned">${Lang.t('book.allLoaned')}</span>`;
 
-    let actionHtml = '';
-    if (book.user_loan_id) {
-        actionHtml = `<a href="/return.html?loan_id=${book.user_loan_id}" class="btn btn-primary btn-sm">${Lang.t('book.return')}</a>`;
-    } else if (book.available > 0 && book.borrow_allowed) {
-        actionHtml = `<a href="/borrow.html?isbn=${encodeURIComponent(isbn)}" class="btn btn-primary btn-sm">${Lang.t('book.borrow')}</a>`;
-    } else if (!book.borrow_allowed && book.borrow_reason) {
-        const msg = book.borrow_reason === 'balance_low' ? Lang.t('book.balanceLow') : Lang.t('book.loanLimit');
-        actionHtml = `<span style="font-size:13px" class="text-warning">${esc(msg)}</span>`;
-    }
-
-    let loansHtml = '';
-    if (book.loans_info && book.loans_info.length) {
-        loansHtml = `<div class="book-panel-loans">` +
-            book.loans_info.map(l => `
-                <div class="book-panel-loan-row">
-                    ${Lang.t('book.copyNum')} #${l.copy_num} — ${Lang.t('book.due')} ${esc(fmtDate(l.due_date))}
-                    ${currentUser.is_admin && l.borrower ? `<span style="color:var(--text-dim)"> (${esc(l.borrower)})</span>` : ''}
-                </div>`
-            ).join('') + `</div>`;
-    }
-
-    let adminHtml = '';
-    if (currentUser.is_admin && book.copies && book.copies.length) {
-        const opts = book.copies.filter(c => c.status !== 'broken').map(c =>
-            `<option value="${c.id}">${Lang.t('book.copyNum')} #${c.copy_num} (${c.status})</option>`
-        ).join('');
-        if (opts) {
-            adminHtml = `
-                <div class="book-panel-admin">
-                    <div class="book-panel-admin-label">${Lang.t('book.admin')}</div>
-                    <div class="book-panel-broken-row">
-                        <select id="bc-sel-${bookId}" class="form-input form-select" style="height:36px;font-size:13px;flex:1;width:auto">${opts}</select>
-                        <input type="text" id="bc-note-${bookId}" class="form-input" placeholder="${Lang.t('book.noteHint')}" style="height:36px;font-size:13px;flex:1;width:auto">
-                        <button class="btn btn-danger btn-sm" onclick="markBroken(${bookId}, '${esc(isbn)}')">${Lang.t('book.markBroken')}</button>
-                    </div>
-                    <div class="book-panel-msg text-danger" id="bc-msg-${bookId}"></div>
-                </div>`;
+    let actionBtn = '';
+    let borrowHint = '';
+    if (b.user_loan_id) {
+        actionBtn = `<a href="/return.html?loan_id=${b.user_loan_id}" class="btn btn-primary btn-sm">${Lang.t('book.return')}</a>`;
+    } else if (b.available > 0) {
+        if (b.borrow_allowed === false) {
+            borrowHint = b.borrow_reason === 'limit_reached'
+                ? Lang.t('book.loanLimit')
+                : Lang.t('book.balanceLow');
+            actionBtn = `<button class="btn btn-primary btn-sm" disabled>${Lang.t('book.borrow')}</button>`;
+        } else {
+            actionBtn = `<button onclick="openBorrow(${b.id}, '${esc(b.isbn)}')" class="btn btn-primary btn-sm">${Lang.t('book.borrow')}</button>`;
         }
     }
 
-    panel.innerHTML = `
-        <div style="display:flex;align-items:flex-start;gap:12px;width:100%">
-            <div class="book-panel-cover">
-                ${coverHtml}
-                <div class="book-panel-isbn">${esc(isbn)}</div>
-            </div>
-            <div class="book-panel-info">
-                ${loansHtml}
-                <div class="book-panel-actions" style="margin-top:auto;justify-content:flex-end">
-                    <span style="font-size:var(--text-sm);color:var(--text-muted)">${(book.loan_rate||0.5).toFixed(2)} ${Lang.t('book.loanRate')}</span>
-                    ${actionHtml}
+    const returnDate = fmtDate(b.user_loan_due || b.projected_due);
+    const balance    = currentUser.guthaben != null ? currentUser.guthaben.toFixed(2) + ' €' : '—';
+    const loanRate   = b.loan_rate != null ? b.loan_rate.toFixed(2) + ' €' : '—';
+
+    let adminRow = '';
+    if (currentUser.is_admin && b.loaned > 0) {
+        // show borrowers for admins
+        const borrowerList = b.borrowers && b.borrowers.length
+            ? b.borrowers.map(n => esc(n)).join(', ')
+            : '';
+        if (borrowerList) adminRow = `<div class="be-borrowers">${borrowerList}</div>`;
+    }
+
+    let brokenBtn = '';
+    if (currentUser.is_admin) {
+        brokenBtn = `<button class="btn btn-ghost btn-sm be-broken-btn" id="btn-broken-${b.id}"
+                             title="${Lang.t('book.markBroken')}" style="font-size:var(--text-xs)">
+                         <i class="fa-solid fa-triangle-exclamation"></i>
+                     </button>`;
+    }
+
+    return `
+        <div class="be" id="be-${b.id}">
+            <div class="be-main">
+                <div class="be-cover">${cover}</div>
+                <div class="be-body">
+                    ${starsRow}
+                    <div class="be-title">${esc(b.title)}</div>
+                    <div class="be-author">${esc(b.author || '')}</div>
+                    ${adminRow}
+                </div>
+                <div class="be-side">
+                    ${badge}
+                    <div class="be-borrow-hint">${borrowHint}</div>
+                    ${actionBtn}
+                    ${brokenBtn}
                 </div>
             </div>
-        </div>
-        ${adminHtml}`;
+            <div class="be-strip">
+                <div class="ls-item">
+                    <span class="ls-label">${Lang.t('book.loanFee')}</span>
+                    <span class="ls-value">${loanRate}</span>
+                </div>
+                <div class="ls-item">
+                    <span class="ls-label">${Lang.t('book.balance')}</span>
+                    <span class="ls-value">${balance}</span>
+                </div>
+                <div class="ls-item">
+                    <span class="ls-label">${Lang.t('book.returnDate')}</span>
+                    <span class="ls-value${b.user_loan_due ? '' : ' ls-value-dim'}">${returnDate}</span>
+                </div>
+            </div>
+            <div class="be-broken-form" id="broken-form-${b.id}" style="display:none"></div>
+            <div class="be-borrow-drop" id="borrow-form-${b.id}" style="display:none"></div>
+        </div>`;
+}
+
+async function openBorrow(bookId, isbn) {
+    const formEl = document.getElementById(`borrow-form-${bookId}`);
+    const wasOpen = formEl.hasAttribute('data-open');
+
+    // Close any open borrow forms
+    document.querySelectorAll('.be-borrow-drop[data-open]').forEach(f => {
+        delete f.dataset.open;
+        f.style.display = 'none';
+    });
+
+    if (wasOpen) return; // clicked again → toggled closed
+
+    formEl.setAttribute('data-open', '');
+    formEl.style.display = 'block';
+    formEl.innerHTML = `<div class="be-borrow-loading text-muted">${Lang.t('empty.loading')}</div>`;
+
+    try {
+        const info = await API.get(`/api/borrow/${encodeURIComponent(isbn)}`);
+        const feeVal = info.is_donor ? (Lang.t('borrow.free') || 'Free') : (info.default_rate + ' €');
+        let adminBrokenHtml = '';
+        if (currentUser.is_admin) {
+            adminBrokenHtml = `<button class="btn btn-ghost btn-sm" id="bd-broken-${bookId}" style="opacity:.7">
+                <i class="fa-solid fa-triangle-exclamation"></i> ${Lang.t('book.markBroken')}
+            </button>`;
+        }
+        formEl.innerHTML = `
+            <div class="borrow-drop">
+                <div class="borrow-drop-strip">
+                    <div class="ls-item">
+                        <span class="ls-label">${Lang.t('book.loanFee')}</span>
+                        <span class="ls-value">${feeVal}</span>
+                    </div>
+                    <div class="ls-item">
+                        <span class="ls-label">${Lang.t('book.balance')}</span>
+                        <span class="ls-value">${info.guthaben.toFixed(2)} €</span>
+                    </div>
+                    <div class="ls-item">
+                        <span class="ls-label">${Lang.t('book.returnDate')}</span>
+                        <span class="ls-value">${info.due_date}</span>
+                    </div>
+                </div>
+                <div class="borrow-drop-btns">
+                    <button class="btn btn-primary btn-sm" id="bd-confirm-${bookId}">${Lang.t('borrow.confirm')}</button>
+                    <button class="btn btn-ghost btn-sm" id="bd-cancel-${bookId}">${Lang.t('borrow.cancelBtn') || Lang.t('return.cancelBtn')}</button>
+                    ${adminBrokenHtml}
+                </div>
+                <div class="fetch-status" id="bd-msg-${bookId}" style="display:none;margin-top:6px"></div>
+            </div>`;
+
+        document.getElementById(`bd-cancel-${bookId}`).addEventListener('click', () => {
+            formEl.removeAttribute('data-open');
+            formEl.style.display = 'none';
+        });
+
+        document.getElementById(`bd-confirm-${bookId}`).addEventListener('click', async () => {
+            const btn = document.getElementById(`bd-confirm-${bookId}`);
+            const msgEl = document.getElementById(`bd-msg-${bookId}`);
+            btn.disabled = true;
+            try {
+                const res = await API.post(`/api/borrow/${encodeURIComponent(isbn)}`, { loan_rate: info.default_rate });
+                msgEl.className = 'fetch-status text-success';
+                msgEl.textContent = res.message;
+                msgEl.style.display = 'block';
+                setTimeout(() => loadBooks(searchEl.value), 1800);
+            } catch (err) {
+                btn.disabled = false;
+                msgEl.className = 'fetch-status text-danger';
+                msgEl.textContent = err.detail || 'Failed';
+                msgEl.style.display = 'block';
+            }
+        });
+
+        if (currentUser.is_admin) {
+            const brokenBtn = document.getElementById(`bd-broken-${bookId}`);
+            if (brokenBtn) brokenBtn.addEventListener('click', () => {
+                formEl.removeAttribute('data-open');
+                formEl.style.display = 'none';
+                markBroken(bookId, isbn);
+            });
+        }
+    } catch (err) {
+        if (handleAuthError(err)) return;
+        formEl.innerHTML = `<div class="text-danger" style="padding:8px 0;font-size:13px">${esc(err.detail || 'Error')}</div>`;
+    }
 }
 
 async function markBroken(bookId, isbn) {
-    const copyId = document.getElementById(`bc-sel-${bookId}`).value;
-    const note   = document.getElementById(`bc-note-${bookId}`).value;
-    const msgEl  = document.getElementById(`bc-msg-${bookId}`);
-    msgEl.style.display = 'none';
+    const formEl = document.getElementById(`broken-form-${bookId}`);
+    if (formEl.style.display !== 'none') { formEl.style.display = 'none'; return; }
+
+    // Fetch copies
     try {
-        const res = await API.post(`/api/copies/${copyId}/broken`, { broken_note: note });
-        if (res.book_removed) {
-            openBookId = null;
-            loadBooks(searchEl.value);
-        } else {
-            // Re-fetch and redraw the panel
-            const book  = await API.get(`/api/books/${encodeURIComponent(isbn)}`);
-            const panel = document.getElementById(`panel-${bookId}`);
-            renderBookPanel(panel, book, bookId, isbn);
-        }
+        const book = await API.get(`/api/books/${encodeURIComponent(isbn)}`);
+        const opts = book.copies.filter(c => c.status !== 'broken').map(c =>
+            `<option value="${c.id}">${Lang.t('book.copyNum')} #${c.copy_num} (${c.status})</option>`
+        ).join('');
+        if (!opts) { formEl.style.display = 'none'; return; }
+        formEl.innerHTML = `
+            <div class="be-broken-inner">
+                <select id="bc-sel-${bookId}" class="form-input form-select" style="height:36px;font-size:13px;flex:1;min-width:0">${opts}</select>
+                <input type="text" id="bc-note-${bookId}" class="form-input" placeholder="${Lang.t('book.noteHint')}" style="height:36px;font-size:13px;flex:1;min-width:0">
+                <button class="btn btn-danger btn-sm" id="bc-confirm-${bookId}">${Lang.t('book.markBroken')}</button>
+            </div>
+            <div class="be-broken-msg text-danger" id="bc-msg-${bookId}" style="display:none;padding:4px 0"></div>`;
+        formEl.style.display = 'block';
+        document.getElementById(`bc-confirm-${bookId}`).addEventListener('click', async () => {
+            const copyId = document.getElementById(`bc-sel-${bookId}`).value;
+            const note   = document.getElementById(`bc-note-${bookId}`).value;
+            const msgEl  = document.getElementById(`bc-msg-${bookId}`);
+            try {
+                const res = await API.post(`/api/copies/${copyId}/broken`, { broken_note: note });
+                if (res.book_removed) loadBooks(searchEl.value);
+                else loadBooks(searchEl.value);
+            } catch (err) {
+                msgEl.textContent = err.detail || 'Failed';
+                msgEl.style.display = 'block';
+            }
+        });
     } catch (err) {
-        msgEl.textContent   = err.detail || 'Failed';
-        msgEl.style.display = 'block';
+        if (handleAuthError(err)) return;
     }
 }
 
 const searchEl = document.getElementById('search');
-
 document.getElementById('btn-search').addEventListener('click', () => loadBooks(searchEl.value));
 document.getElementById('chk-available').addEventListener('change', () => loadBooks(searchEl.value));
 searchEl.addEventListener('keydown', e => { if (e.key === 'Enter') loadBooks(searchEl.value); });
@@ -242,16 +320,16 @@ searchEl.addEventListener('input', () => {
     searchDebounce = setTimeout(() => loadBooks(searchEl.value), 300);
 });
 
-// Hardware barcode scanner (rapid keypresses → Enter) → borrow/return
+// Hardware barcode scanner (rapid keypresses → Enter)
 async function handleIsbn(isbn) {
     isbn = isbn.trim();
     if (!isbn) return;
     try {
         const res = await API.get(`/api/scan?isbn=${encodeURIComponent(isbn)}`);
-        if (res.action === 'borrow')      window.location.href = `/borrow.html?isbn=${encodeURIComponent(isbn)}`;
-        else if (res.action === 'return') window.location.href = `/return.html?loan_id=${res.loan_id}`;
+        if (res.action === 'borrow')           window.location.href = `/borrow.html?isbn=${encodeURIComponent(isbn)}`;
+        else if (res.action === 'return')      window.location.href = `/return.html?loan_id=${res.loan_id}`;
         else if (res.action === 'return_pick') window.location.href = `/return-pick.html?isbn=${encodeURIComponent(isbn)}`;
-        else if (res.action === 'add')    window.location.href = `/admin/add-book.html?isbn=${encodeURIComponent(isbn)}`;
+        else if (res.action === 'add')         window.location.href = `/admin/add-book.html?isbn=${encodeURIComponent(isbn)}`;
     } catch (err) { if (handleAuthError(err)) return; }
 }
 
@@ -267,7 +345,6 @@ document.addEventListener('keypress', e => {
         scanTimer = setTimeout(() => { scanBuffer = ''; }, 500);
     }
 });
-
 
 init();
 </script>

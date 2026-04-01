@@ -96,16 +96,16 @@ function _showAdminPinPrompt(onVerified) {
                 Your PIN &nbsp;+&nbsp; Admin PIN
             </div>
             <div id="ap-error" class="pin-error"></div>
-            <div id="ap-dots" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:16px">
-                <div id="apd-0" class="dot"></div><div id="apd-1" class="dot"></div>
-                <div id="apd-2" class="dot"></div><div id="apd-3" class="dot"></div>
-                <div style="width:14px;height:2px;background:var(--border);border-radius:1px;margin:0 2px"></div>
-                <div id="apd-4" class="dot"></div><div id="apd-5" class="dot"></div>
-                <div id="apd-6" class="dot"></div><div id="apd-7" class="dot"></div>
+            <div class="pinpad-dots" id="ap-dots" style="margin-bottom:14px">
+                <div class="dot" id="ap-dot-0"></div>
+                <div class="dot" id="ap-dot-1"></div>
+                <div class="dot" id="ap-dot-2"></div>
+                <div class="dot" id="ap-dot-3"></div>
+                <div class="dot" id="ap-dot-4" style="margin-left:10px"></div>
+                <div class="dot" id="ap-dot-5"></div>
+                <div class="dot" id="ap-dot-6"></div>
+                <div class="dot" id="ap-dot-7"></div>
             </div>
-            <input type="password" id="ap-input" class="pin-text-input"
-                   inputmode="numeric" maxlength="8" placeholder="••••••••" autocomplete="off"
-                   style="letter-spacing:10px;font-size:var(--text-base)">
             <div class="pinpad-grid">
                 <button class="pinpad-key" data-ap="1">1</button>
                 <button class="pinpad-key" data-ap="2">2</button>
@@ -126,16 +126,14 @@ function _showAdminPinPrompt(onVerified) {
         </div>`;
     document.body.appendChild(overlay);
 
-    const input  = overlay.querySelector('#ap-input');
     const errEl  = overlay.querySelector('#ap-error');
     let apPin = '';
 
     function updateDots() {
         for (let i = 0; i < 8; i++) {
-            const dot = overlay.querySelector(`#apd-${i}`);
+            const dot = overlay.querySelector(`#ap-dot-${i}`);
             if (dot) dot.classList.toggle('filled', i < apPin.length);
         }
-        input.value = apPin;
     }
 
     async function doVerify() {
@@ -149,7 +147,6 @@ function _showAdminPinPrompt(onVerified) {
             errEl.textContent = err.detail || 'Incorrect PIN.';
             errEl.style.display = 'block';
             apPin = ''; updateDots();
-            input.focus();
         }
     }
 
@@ -165,17 +162,22 @@ function _showAdminPinPrompt(onVerified) {
         });
     });
 
-    input.addEventListener('input', function() {
-        const v = this.value.replace(/\D/g, '').slice(0, 8);
-        apPin = v; updateDots();
-        if (apPin.length === 8) setTimeout(doVerify, 150);
-    });
-
     overlay.querySelector('#ap-cancel').addEventListener('click', () => {
         overlay.remove();
         window.location.href = '/index.html';
     });
 
-    input.addEventListener('keydown', e => { if (e.key === 'Escape') { overlay.remove(); window.location.href = '/index.html'; } });
-    input.focus();
+    overlay.addEventListener('keydown', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.key === 'Escape') { overlay.remove(); window.location.href = '/index.html'; return; }
+        if (/^\d$/.test(e.key) && apPin.length < 8) {
+            apPin += e.key; updateDots();
+            if (apPin.length === 8) setTimeout(doVerify, 150);
+        } else if (e.key === 'Backspace') {
+            apPin = apPin.slice(0, -1); updateDots();
+        }
+    });
+    overlay.setAttribute('tabindex', '-1');
+    overlay.focus();
 }

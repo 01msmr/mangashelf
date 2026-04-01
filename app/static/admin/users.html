@@ -75,15 +75,19 @@ async function loadUsers() {
                     <span class="lbl-hover">${u.is_admin ? '—' : 'A'}</span>
                 </button>`;
 
-            const deactivateBtn = isSelf ? '' : `
-                <button class="btn btn-ghost btn-sm" onclick="deactivate(${u.id}, ${u.active})">
-                    ${u.active ? Lang.t('adminUsers.deactivate') : Lang.t('adminUsers.activate')}
-                </button>`;
+            const hide = 'style="visibility:hidden;pointer-events:none"';
 
-            const deleteBtn = isSelf ? '' : `
-                <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">
-                    ${Lang.t('adminUsers.delete')}
-                </button>`;
+            const forcePinBtn = isSelf
+                ? `<button class="btn btn-ghost btn-sm" ${hide}>${Lang.t('adminUsers.forcePin')}</button>`
+                : `<button class="btn btn-ghost btn-sm" onclick="forcePin(${u.id})">${Lang.t('adminUsers.forcePin')}</button>`;
+
+            const deactivateBtn = isSelf
+                ? `<button class="btn btn-ghost btn-sm" ${hide}>${u.active ? Lang.t('adminUsers.deactivate') : Lang.t('adminUsers.activate')}</button>`
+                : `<button class="btn btn-ghost btn-sm" onclick="deactivate(${u.id}, ${u.active})">${u.active ? Lang.t('adminUsers.deactivate') : Lang.t('adminUsers.activate')}</button>`;
+
+            const deleteBtn = isSelf
+                ? `<button class="btn btn-danger btn-sm" ${hide}>${Lang.t('adminUsers.delete')}</button>`
+                : `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">${Lang.t('adminUsers.delete')}</button>`;
 
             return `
                 <div id="wrap-${u.id}">
@@ -121,7 +125,7 @@ async function loadUsers() {
                             <input type="text" inputmode="none" maxlength="4" placeholder="PIN"
                                    id="pin-${u.id}" class="form-input adjust-amount pin-admin-input">
                             <button class="btn btn-ghost btn-sm" onclick="setPin(${u.id})">${Lang.t('adminUsers.setPin')}</button>
-                            <button class="btn btn-ghost btn-sm" onclick="forcePin(${u.id})">${Lang.t('adminUsers.forcePin')}</button>
+                            ${forcePinBtn}
                             ${deactivateBtn}
                             ${deleteBtn}
                         </div>

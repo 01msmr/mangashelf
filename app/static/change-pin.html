@@ -6,89 +6,79 @@
     <title>MangaShelf — Change PIN</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body>
-<header id="site-header" class="app-header"></header>
-<main class="app-main">
-    <div class="auth-page">
-        <div class="hint-aside-row">
-            <div class="auth-card">
-                <div class="auth-title" id="change-pin-title"></div>
-                <div class="error-spacer"><div id="error-box" class="auth-error" style="display:none"></div></div>
-                <div class="auth-form">
-                    <div class="form-group">
-                        <label class="form-label" id="label-current-pin"></label>
-                        <div class="input-with-btn">
-                            <input type="password" id="current-pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
-                            <button type="button" id="btn-numpad-current" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" id="label-new-pin"></label>
-                        <div class="input-with-btn">
-                            <input type="password" id="new-pin" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
-                            <button type="button" id="btn-numpad-new" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" id="label-confirm-pin"></label>
-                        <div class="input-with-btn">
-                            <input type="password" id="pin-confirm" class="form-input" inputmode="none" maxlength="4" style="flex:1;padding-right:36px">
-                            <button type="button" id="btn-numpad-confirm" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:10px">
-                        <button class="btn btn-primary" style="flex:1" id="btn-save"></button>
-                        <a href="/account.html" class="btn btn-ghost" id="btn-cancel-link"></a>
-                    </div>
-                </div>
-            </div>
-            <div class="hint text-muted" id="hint-aside">
-            </div>
+<body class="login-page">
+<div style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+    <div class="pin-card">
+        <div class="auth-title" id="page-title" style="margin-bottom:16px"></div>
+        <div id="pin-step"></div>
+        <div class="pin-actions" style="margin-top:10px">
+            <a href="/account.html" class="btn btn-ghost" style="flex:1;text-align:center" id="btn-cancel"></a>
         </div>
     </div>
-</main>
+</div>
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
-<script src="/static/js/numpad.js"></script>
+<script src="/static/js/pin.js"></script>
 <script>
-const errorBox = document.getElementById('error-box');
+let currentPinVal = '';
+let newPinVal = '';
 
 async function applyTranslations() {
     await Lang.load();
-    document.getElementById('change-pin-title').textContent  = Lang.t('changePin.title');
-    document.getElementById('label-current-pin').textContent = Lang.t('changePin.currentLabel');
-    document.getElementById('label-new-pin').textContent     = Lang.t('changePin.newLabel');
-    document.getElementById('label-confirm-pin').textContent = Lang.t('changePin.confirmLabel');
-    document.getElementById('btn-save').textContent          = Lang.t('changePin.saveBtn');
-    document.getElementById('btn-cancel-link').textContent   = Lang.t('changePin.cancelBtn');
-    document.getElementById('hint-aside').innerHTML = `
-        <p>${Lang.t('changePin.hint1')}</p>
-        <p>${Lang.t('changePin.hint2')}</p>
-    `;
+    document.getElementById('page-title').textContent  = Lang.t('changePin.title');
+    document.getElementById('btn-cancel').textContent  = Lang.t('changePin.cancelBtn');
 }
 
-attachNumpad(document.getElementById('current-pin'), document.getElementById('btn-numpad-current'), { keepFocus: true });
-attachNumpad(document.getElementById('new-pin'), document.getElementById('btn-numpad-new'), { keepFocus: true });
-attachNumpad(document.getElementById('pin-confirm'), document.getElementById('btn-numpad-confirm'), { keepFocus: true });
+function watchDots(step, pf, onFull) {
+    const obs = new MutationObserver(() => {
+        if (pf.getValue().length === 4) { obs.disconnect(); setTimeout(onFull, 200); }
+    });
+    obs.observe(step.querySelector('.pf-dots'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+}
 
-document.getElementById('btn-save').addEventListener('click', async () => {
-    hideError(errorBox);
-    const current_pin = document.getElementById('current-pin').value.trim();
-    const pin         = document.getElementById('new-pin').value.trim();
-    const pin_confirm = document.getElementById('pin-confirm').value.trim();
-    try {
-        await API.post('/api/account/change-pin', { current_pin, pin, pin_confirm });
-        window.location.href = '/account.html';
-    } catch (err) {
-        if (handleAuthError(err)) return;
-        showError(errorBox, err.detail || Lang.t('changePin.saveBtn'));
-    }
+function showStep1() {
+    const step = document.getElementById('pin-step');
+    const pf = makePinField(step, Lang.t('changePin.currentLabel'), 4);
+    watchDots(step, pf, () => { currentPinVal = pf.getValue(); showStep2(); });
+}
+
+function showStep2() {
+    const step = document.getElementById('pin-step');
+    const pf = makePinField(step, Lang.t('changePin.newLabel'), 4);
+    watchDots(step, pf, () => { newPinVal = pf.getValue(); showStep3(); });
+}
+
+function showStep3() {
+    const step = document.getElementById('pin-step');
+    const pf = makePinField(step, Lang.t('changePin.confirmLabel'), 4);
+    watchDots(step, pf, async () => {
+        const confirm = pf.getValue();
+        if (confirm !== newPinVal) {
+            pf.showError(Lang.t('setupPin.mismatch') || 'PINs do not match');
+            pf.reset();
+            return;
+        }
+        try {
+            await API.post('/api/account/change-pin', {
+                current_pin: currentPinVal,
+                pin: newPinVal,
+                pin_confirm: confirm,
+            });
+            window.location.href = '/account.html';
+        } catch (err) {
+            if (handleAuthError(err)) return;
+            pf.showError(err.detail || 'Error');
+            pf.reset();
+        }
+    });
+}
+
+applyTranslations().then(() => {
+    initPage();
+    showStep1();
 });
-
-applyTranslations();
-initPage();
 </script>
 </body>
 </html>

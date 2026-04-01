@@ -25,8 +25,16 @@
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
+<script src="/static/js/rating.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function starsHtml(avg) {
+    if (!avg) return '';
+    const n = Math.round(avg);
+    const s = Array.from({length: 9}, (_, i) => i < n ? '★' : '☆');
+    const gap = '<span style="display:inline-block;width:.22em"></span>';
+    return s.slice(0,3).join('') + gap + s.slice(3,6).join('') + gap + s.slice(6,9).join('');
+}
 
 async function init() {
     await Lang.load();
@@ -52,7 +60,7 @@ async function init() {
 
     const coverHtml = book.cover_path
         ? `<img class="detail-cover-img" src="/static/${esc(book.cover_path)}" alt="">`
-        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal cover-icon"></i></div>`;
+        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal cover-icon" style="color:#aaa"></i></div>`;
 
     const avail = book.available > 0;
     const statusBadge = avail
@@ -103,6 +111,10 @@ async function init() {
         }
     }
 
+    const avgBadge = book.avg_rating
+        ? `<span class="rating-badge" style="margin-left:6px" title="${book.avg_rating}/9">${starsHtml(book.avg_rating)}</span>`
+        : '';
+
     document.getElementById('detail-body').innerHTML = `
         <div class="detail-cover-wrap" style="flex-direction:column;gap:6px;align-items:flex-start">
             ${coverHtml}
@@ -113,16 +125,19 @@ async function init() {
             <div class="detail-author">${esc(book.author || '')}</div>
             <div class="detail-meta">${book.publisher ? esc(book.publisher) + (book.published ? ' · ' + esc(book.published) : '') : ''}</div>
             <div class="detail-meta">${Lang.t('book.loanRateLabel')} ${(book.loan_rate || 0.5).toFixed(2)} €</div>
-            <div class="detail-availability">${statusBadge}</div>
+            <div class="detail-availability">${statusBadge}${avgBadge}</div>
             ${actionHtml}
             ${loansHtml}
             ${brokenHtml}
+            <div id="rating-section"></div>
         </div>
         <div class="page-hint text-muted">
             <p>${Lang.t('book.borrowHint1')}</p>
             <p>${Lang.t('book.borrowHint2')}</p>
         </div>
     `;
+
+    renderRatingSection(book, isbn);
 
     if (user.is_admin) {
         const btnBroken = document.getElementById('btn-broken');
@@ -142,6 +157,87 @@ async function init() {
             });
         }
     }
+}
+
+function renderRatingSection(book, isbn) {
+    const sec = document.getElementById('rating-section');
+    if (!sec) return;
+
+    // Show rating UI only if user has an active loan or an existing rating
+    const canRate = book.user_loan_id || book.user_rating != null;
+    if (!canRate) return;
+
+    if (book.user_rating != null) {
+        // Show existing rating with an edit button
+        sec.innerHTML = `
+            <div class="rating-section">
+                <div class="rating-section-inline">
+                    <span style="font-size:var(--text-sm);color:var(--text-muted)">${Lang.t('rating.yourRating')}:</span>
+                    <span class="rating-badge" style="font-size:var(--text-base)">★ ${book.user_rating}</span>
+                    <button class="btn btn-ghost btn-sm rating-edit-expand" id="btn-edit-rating">${Lang.t('rating.edit')}</button>
+                </div>
+                <div id="rating-edit-area" style="display:none;margin-top:10px"></div>
+            </div>`;
+
+        document.getElementById('btn-edit-rating').addEventListener('click', () => {
+            const area = document.getElementById('rating-edit-area');
+            if (area.style.display === 'none') {
+                area.style.display = 'block';
+                mountRatingEditor(area, book.user_rating, isbn);
+                document.getElementById('btn-edit-rating').textContent = Lang.t('rating.skip');
+            } else {
+                area.style.display = 'none';
+                document.getElementById('btn-edit-rating').textContent = Lang.t('rating.edit');
+            }
+        });
+    } else {
+        // User has active loan but no rating yet
+        sec.innerHTML = `
+            <div class="rating-section">
+                <div class="rating-section-inline">
+                    <span style="font-size:var(--text-sm);color:var(--text-muted)">${Lang.t('rating.rateThis')}</span>
+                    <button class="btn btn-ghost btn-sm rating-edit-expand" id="btn-open-rating">${Lang.t('rating.rateThis')}</button>
+                </div>
+                <div id="rating-edit-area" style="display:none;margin-top:10px"></div>
+            </div>`;
+
+        document.getElementById('btn-open-rating').addEventListener('click', () => {
+            const area = document.getElementById('rating-edit-area');
+            if (area.style.display === 'none') {
+                area.style.display = 'block';
+                mountRatingEditor(area, 0, isbn);
+                document.getElementById('btn-open-rating').style.display = 'none';
+            }
+        });
+    }
+}
+
+function mountRatingEditor(container, initial, isbn) {
+    container.innerHTML = `
+        <div id="inline-slider"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-primary btn-sm flex-1" id="btn-rate-save">${Lang.t('rating.save')}</button>
+        </div>
+        <div id="rate-msg" style="font-size:var(--text-sm);margin-top:6px;display:none"></div>`;
+
+    const slider = createRatingSlider(document.getElementById('inline-slider'), initial);
+
+    document.getElementById('btn-rate-save').addEventListener('click', async () => {
+        const v = slider.getValue();
+        const msgEl = document.getElementById('rate-msg');
+        try {
+            await API.post(`/api/books/${encodeURIComponent(isbn)}/rate`, { rating: v });
+            msgEl.className = 'text-success';
+            msgEl.textContent = v > 0 ? Lang.t('rating.saved') + ' ★ ' + v : Lang.t('rating.skip');
+            msgEl.style.display = 'block';
+            // Refresh the section after a brief pause
+            setTimeout(() => window.location.reload(), 800);
+        } catch (err) {
+            msgEl.className = 'text-danger';
+            msgEl.textContent = err.detail || 'Error';
+            msgEl.style.display = 'block';
+        }
+    });
 }
 
 init();

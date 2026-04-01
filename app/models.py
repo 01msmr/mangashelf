@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, Float, Text, ForeignKey
+from sqlalchemy import Column, Integer, Float, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 import bcrypt
 
@@ -117,6 +117,18 @@ class RebuyItem(Base):
 
     book = relationship('Book', foreign_keys=[book_id])
     copy = relationship('Copy', back_populates='rebuy')
+
+
+class BookRating(Base):
+    __tablename__ = 'book_ratings'
+
+    id       = Column(Integer, primary_key=True)
+    book_id  = Column(Integer, ForeignKey('books.id'), nullable=False)
+    user_id  = Column(Integer, ForeignKey('users.id'), nullable=False)
+    rating   = Column(Integer, nullable=False)   # 1–9
+    rated_at = Column(Text, default=lambda: datetime.now(timezone.utc).isoformat())
+
+    __table_args__ = (UniqueConstraint('book_id', 'user_id', name='uq_book_user_rating'),)
 
 
 class Setting(Base):

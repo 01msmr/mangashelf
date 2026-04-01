@@ -13,6 +13,7 @@
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
+<script src="/static/js/pin.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -38,46 +39,55 @@ async function tryLoadAccount() {
 
 function renderVerify() {
     document.getElementById('main-content').innerHTML = `
-        <div class="auth-page">
-            <div class="hint-aside-row">
-                <div class="auth-card">
-                    <div class="auth-title">${Lang.t('acct.verify.title')}</div>
-                    <div class="auth-subtitle">${Lang.t('acct.verify.subtitle')}</div>
-                    <div id="verify-error" class="auth-error" style="display:none"></div>
-                    <div class="auth-form">
-                        <input type="password" id="verify-pin" class="form-input form-input-pin"
-                               inputmode="none" maxlength="4" placeholder="••••">
-                        <button class="btn btn-primary btn-block" id="btn-verify">${Lang.t('acct.verify.btn')}</button>
-                    </div>
-                </div>
-                <div class="hint text-muted">
-                    <p>${Lang.t('acct.verify.hint1')}</p>
-                    <p>${Lang.t('acct.verify.hint2')}</p>
-                </div>
+        <div style="display:flex;align-items:center;justify-content:center;flex:1">
+            <div class="pin-card">
+                <div class="pin-card-label" id="verify-label"></div>
+                <div class="pin-card-user" id="verify-subtitle"></div>
+                <div id="verify-error" class="pin-error" style="display:none;margin-bottom:8px"></div>
+                <div id="verify-pin-step"></div>
             </div>
         </div>
     `;
+    document.getElementById('verify-label').textContent    = Lang.t('acct.verify.title');
+    document.getElementById('verify-subtitle').textContent = Lang.t('acct.verify.subtitle');
 
-    const pinEl = document.getElementById('verify-pin');
-    pinEl.focus();
+    const step = document.getElementById('verify-pin-step');
+    const pf = makePinField(step, '', 4);
+
+    const errEl = document.getElementById('verify-error');
 
     async function doVerify() {
-        const pin   = pinEl.value.trim();
-        const errEl = document.getElementById('verify-error');
-        hideError(errEl);
+        const pin = pf.getValue();
+        errEl.style.display = 'none';
         try {
             await API.post('/api/account/verify', { pin });
+            document.removeEventListener('keydown', keyHandler);
             tryLoadAccount();
         } catch (err) {
-            showError(errEl, err.detail || Lang.t('acct.verify.wrongPin'));
-            pinEl.value = '';
-            pinEl.focus();
+            errEl.textContent = err.detail || Lang.t('acct.verify.wrongPin');
+            errEl.style.display = 'block';
+            pf.reset();
         }
     }
 
-    document.getElementById('btn-verify').addEventListener('click', doVerify);
-    pinEl.addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
-    pinEl.addEventListener('input', () => { if (pinEl.value.length === 4) setTimeout(doVerify, 150); });
+    // Watch for 4 digits
+    const obs = new MutationObserver(() => {
+        if (pf.getValue().length === 4) { obs.disconnect(); setTimeout(doVerify, 200); }
+    });
+    obs.observe(step.querySelector('.pf-dots'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+
+    function keyHandler(e) {
+        e.preventDefault(); e.stopPropagation();
+        if (e.key === 'Escape') { document.removeEventListener('keydown', keyHandler); return; }
+        if (/^\d$/.test(e.key) && pf.getValue().length < 4) {
+            const btn = step.querySelector(`.pinpad-key[data-k="${e.key}"]`);
+            if (btn) btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        } else if (e.key === 'Backspace') {
+            const btn = step.querySelector('.pinpad-key[data-k="back"]');
+            if (btn) btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        }
+    }
+    document.addEventListener('keydown', keyHandler);
 }
 
 function showQr(src) {
