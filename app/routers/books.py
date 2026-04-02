@@ -56,7 +56,7 @@ def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db
             .first()
         )
 
-        avg = db.query(func.avg(BookRating.rating)).filter(BookRating.book_id == book.id).scalar()
+        avg, rating_count = db.query(func.avg(BookRating.rating), func.count(BookRating.rating)).filter(BookRating.book_id == book.id).one()
         result.append({
             'id':             book.id,
             'isbn':           book.isbn,
@@ -69,6 +69,7 @@ def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db
             'latest_due':     latest_due,
             'borrowers':      borrowers,
             'avg_rating':     round(avg, 1) if avg else None,
+            'rating_count':   rating_count,
             'user_loan_id':   user_loan.id if user_loan else None,
             'user_loan_due':  user_loan.due_date.isoformat() if user_loan and user_loan.due_date else None,
             'projected_due':  user_loan.due_date if user_loan else projected_due,

@@ -526,7 +526,7 @@ html, body {
 .be-cover-img { width: 79px; height: 115px; object-fit: cover; border-radius: 6px; display: block; }
 
 .be-body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-top: 2px; }
-.be-stars { margin-bottom: 4px; line-height: 1; }
+.be-stars { margin-bottom: 4px; line-height: 1; height: 30px; flex-shrink: 0; white-space: nowrap; }
 .be-title {
     font-size: 1.92rem;
     font-weight: 700;
@@ -554,8 +554,25 @@ html, body {
     gap: 8px;
     padding-top: 2px;
 }
+.be-action-wrap { height: 44px; display: flex; align-items: center; justify-content: flex-end; }
 .be-broken-btn { opacity: 0.5; padding: 0 8px; }
 .be-broken-btn:hover { opacity: 1; }
+
+/* JS tooltip — see initTooltips() in nav.js */
+#js-tooltip {
+    position: fixed;
+    background: #1a1a2e;
+    color: var(--text);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 9000;
+    display: none;
+}
 .be-borrow-hint {
     min-height: 1.2em;
     font-size: var(--text-xs);
@@ -729,7 +746,7 @@ html, body {
 .isbn-row { display: flex; gap: 8px; }
 .isbn-row .form-input { flex: 1; }
 
-.fetch-status { font-size: var(--text-sm); color: var(--text-muted); min-height: 18px; margin-top: 2px; }
+.fetch-status { font-size: var(--text-sm); min-height: 18px; margin-top: 2px; }
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 .form-select {
@@ -915,7 +932,7 @@ html, body {
 /* ── User list ──────────────────────────────────────────────── */
 .user-list { display: flex; flex-direction: column; gap: 6px; }
 
-.user-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.user-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 
 .user-main { display: flex; align-items: center; gap: 10px; padding: 10px 14px; min-height: 58px; }
 
@@ -964,8 +981,15 @@ html, body {
 /* ── Inline balance adjust form ─────────────────────────────── */
 .user-adjust { border-top: 1px solid var(--border); padding: 10px 14px; background: var(--surface); }
 .adjust-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.adjust-amount { width: 110px; height: 48px; font-size: var(--text-sm); }
-.adjust-reason { flex: 0 1 80px; min-width: 60px; height: 48px; font-size: var(--text-sm); }
+.adjust-amount { width: 73px; height: 32px; font-size: var(--text-sm); padding: 0 8px; }
+.adjust-amount.pin-admin-input { width: 60px; }
+.adjust-amount::-webkit-inner-spin-button,
+.adjust-amount::-webkit-outer-spin-button,
+.adjust-amount::-webkit-clear-button,
+.adjust-amount::-ms-clear { display: none; }
+.adjust-amount { -moz-appearance: textfield; appearance: textfield; }
+.adjust-icon-btn { cursor: pointer; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; padding: 0; }
+.adjust-kbd-btn { width: 44px; height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 
 /* ── Overdue list ───────────────────────────────────────────── */
 .overdue-list { display: flex; flex-direction: column; gap: 6px; }
@@ -1205,7 +1229,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .input-with-btn { position: relative; display: inline-flex; align-items: center; }
 .input-with-btn .btn-inside      { position: absolute; right: 2px; }
 .input-with-btn .btn-inside-left { position: absolute; left: 4px; }
-.pin-admin-input { letter-spacing: 4px; text-align: center; -webkit-text-security: disc; padding-right: 32px; }
+.pin-admin-input { letter-spacing: 4px; text-align: center; -webkit-text-security: disc; }
 .error-spacer { min-height: 44px; }
 
 /* ── Responsive overrides (phones + tablets ≤ 1024px) ──────── */

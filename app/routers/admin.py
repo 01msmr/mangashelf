@@ -197,6 +197,8 @@ def user_adjust(user_id: int, body: AdjustRequest, db: Session = Depends(get_db)
     if amount < 0 and user.guthaben + amount < 0:
         raise HTTPException(400,
             f'Cannot debit {abs(amount):.2f} € — balance would go negative ({user.guthaben:.2f} €).')
+    if amount > 0 and user.guthaben + amount > 100:
+        raise HTTPException(400, 'Balance cannot exceed 100 €')
 
     reason = (body.reason or '').strip() or 'Admin adjustment'
     user.guthaben = round(user.guthaben + amount, 2)

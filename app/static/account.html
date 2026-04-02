@@ -107,7 +107,7 @@ function renderAccount(data) {
                    : data.balance_status === 'warn' ? 'balance-warn'
                    : 'balance-danger';
     const balHint  = data.balance_status === 'ok'  ? Lang.t('acct.canBorrow')
-                   : data.balance_status === 'warn' ? Lang.t('acct.warnFunds', { min: data.borrow_min.toFixed(2) })
+                   : data.balance_status === 'warn' ? Lang.t('acct.warnFunds', { min: fmtEur(data.borrow_min).replace(' €','') })
                    : Lang.t('acct.empty');
 
     const topupBtns = [1, 2, 5, 10, 20].map(a =>
@@ -140,7 +140,7 @@ function renderAccount(data) {
         ? `<div class="txn-list">${data.recent_txns.map(t => {
             const cls = t.amount > 0 ? 'txn-credit' : t.amount < 0 ? 'txn-debit' : 'txn-neutral';
             const amtStr = t.amount !== 0
-                ? (t.amount > 0 ? '+' : '') + t.amount.toFixed(2) + ' €'
+                ? (t.amount > 0 ? '+' : '') + fmtEur(t.amount)
                 : '—';
             return `
                 <div class="txn-row">
@@ -164,7 +164,7 @@ function renderAccount(data) {
             <div class="lang-switcher-row">
                 <span class="lang-switcher-label">${Lang.t('acct.language')}</span>
                 <div class="lang-switcher">${langBtns}</div>
-                <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="showQr('/user-qr/${data.id}.png')" title="Login QR">
+                <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="showQr('/user-qr/${data.id}.png')" data-tip="Login QR">
                     <i class="fa-solid fa-qrcode" style="font-size:22px"></i>
                 </button>
             </div>
@@ -173,7 +173,7 @@ function renderAccount(data) {
                     <div class="acct-section-title">${Lang.t('acct.balance')}</div>
                     <div class="balance-card ${balClass}">
                         <span class="balance-label">${Lang.t('acct.balance')}</span>
-                        <span class="balance-amount">${data.guthaben.toFixed(2)} €</span>
+                        <span class="balance-amount">${fmtEur(data.guthaben)}</span>
                         <span class="balance-hint">${balHint}</span>
                     </div>
                 </div>

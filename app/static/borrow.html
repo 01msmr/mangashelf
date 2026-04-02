@@ -74,7 +74,7 @@ async function init() {
             <div class="action-details">
                 <div class="detail-row">
                     <span class="dr-label">${Lang.t('borrow.balance')}</span>
-                    <span class="dr-value">${info.guthaben.toFixed(2)} €</span>
+                    <span class="dr-value">${fmtEur(info.guthaben)}</span>
                 </div>
                 ${info.is_donor ? `
                 <div class="detail-row">

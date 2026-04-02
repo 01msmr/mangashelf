@@ -129,6 +129,8 @@ def topup(body: TopupRequest, request: Request, db: Session = Depends(get_db),
         raise HTTPException(400, 'Amount must be greater than zero.')
     if amount > _TOPUP_MAX:
         raise HTTPException(400, f'Maximum top-up per transaction is {_TOPUP_MAX:.2f} €.')
+    if user.guthaben + amount > 100:
+        raise HTTPException(400, 'Balance cannot exceed 100 €')
 
     user.guthaben = round(user.guthaben + amount, 2)
     db.add(Transaction(

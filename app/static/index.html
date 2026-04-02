@@ -95,11 +95,9 @@ function renderBook(b) {
         ? `<img src="/static/${esc(b.cover_path)}" alt="" class="be-cover-img">`
         : `<div class="cover-placeholder cover-sm"><i class="fa-solid fa-book fa-flip-horizontal cover-icon-sm"></i></div>`;
 
-    const starsRow = b.avg_rating
-        ? `<div class="be-stars">
-               <span class="rating-badge" role="img" aria-label="Rating ${Math.round(b.avg_rating)} of 9">${starsHtml(b.avg_rating)}</span>
-           </div>`
-        : '';
+    const starsRow = `<div class="be-stars">${b.avg_rating
+        ? `<span class="rating-badge" role="img" aria-label="Rating ${Math.round(b.avg_rating)} of 9" style="white-space:nowrap">${starsHtml(b.avg_rating)}</span>${b.rating_count ? `<span style="font-size:0.75em;color:var(--text-muted);margin-left:12px;white-space:nowrap">${b.rating_count} <i class="fa-solid fa-square-check"></i></span>` : ''}`
+        : ''}</div>`;
 
     const badge = b.available > 0
         ? `<span class="status-badge status-available">${Lang.t('book.available')}</span>`
@@ -121,8 +119,8 @@ function renderBook(b) {
     }
 
     const returnDate = fmtDate(b.user_loan_due || b.projected_due);
-    const balance    = currentUser.guthaben != null ? currentUser.guthaben.toFixed(2) + ' €' : '—';
-    const loanRate   = b.loan_rate != null ? b.loan_rate.toFixed(2) + ' €' : '—';
+    const balance    = fmtEur(currentUser.guthaben);
+    const loanRate   = b.loan_rate != null ? fmtEur(b.loan_rate) : '—';
 
     let adminRow = '';
     if (currentUser.is_admin && b.loaned > 0) {
@@ -136,7 +134,7 @@ function renderBook(b) {
     let brokenBtn = '';
     if (currentUser.is_admin) {
         brokenBtn = `<button class="btn btn-ghost btn-sm be-broken-btn" id="btn-broken-${b.id}"
-                             title="${Lang.t('book.markBroken')}" style="font-size:var(--text-xs)">
+                             data-tip="${Lang.t('book.markBroken')}" style="font-size:var(--text-xs)">
                          <i class="fa-solid fa-triangle-exclamation"></i>
                      </button>`;
     }
@@ -154,7 +152,7 @@ function renderBook(b) {
                 <div class="be-side">
                     ${badge}
                     <div class="be-borrow-hint">${borrowHint}</div>
-                    ${actionBtn}
+                    <div class="be-action-wrap">${actionBtn}</div>
                     ${brokenBtn}
                 </div>
             </div>
@@ -211,7 +209,7 @@ async function openBorrow(bookId, isbn) {
                     </div>
                     <div class="ls-item">
                         <span class="ls-label">${Lang.t('book.balance')}</span>
-                        <span class="ls-value">${info.guthaben.toFixed(2)} €</span>
+                        <span class="ls-value">${fmtEur(info.guthaben)}</span>
                     </div>
                     <div class="ls-item">
                         <span class="ls-label">${Lang.t('book.returnDate')}</span>

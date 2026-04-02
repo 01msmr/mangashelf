@@ -51,10 +51,8 @@
                             <label class="form-label" id="label-admin-pin"></label>
                             <div id="admin-pin-desc" style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:8px"></div>
                             <div style="display:flex;gap:8px;align-items:center">
-                                <div class="input-with-btn" style="flex:1">
-                                    <input type="password" id="new-admin-pin" class="form-input pin-admin-input" inputmode="none" maxlength="4" placeholder="••••">
-                                    <button type="button" id="btn-numpad-admin-pin" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" title="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                                </div>
+                                <input type="password" id="new-admin-pin" class="form-input pin-admin-input" inputmode="none" maxlength="4" placeholder="••••" style="flex:1">
+                                <button type="button" id="btn-numpad-admin-pin" class="btn btn-ghost btn-sm" tabindex="-1" data-tip="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                                 <button class="btn btn-ghost btn-sm" id="btn-set-admin-pin"></button>
                             </div>
                             <div id="admin-pin-msg" class="fetch-status mt-1" style="display:none"></div>
@@ -91,11 +89,6 @@ function applyTranslations() {
     document.getElementById('btn-set-admin-pin').textContent  = Lang.t('adminSettings.setPinBtn');
     document.getElementById('purge-desc').textContent         = Lang.t('adminSettings.purgeDesc');
     document.getElementById('btn-purge').textContent          = Lang.t('adminSettings.purgeBtn');
-    document.getElementById('hint-aside').innerHTML = `
-        <p><strong>${Lang.t('adminSettings.maxBooks')}</strong><br>${Lang.t('adminSettings.hintMaxBooks')}</p>
-        <p><strong>${Lang.t('adminSettings.maxDays')}</strong><br>${Lang.t('adminSettings.hintLoanDays')}</p>
-        <p><strong>${Lang.t('adminSettings.defaultRate')}</strong><br>${Lang.t('adminSettings.hintDefaultRate')}</p>
-    `;
 }
 
 async function init() {

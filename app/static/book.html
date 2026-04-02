@@ -112,7 +112,7 @@ async function init() {
     }
 
     const avgBadge = book.avg_rating
-        ? `<span class="rating-badge" style="margin-left:6px" title="${book.avg_rating}/9">${starsHtml(book.avg_rating)}</span>`
+        ? `<span class="rating-badge" style="margin-left:6px" data-tip="${book.avg_rating}/9">${starsHtml(book.avg_rating)}</span>`
         : '';
 
     document.getElementById('detail-body').innerHTML = `
@@ -124,7 +124,7 @@ async function init() {
             <div class="detail-title">${esc(book.title)}</div>
             <div class="detail-author">${esc(book.author || '')}</div>
             <div class="detail-meta">${book.publisher ? esc(book.publisher) + (book.published ? ' · ' + esc(book.published) : '') : ''}</div>
-            <div class="detail-meta">${Lang.t('book.loanRateLabel')} ${(book.loan_rate || 0.5).toFixed(2)} €</div>
+            <div class="detail-meta">${Lang.t('book.loanRateLabel')} ${fmtEur(book.loan_rate || 0.5)}</div>
             <div class="detail-availability">${statusBadge}${avgBadge}</div>
             ${actionHtml}
             ${loansHtml}

@@ -63,6 +63,41 @@ function startIdleTimer() {
     reset();
 }
 
+/* ── JS tooltip ───────────────────────────────────────────────────────────── */
+
+(function () {
+    let tip = null;
+
+    function getTip() {
+        if (!tip) {
+            tip = document.createElement('div');
+            tip.id = 'js-tooltip';
+            document.body.appendChild(tip);
+        }
+        return tip;
+    }
+
+    document.addEventListener('mouseover', function (e) {
+        const el = e.target.closest('[data-tip]');
+        if (!el) return;
+        const t = getTip();
+        t.textContent = el.dataset.tip;
+        t.style.display = 'block';
+        // Position after display so offsetWidth is known
+        const r = el.getBoundingClientRect();
+        const tw = t.offsetWidth;
+        t.style.top  = (r.bottom + 6) + 'px';
+        t.style.left = (r.right - tw) + 'px';
+    });
+
+    document.addEventListener('mouseout', function (e) {
+        const el = e.target.closest('[data-tip]');
+        if (!el) return;
+        const t = getTip();
+        t.style.display = 'none';
+    });
+})();
+
 /* ── Admin section PIN gate ───────────────────────────────────────────────── */
 
 /**

@@ -29,6 +29,12 @@ const API = {
     delete: (path)        => api('DELETE', path),
 };
 
+/** Format euro amount — omits decimals when whole number */
+function fmtEur(n) {
+    if (n == null) return '—';
+    return (n % 1 === 0 ? Math.round(n).toString() : n.toFixed(2)) + ' €';
+}
+
 /** Format ISO date string as DD.MM.YYYY */
 function fmtDate(iso) {
     if (!iso) return '';

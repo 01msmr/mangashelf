@@ -1,8 +1,6 @@
 # MangaShelf
 
 A self-hosted manga/book lending kiosk built for a Raspberry Pi touchscreen.
-Users browse books, borrow and return them, top up a balance, and manage their account — all from a 800 × 480 touch display without a keyboard.
-
 ![Book List](app/static/../style_screenshots/kiosk_Book_list.png)
 
 ---
@@ -110,6 +108,13 @@ erDiagram
         text added_at
         int resolved
     }
+    BookRating {
+        int id PK
+        int book_id FK
+        int user_id FK
+        int rating
+        text rated_at
+    }
     Setting {
         text key PK
         text value
@@ -117,7 +122,9 @@ erDiagram
 
     User ||--o{ Loan : "borrows"
     User ||--o{ Transaction : "has"
+    User ||--o{ BookRating : "rates"
     Book ||--o{ Copy : "has"
+    Book ||--o{ BookRating : "rated via"
     Copy ||--o{ Loan : "is loaned via"
     Copy ||--o{ RebuyItem : "triggers"
     Book ||--o{ RebuyItem : "listed in"
@@ -135,16 +142,31 @@ sequenceDiagram
     participant Session
 
     User->>Login: Tap username tile
-    Login->>User: Show PIN pad
+    Login->>User: Show 4-dot PIN pad
     User->>Login: Enter 4-digit PIN
     Login->>API: POST /api/auth/login
-    API-->>Login: 401 Wrong PIN (max 5 attempts, then lockout)
-    API-->>Session: Set session cookie (HTTPS only)
-    Session-->>Login: 200 OK
-    Login->>User: Redirect → index / setup-PIN
+
+    alt Wrong PIN (up to 3 failures)
+        API-->>Login: 401 Wrong PIN
+        Login->>User: Clear dots, show error
+    else 4th consecutive failure
+        API-->>Login: 429 Locked — wait_seconds=120
+        Login->>User: Countdown timer, keypad disabled
+    else Correct PIN
+        API-->>Session: Set session cookie (HTTPS only)
+        API-->>Login: 200 OK {setup_required, is_admin}
+        alt setup_required
+            Login->>User: Redirect → /setup-pin.html
+        else
+            Login->>User: Redirect → /index.html
+        end
+    end
 
     Note over Session: Idle 90 s → auto-logout
-    Session->>Login: POST /api/auth/logout + redirect
+    Session->>API: POST /api/auth/logout
+    API->>Login: Redirect → /login.html
+
+    Note over User,API: Admin section additionally requires<br/>8-digit PIN (user PIN + admin PIN)<br/>verified via POST /api/admin/verify — TTL 10 min
 ```
 
 ---
@@ -153,16 +175,23 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A([Scan ISBN / tap book]) --> B{Book available?}
-    B -- No --> Z([Show 'All loaned'])
-    B -- Yes --> C{Balance ≥ 10.50 €?}
-    C -- No --> Y([Show balance warning])
-    C -- Yes --> D{Loans < max per user?}
-    D -- No --> X([Show loan limit warning])
-    D -- Yes --> E([Borrow page — confirm])
-    E --> F[POST /api/loans/borrow]
-    F --> G[Loan record created\nBalance debited]
-    G --> H([Success — show due date])
+    A([Scan ISBN or tap Borrow]) --> B{ISBN in catalogue?}
+    B -- No, user --> E1([404 — not in library])
+    B -- No, admin --> E2([Redirect → Add Book page])
+    B -- Yes --> C{User already has\na loan for this book?}
+    C -- 1 active loan --> R1([Redirect → Return page])
+    C -- multiple loans --> R2([Redirect → Pick copy to return])
+    C -- No --> D{Available copies?}
+    D -- None --> Z([Badge: 'Loaned' — no button])
+    D -- Yes --> EL{Balance ≥ 10.50 €\nand loans below limit?}
+    EL -- Balance low --> Y([Disabled Borrow button\nHint: 'Balance too low'])
+    EL -- Limit reached --> X([Disabled Borrow button\nHint: 'Loan limit reached'])
+    EL -- OK --> G([Inline dropdown opens:\nFee · Balance · Due date])
+    G --> H{User confirms}
+    H -- Cancel --> G2([Dropdown closes])
+    H -- Confirm --> I[POST /api/borrow/isbn]
+    I --> J[Loan record created\nFee deducted from balance]
+    J --> K([Book list reloads — copy now loaned])
 ```
 
 ---
@@ -255,8 +284,10 @@ mangashelf/
 │       ├── admin/           # Admin panel pages
 │       ├── js/
 │       │   ├── api.js       # Thin fetch wrapper
-│       │   ├── nav.js       # Header / navigation rendering + 90 s idle timer
-│       │   ├── numpad.js    # Floating numpad widget (PIN / amount inputs)
+│       │   ├── nav.js       # Header / navigation rendering + 90 s idle timer + admin PIN gate
+│       │   ├── numpad.js    # Floating numpad widget (amount inputs)
+│       │   ├── pin.js       # Shared PIN entry widget (makePinField)
+│       │   ├── rating.js    # Star rating widget (1–9)
 │       │   └── lang.js      # i18n module (reads lang.json, supports {{var}} placeholders)
 │       ├── css/style.css    # Design system (dark manga theme)
 │       ├── lang.json        # Translation strings (en, de, schwaebisch)
