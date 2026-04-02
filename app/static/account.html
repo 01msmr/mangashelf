@@ -111,7 +111,7 @@ function renderAccount(data) {
                    : Lang.t('acct.empty');
 
     const topupBtns = [1, 2, 5, 10, 20].map(a =>
-        `<button class="btn topup-btn" data-amount="${a}">${a} €</button>`
+        `<button class="btn btn-ghost topup-btn" data-amount="${a}">${a} €</button>`
     ).join('');
 
     const loansHtml = data.active_loans.length

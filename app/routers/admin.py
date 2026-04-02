@@ -128,7 +128,7 @@ def user_deactivate(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(400, 'You cannot deactivate yourself.')
     user.active = 0 if user.active else 1
     db.commit()
-    state = 'activated' if user.active else 'deactivated'
+    state = 'unlocked' if user.active else 'locked'
     return {'ok': True, 'active': bool(user.active), 'message': f'"{user.username}" {state}.'}
 
 
