@@ -36,7 +36,7 @@ A self-hosted manga/book lending kiosk built for a Raspberry Pi touchscreen.
 | ISBN lookup | OpenLibrary API · Google Books API (with ISBN-13 ↔ ISBN-10 fallback) |
 | Cover cache | Automatic download and local caching |
 | Scheduler | APScheduler (overdue fee processing) |
-| Deployment | systemd service · Chromium kiosk mode · Raspberry Pi OS |
+| Deployment | Docker · systemd service · Chromium kiosk mode · Raspberry Pi OS |
 
 ---
 
@@ -196,7 +196,37 @@ flowchart TD
 
 ---
 
-## Quick Start (local development)
+## Quick Start — Docker
+
+```bash
+# 1. Clone the project
+git clone https://github.com/01msmr/mangashelf.git
+cd mangashelf
+
+# 2. Build the image
+docker build -t mangashelf .
+
+# 3. Run the container (persist the database via a volume)
+docker run -d \
+  --name mangashelf \
+  -p 80:80 \
+  -v mangashelf-data:/code/data \
+  -e SECRET_KEY=change-me-in-production \
+  mangashelf
+```
+
+Open **http://localhost** in a browser.
+Default credentials: **admin** / PIN **0000** — you will be asked to change the PIN on first login.
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `SECRET_KEY` | `mangashelf-dev-secret-change-in-production` | Session signing key — **change this in production** |
+
+---
+
+## Quick Start — local development (without Docker)
 
 ```bash
 # 1. Clone and enter the project
@@ -216,21 +246,34 @@ python run.py
 ```
 
 Open **https://localhost:5001** (accept the self-signed cert warning).
-Default credentials: **admin** / PIN **0000** — you will be asked to change the PIN on first login.
-
-### Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `SECRET_KEY` | `mangashelf-dev-secret-change-in-production` | Session signing key — **change this in production** |
-
-Put it in a `.env` file in the project root; `python-dotenv` loads it automatically.
 
 ---
 
 ## Raspberry Pi Deployment
 
 Tested on Raspberry Pi OS Bookworm/Bullseye with a 800 × 480 HDMI display.
+
+### Option A — Docker on the Pi
+
+```bash
+# Install Docker on the Pi (if not already installed)
+curl -fsSL https://get.docker.com | sh
+
+# Clone and run
+git clone https://github.com/01msmr/mangashelf.git
+cd mangashelf
+docker build -t mangashelf .
+docker run -d --restart unless-stopped \
+  --name mangashelf \
+  -p 80:80 \
+  -v mangashelf-data:/code/data \
+  -e SECRET_KEY=change-me \
+  mangashelf
+```
+
+Then configure Chromium kiosk mode to open `http://localhost`.
+
+### Option B — systemd service (no Docker)
 
 ```bash
 # On the Pi, clone the project to /home/pi/mangashelf, then:
@@ -248,18 +291,17 @@ The installer:
 
 After reboot the kiosk opens automatically at `https://localhost:5001`.
 
-### Useful commands after deployment
+### Useful commands
 
 ```bash
-# Service management
+# Docker
+docker logs -f mangashelf
+docker restart mangashelf
+
+# systemd
 sudo systemctl status mangashelf
 sudo systemctl restart mangashelf
-journalctl -u mangashelf -f          # live logs
-
-# Update the app
-cd /home/pi/mangashelf
-git pull
-sudo systemctl restart mangashelf
+journalctl -u mangashelf -f
 ```
 
 ---
