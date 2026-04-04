@@ -139,7 +139,9 @@ function renderAccount(data) {
                             ${overdue ? '⚠ ' : ''}${Lang.t('acct.due')} ${esc(fmtDate(l.due_date))}
                         </div>
                         ${overdue ? `<span class="overdue-badge">${Lang.t('return.overdue')}</span>` : ''}
-                        <a href="/return.html?loan_id=${l.id}" class="btn btn-ghost btn-sm" style="margin-top:4px">${Lang.t('book.return')}</a>
+                        <span id="return-wrap-${l.id}">
+                            <button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="confirmReturn(${l.id})">${Lang.t('book.return')}</button>
+                        </span>
                     </div>
                 </div>
             `;
@@ -172,7 +174,8 @@ function renderAccount(data) {
     document.getElementById('main-content').innerHTML = `
         <div class="acct-page">
             <div class="lang-switcher-row">
-                <span class="lang-switcher-label">${Lang.t('acct.language')}</span>
+                <a href="/change-pin.html" class="btn btn-ghost btn-sm">${Lang.t('acct.changePin')}</a>
+                <span class="lang-switcher-label" style="margin-left:auto">${Lang.t('acct.language')}</span>
                 <div class="lang-switcher">${langBtns}</div>
             </div>
             <div class="acct-body">
@@ -219,12 +222,6 @@ function renderAccount(data) {
                     ${txnsHtml}
                 </div>
 
-<div class="acct-section">
-                    <div class="acct-section-title">${Lang.t('acct.settings')}</div>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap;padding:8px 0">
-                        <a href="/change-pin.html" class="btn btn-ghost btn-sm">${Lang.t('acct.changePin')}</a>
-                    </div>
-                </div>
             </div>
         </div>
     `;
@@ -274,6 +271,27 @@ function renderAccount(data) {
             await API.post(`/api/account/language/${btn.dataset.lang}`).catch(() => {});
         });
     });
+}
+
+function confirmReturn(loanId) {
+    const wrap = document.getElementById(`return-wrap-${loanId}`);
+    if (!wrap) return;
+    wrap.innerHTML = `
+        <span style="display:inline-flex;align-items:center;gap:6px;margin-top:4px">
+            <span class="text-danger" style="font-size:13px">${Lang.t('acct.confirmReturn')}</span>
+            <button class="btn btn-ghost btn-sm" onclick="doReturn(${loanId})">${Lang.t('adminUsers.confirmYes')}</button>
+            <button class="btn btn-ghost btn-sm" onclick="tryLoadAccount()">${Lang.t('adminUsers.confirmNo')}</button>
+        </span>`;
+}
+
+async function doReturn(loanId) {
+    try {
+        await API.post(`/api/return/${loanId}`);
+        tryLoadAccount();
+    } catch (err) {
+        const wrap = document.getElementById(`return-wrap-${loanId}`);
+        if (wrap) wrap.innerHTML = `<span class="text-danger" style="font-size:13px">${esc(err.detail || 'Failed')}</span>`;
+    }
 }
 
 async function init() {

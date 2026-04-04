@@ -61,22 +61,38 @@ def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db
             'id':             book.id,
             'isbn':           book.isbn,
             'title':          book.title,
+            'subtitle':       book.subtitle,
             'author':         book.author,
             'cover_path':     book.cover_path,
             'loan_rate':      book.loan_rate,
             'available':      avail_count,
+            'total_copies':   len(book.active_copies),
             'loaned':         len(loaned_cps),
             'latest_due':     latest_due,
             'borrowers':      borrowers,
             'avg_rating':     round(avg, 1) if avg else None,
             'rating_count':   rating_count,
             'user_loan_id':   user_loan.id if user_loan else None,
-            'user_loan_due':  user_loan.due_date.isoformat() if user_loan and user_loan.due_date else None,
+            'user_loan_due':  user_loan.due_date if user_loan and user_loan.due_date else None,
             'projected_due':  user_loan.due_date if user_loan else projected_due,
             'borrow_allowed': borrow_allowed,
             'borrow_reason':  borrow_reason,
+            'added_at':       book.added_at,
         })
-    return result
+    new_book_days = Setting.get_int(db, 'new_book_days', 14)
+    return {'items': result, 'new_book_days': new_book_days}
+
+
+# ── Fetch ISBN metadata (admin) ───────────────────────────────────────────────
+
+@router.get('/books/fetch-isbn')
+def fetch_isbn(isbn: str = '', _admin: User = Depends(get_current_admin)):
+    if not isbn:
+        raise HTTPException(400, 'ISBN required')
+    meta = lookup_isbn(isbn.strip())
+    if not meta or not meta.get('title'):
+        raise HTTPException(404, 'Not found in OpenLibrary or Google Books')
+    return meta
 
 
 # ── Book detail ───────────────────────────────────────────────────────────────
@@ -115,6 +131,7 @@ def book_detail(isbn: str, db: Session = Depends(get_db),
         'id':             book.id,
         'isbn':           book.isbn,
         'title':          book.title,
+        'subtitle':       book.subtitle,
         'author':         book.author,
         'publisher':      book.publisher,
         'published':      book.published,
@@ -132,23 +149,12 @@ def book_detail(isbn: str, db: Session = Depends(get_db),
     }
 
 
-# ── Fetch ISBN metadata (admin) ───────────────────────────────────────────────
-
-@router.get('/books/fetch-isbn')
-def fetch_isbn(isbn: str = '', _admin: User = Depends(get_current_admin)):
-    if not isbn:
-        raise HTTPException(400, 'ISBN required')
-    meta = lookup_isbn(isbn.strip())
-    if not meta or not meta.get('title'):
-        raise HTTPException(404, 'Not found in OpenLibrary or Google Books')
-    return meta
-
-
 # ── Add book (admin) ──────────────────────────────────────────────────────────
 
 class AddBookRequest(BaseModel):
     isbn:      str
     title:     str
+    subtitle:  Optional[str] = None
     author:    Optional[str] = None
     publisher: Optional[str] = None
     published: Optional[str] = None
@@ -166,14 +172,20 @@ def book_add(body: AddBookRequest, db: Session = Depends(get_db),
     if not isbn_val or not title:
         raise HTTPException(400, 'ISBN and title are required.')
 
-    if db.query(Book).filter_by(isbn=isbn_val).first():
-        raise HTTPException(409, 'A book with this ISBN already exists.')
+    existing = db.query(Book).filter_by(isbn=isbn_val).first()
+    if existing:
+        next_num = max((c.copy_num for c in existing.copies), default=0) + 1
+        copy = Copy(book_id=existing.id, copy_num=next_num, donated_by=body.donor_id)
+        db.add(copy)
+        db.commit()
+        return {'ok': True, 'isbn': isbn_val, 'title': existing.title}
 
     cover_path = get_cover_path(isbn_val, body.cover_url) if body.cover_url else None
 
     book = Book(
         isbn=isbn_val,
         title=title,
+        subtitle=body.subtitle or None,
         author=body.author or None,
         publisher=body.publisher or None,
         published=body.published or None,
@@ -184,11 +196,7 @@ def book_add(body: AddBookRequest, db: Session = Depends(get_db),
     db.add(book)
     db.flush()
 
-    copy = Copy(
-        book_id=book.id,
-        copy_num=1,
-        donated_by=body.donor_id,
-    )
+    copy = Copy(book_id=book.id, copy_num=1, donated_by=body.donor_id)
     db.add(copy)
     db.commit()
 
@@ -218,19 +226,8 @@ def copy_mark_broken(copy_id: int, body: BrokenRequest, db: Session = Depends(ge
         copy_id=copy.id,
         reason=note or None,
     ))
-
-    book       = copy.book
-    book_isbn  = book.isbn
-    book_title = book.title
-
-    remaining = [c for c in book.copies if c.id != copy.id and c.status in ('available', 'loaned')]
-    if not remaining:
-        db.delete(book)
-        db.commit()
-        return {'ok': True, 'book_removed': True, 'message': f'Last copy — book "{book_title}" removed.'}
-
     db.commit()
-    return {'ok': True, 'book_removed': False, 'isbn': book_isbn}
+    return {'ok': True, 'book_removed': False, 'isbn': copy.book.isbn}
 
 
 # ── Rate book ─────────────────────────────────────────────────────────────────

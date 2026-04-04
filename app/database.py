@@ -25,6 +25,7 @@ def run_migrations():
     """Safe column-addition migrations for SQLite."""
     migrations = [
         'ALTER TABLE books ADD COLUMN loan_rate REAL DEFAULT 0.50',
+        'ALTER TABLE books ADD COLUMN subtitle TEXT',
     ]
     with engine.connect() as conn:
         for sql in migrations:

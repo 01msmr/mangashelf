@@ -130,7 +130,7 @@ async function init() {
             <div style="font-size:11px;color:var(--text-dim);word-break:break-all;max-width:160px;padding:0 2px">${esc(book.isbn)}</div>
         </div>
         <div class="detail-info">
-            <div class="detail-title">${esc(book.title)}</div>
+            <div class="detail-title">${esc(book.title)}${book.subtitle ? `<span class="detail-subtitle"> — ${esc(book.subtitle)}</span>` : ''}</div>
             <div class="detail-author">${esc(book.author || '')}</div>
             <div class="detail-meta">${book.publisher ? esc(book.publisher) + (book.published ? ' · ' + esc(book.published) : '') : ''}</div>
             <div class="detail-meta">${Lang.t('book.loanRateLabel')} ${fmtEur(book.loan_rate || 0.5)}</div>
@@ -156,9 +156,8 @@ async function init() {
                 const note    = document.getElementById('broken-note').value;
                 const msgEl   = document.getElementById('broken-msg');
                 try {
-                    const res = await API.post(`/api/copies/${copy_id}/broken`, { broken_note: note });
-                    if (res.book_removed) { window.location.href = '/index.html'; }
-                    else { window.location.href = `/book.html?isbn=${encodeURIComponent(isbn)}`; }
+                    await API.post(`/api/copies/${copy_id}/broken`, { broken_note: note });
+                    window.location.href = `/book.html?isbn=${encodeURIComponent(isbn)}`;
                 } catch (err) {
                     msgEl.textContent = err.detail || 'Failed';
                     msgEl.style.display = 'block';

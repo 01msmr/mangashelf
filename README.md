@@ -1,7 +1,6 @@
 # MangaShelf
 
 A self-hosted manga/book lending kiosk built for a Raspberry Pi touchscreen.
-![Book List](app/static/../style_screenshots/kiosk_Book_list.png)
 
 ---
 

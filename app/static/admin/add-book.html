@@ -41,6 +41,10 @@
                         <input type="text" id="title" class="form-input">
                     </div>
                     <div class="form-group">
+                        <label class="form-label" id="label-subtitle"></label>
+                        <input type="text" id="subtitle" class="form-input">
+                    </div>
+                    <div class="form-group">
                         <label class="form-label" id="label-author"></label>
                         <input type="text" id="author" class="form-input">
                     </div>
@@ -121,6 +125,7 @@ function applyTranslations() {
     document.getElementById('topbar-back').textContent     = Lang.t('addBook.back');
     document.getElementById('btn-close-scanner').textContent = Lang.t('addBook.close');
     document.getElementById('label-title').textContent     = Lang.t('addBook.titleLabel');
+    document.getElementById('label-subtitle').textContent  = Lang.t('addBook.subtitleLabel');
     document.getElementById('label-author').textContent    = Lang.t('addBook.authorLabel');
     document.getElementById('label-publisher').textContent = Lang.t('addBook.publisherLabel');
     document.getElementById('label-published').textContent = Lang.t('addBook.publishedLabel');
@@ -171,6 +176,7 @@ async function doLookup(isbn) {
     try {
         const meta = await API.get(`/api/books/fetch-isbn?isbn=${encodeURIComponent(isbn)}`);
         set('title',     meta.title);
+        set('subtitle',  meta.subtitle);
         set('author',    meta.author);
         set('publisher', meta.publisher);
         set('published', meta.published);
@@ -183,9 +189,18 @@ async function doLookup(isbn) {
         msgEl.className = 'fetch-status text-success';
         msgEl.textContent = Lang.t('addBook.metaLoaded');
         setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
+        // Check if book already exists in library
+        const btnAdd = document.getElementById('btn-add');
+        try {
+            await API.get(`/api/books/${encodeURIComponent(isbn)}`);
+            btnAdd.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${Lang.t('addBook.addCopyBtn')}`;
+        } catch (e) {
+            btnAdd.textContent = Lang.t('addBook.addBtn');
+        }
     } catch (err) {
         msgEl.className = 'fetch-status text-warning';
         msgEl.textContent = Lang.t('addBook.notFound');
+        document.getElementById('btn-add').textContent = Lang.t('addBook.addBtn');
     }
 }
 
@@ -244,6 +259,7 @@ document.getElementById('btn-add').addEventListener('click', async () => {
     const body = {
         isbn:      isbnScan.value.trim(),
         title:     document.getElementById('title').value.trim(),
+        subtitle:  document.getElementById('subtitle').value.trim() || null,
         author:    document.getElementById('author').value.trim() || null,
         publisher: document.getElementById('publisher').value.trim() || null,
         published: document.getElementById('published').value.trim() || null,
@@ -253,7 +269,7 @@ document.getElementById('btn-add').addEventListener('click', async () => {
     };
     try {
         await API.post('/api/books', body);
-        window.location.href = `/book.html?isbn=${encodeURIComponent(body.isbn)}`;
+        window.location.href = `/index.html?new=${encodeURIComponent(body.isbn)}`;
     } catch (err) {
         msgEl.className = 'fetch-status text-danger';
         msgEl.textContent = err.detail || 'Failed.';

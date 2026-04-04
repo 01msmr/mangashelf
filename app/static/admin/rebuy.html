@@ -63,6 +63,7 @@ async function loadList() {
                     </div>
                     <div class="rebuy-action">
                         <button class="btn btn-ghost btn-sm" onclick="resolve(${i.id})">${Lang.t('adminRebuy.markResolved')}</button>
+                        <button class="btn btn-ghost btn-sm" onclick="dismiss(${i.id})">${Lang.t('adminRebuy.dismiss')}</button>
                     </div>
                 </div>
             `;
@@ -76,6 +77,18 @@ async function loadList() {
 async function resolve(id) {
     try {
         await API.post(`/api/admin/rebuy/${id}/resolve`);
+        document.getElementById(`rebuy-${id}`).remove();
+        if (!document.querySelector('.rebuy-row')) {
+            document.getElementById('list').innerHTML = `<div class="empty-state">${Lang.t('adminRebuy.none')}</div>`;
+        }
+    } catch (err) {
+        alert(err.detail || 'Failed');
+    }
+}
+
+async function dismiss(id) {
+    try {
+        await API.delete(`/api/admin/rebuy/${id}`);
         document.getElementById(`rebuy-${id}`).remove();
         if (!document.querySelector('.rebuy-row')) {
             document.getElementById('list').innerHTML = `<div class="empty-state">${Lang.t('adminRebuy.none')}</div>`;

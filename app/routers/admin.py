@@ -276,6 +276,7 @@ def settings_get(db: Session = Depends(get_db), _admin: User = Depends(get_curre
         'max_books_per_user': Setting.get_int(db, 'max_books_per_user', 3),
         'max_loan_days':      Setting.get_int(db, 'max_loan_days', 60),
         'default_loan_rate':  Setting.get(db, 'default_loan_rate', '0.50'),
+        'new_book_days':      Setting.get_int(db, 'new_book_days', 14),
         'loan_rates':         LOAN_RATES,
     }
 
@@ -284,6 +285,7 @@ class SettingsRequest(BaseModel):
     max_books_per_user: int
     max_loan_days:      int
     default_loan_rate:  str
+    new_book_days:      int
 
 
 @router.post('/settings')
@@ -296,12 +298,15 @@ def settings_save(body: SettingsRequest, db: Session = Depends(get_db),
         errors.append('Loan days must be between 7 and 365.')
     if body.default_loan_rate not in LOAN_RATES:
         errors.append('Invalid loan rate.')
+    if not 0 <= body.new_book_days <= 90:
+        errors.append('New book days must be between 0 and 90.')
     if errors:
         raise HTTPException(400, ' '.join(errors))
 
     Setting.set(db, 'max_books_per_user', body.max_books_per_user)
     Setting.set(db, 'max_loan_days',      body.max_loan_days)
     Setting.set(db, 'default_loan_rate',  body.default_loan_rate)
+    Setting.set(db, 'new_book_days',      body.new_book_days)
     db.commit()
     return {'ok': True}
 
@@ -338,5 +343,20 @@ def rebuy_resolve(item_id: int, db: Session = Depends(get_db),
     if not item:
         raise HTTPException(404, 'Item not found.')
     item.resolved = 1
+    if item.copy:
+        item.copy.status     = 'available'
+        item.copy.broken_at  = None
+        item.copy.broken_note = None
     db.commit()
     return {'ok': True, 'message': f'"{item.book.title}" marked as reacquired.'}
+
+
+@router.delete('/rebuy/{item_id}')
+def rebuy_dismiss(item_id: int, db: Session = Depends(get_db),
+                  _admin: User = Depends(get_current_admin)):
+    item = db.get(RebuyItem, item_id)
+    if not item:
+        raise HTTPException(404, 'Item not found.')
+    db.delete(item)
+    db.commit()
+    return {'ok': True}

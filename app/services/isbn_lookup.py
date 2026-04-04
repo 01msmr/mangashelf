@@ -97,6 +97,7 @@ def _openlibrary(isbn):
 
         return {
             'title':     title,
+            'subtitle':  book.get('subtitle') or None,
             'author':    author,
             'publisher': publisher,
             'published': book.get('publish_date'),
@@ -139,6 +140,7 @@ def _google_books(isbn):
 
         return {
             'title':     info.get('title', ''),
+            'subtitle':  info.get('subtitle') or None,
             'author':    ', '.join(authors) if authors else None,
             'publisher': info.get('publisher'),
             'published': info.get('publishedDate'),

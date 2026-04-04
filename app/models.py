@@ -36,6 +36,7 @@ class Book(Base):
     id         = Column(Integer, primary_key=True)
     isbn       = Column(Text, unique=True, nullable=False)
     title      = Column(Text, nullable=False)
+    subtitle   = Column(Text)
     author     = Column(Text)
     publisher  = Column(Text)
     published  = Column(Text)

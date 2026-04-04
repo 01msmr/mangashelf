@@ -31,6 +31,10 @@
                             <input type="number" id="max-days" class="form-input" min="7" max="365" value="60">
                         </div>
                         <div class="form-group mb-3">
+                            <label class="form-label" id="label-new-book-days"></label>
+                            <input type="number" id="new-book-days" class="form-input" min="0" max="90" value="14">
+                        </div>
+                        <div class="form-group mb-3">
                             <label class="form-label" id="label-default-rate"></label>
                             <select id="default-rate" class="form-input form-select">
                                 <option value="0.50">0.50 €</option>
@@ -80,11 +84,12 @@ function applyTranslations() {
     document.querySelector('.nav-label-overdue').textContent  = Lang.t('admin.overdue');
     document.querySelector('.nav-label-rebuy').textContent    = Lang.t('admin.rebuy');
     document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
-    document.getElementById('card-title').textContent         = Lang.t('adminSettings.cardTitle');
+    document.getElementById('card-title').textContent         = Lang.t('admin.settings');
     document.getElementById('card-title-actions').textContent = Lang.t('adminSettings.actionsTitle');
     document.getElementById('label-max-books').textContent    = Lang.t('adminSettings.maxBooks');
     document.getElementById('label-max-days').textContent     = Lang.t('adminSettings.maxDays');
-    document.getElementById('label-default-rate').textContent = Lang.t('adminSettings.defaultRate');
+    document.getElementById('label-new-book-days').textContent = Lang.t('adminSettings.newBookDays');
+    document.getElementById('label-default-rate').textContent  = Lang.t('adminSettings.defaultRate');
     document.getElementById('btn-save').textContent           = Lang.t('adminSettings.saveBtn');
     document.getElementById('label-admin-pin').textContent    = Lang.t('adminSettings.adminPinLabel');
     document.getElementById('admin-pin-desc').textContent     = Lang.t('adminSettings.adminPinDesc');
@@ -104,9 +109,10 @@ async function init() {
 async function loadContent() {
     try {
         const s = await API.get('/api/admin/settings');
-        document.getElementById('max-books').value    = s.max_books_per_user;
-        document.getElementById('max-days').value     = s.max_loan_days;
-        document.getElementById('default-rate').value = s.default_loan_rate;
+        document.getElementById('max-books').value     = s.max_books_per_user;
+        document.getElementById('max-days').value      = s.max_loan_days;
+        document.getElementById('new-book-days').value = s.new_book_days;
+        document.getElementById('default-rate').value  = s.default_loan_rate;
     } catch (err) {
         if (handleAuthError(err)) return;
     }
@@ -117,6 +123,7 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     const body = {
         max_books_per_user: parseInt(document.getElementById('max-books').value),
         max_loan_days:      parseInt(document.getElementById('max-days').value),
+        new_book_days:      parseInt(document.getElementById('new-book-days').value),
         default_loan_rate:  document.getElementById('default-rate').value,
     };
     try {
