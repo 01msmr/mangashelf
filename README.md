@@ -203,26 +203,27 @@ flowchart TD
 git clone https://github.com/01msmr/mangashelf.git
 cd mangashelf
 
-# 2. Build the image
-docker build -t mangashelf .
-
-# 3. Run the container (persist the database via a volume)
-docker run -d \
-  --name mangashelf \
-  -p 80:80 \
-  -v mangashelf-data:/code/data \
-  -e SECRET_KEY=change-me-in-production \
-  mangashelf
+# 2. Set your secret key in docker-compose.yml, then start
+docker compose up -d
 ```
 
 Open **http://localhost** in a browser.
 Default credentials: **admin** / PIN **0000** — you will be asked to change the PIN on first login.
+
+### Update
+
+```bash
+git pull
+docker compose up -d --build
+```
 
 ### Environment variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `SECRET_KEY` | `mangashelf-dev-secret-change-in-production` | Session signing key — **change this in production** |
+
+Set it in `docker-compose.yml` under `environment`.
 
 ---
 
@@ -259,19 +260,15 @@ Tested on Raspberry Pi OS Bookworm/Bullseye with a 800 × 480 HDMI display.
 # Install Docker on the Pi (if not already installed)
 curl -fsSL https://get.docker.com | sh
 
-# Clone and run
+# Clone and start
 git clone https://github.com/01msmr/mangashelf.git
 cd mangashelf
-docker build -t mangashelf .
-docker run -d --restart unless-stopped \
-  --name mangashelf \
-  -p 80:80 \
-  -v mangashelf-data:/code/data \
-  -e SECRET_KEY=change-me \
-  mangashelf
+docker compose up -d
 ```
 
 Then configure Chromium kiosk mode to open `http://localhost`.
+
+To update later: `git pull && docker compose up -d --build`
 
 ### Option B — systemd service (no Docker)
 
@@ -295,8 +292,9 @@ After reboot the kiosk opens automatically at `https://localhost:5001`.
 
 ```bash
 # Docker
-docker logs -f mangashelf
-docker restart mangashelf
+docker compose logs -f
+docker compose restart
+docker compose up -d --build   # after git pull
 
 # systemd
 sudo systemctl status mangashelf

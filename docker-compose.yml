@@ -1,0 +1,15 @@
+services:
+  mangashelf:
+    build: .
+    image: mangashelf
+    container_name: mangashelf
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - mangashelf-data:/code/data
+    environment:
+      - SECRET_KEY=change-me-in-production
+
+volumes:
+  mangashelf-data:
