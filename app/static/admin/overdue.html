@@ -69,7 +69,7 @@ async function loadContent() {
                             <a href="/book.html?isbn=${encodeURIComponent(i.book_isbn)}" class="overdue-book-link">${esc(i.book_title)}</a>
                         </div>
                         <div class="overdue-meta">
-                            <span class="overdue-borrower">${esc(i.username)}</span>
+                            <span class="overdue-borrower${!i.user_active ? ' user-locked' : ''}">${!i.user_active ? '<i class="fa-solid fa-lock" style="font-size:10px;margin-right:4px;opacity:.8"></i>' : ''}${esc(i.username)}</span>
                             <span class="overdue-due">${Lang.t('adminOverdue.due')} ${esc(fmtDate(i.due_date))}</span>
                         </div>
                     </div>

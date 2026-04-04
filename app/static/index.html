@@ -107,15 +107,11 @@ function renderBook(b) {
     let borrowHint = '';
     if (b.user_loan_id) {
         actionBtn = `<a href="/return.html?loan_id=${b.user_loan_id}" class="btn btn-primary btn-sm">${Lang.t('book.return')}</a>`;
-    } else if (b.available > 0) {
-        if (b.borrow_allowed === false) {
-            borrowHint = b.borrow_reason === 'limit_reached'
-                ? Lang.t('book.loanLimit')
-                : Lang.t('book.balanceLow');
-            actionBtn = `<button class="btn btn-primary btn-sm" disabled>${Lang.t('book.borrow')}</button>`;
-        } else {
-            actionBtn = `<button onclick="openBorrow(${b.id}, '${esc(b.isbn)}')" class="btn btn-primary btn-sm">${Lang.t('book.borrow')}</button>`;
-        }
+    } else if (b.available > 0 && b.borrow_allowed !== false) {
+        actionBtn = `<button onclick="openBorrow(${b.id}, '${esc(b.isbn)}')" class="btn btn-primary btn-sm">${Lang.t('book.borrow')}</button>`;
+    } else {
+        const tip = b.available === 0 ? Lang.t('book.reasonNoAvail') : b.borrow_reason === 'account_locked' ? Lang.t('book.reasonLocked') : b.borrow_reason === 'balance_low' ? Lang.t('book.balanceLow') : Lang.t('book.loanLimit');
+        actionBtn = `<button class="btn btn-primary btn-sm" disabled style="opacity:.4;cursor:not-allowed" data-tip="${esc(tip)}">${Lang.t('book.borrow')}</button>`;
     }
 
     const returnDate = fmtDate(b.user_loan_due || b.projected_due);
@@ -123,13 +119,6 @@ function renderBook(b) {
     const loanRate   = b.loan_rate != null ? fmtEur(b.loan_rate) : '—';
 
     let adminRow = '';
-    if (currentUser.is_admin && b.loaned > 0) {
-        // show borrowers for admins
-        const borrowerList = b.borrowers && b.borrowers.length
-            ? b.borrowers.map(n => esc(n)).join(', ')
-            : '';
-        if (borrowerList) adminRow = `<div class="be-borrowers">${borrowerList}</div>`;
-    }
 
     let brokenBtn = '';
     if (currentUser.is_admin) {
@@ -142,7 +131,7 @@ function renderBook(b) {
     return `
         <div class="be" id="be-${b.id}">
             <div class="be-main">
-                <div class="be-cover">${cover}</div>
+                <div class="be-cover"${b.available === 0 ? ' style="opacity:.6"' : ''}>${cover}</div>
                 <div class="be-body">
                     ${starsRow}
                     <div class="be-title">${esc(b.title)}</div>
@@ -152,7 +141,7 @@ function renderBook(b) {
                 <div class="be-side">
                     ${badge}
                     <div class="be-borrow-hint">${borrowHint}</div>
-                    <div class="be-action-wrap">${actionBtn}</div>
+                    <div class="be-action-wrap"${b.available === 0 ? ' style="opacity:.6"' : ''}>${actionBtn}</div>
                     ${brokenBtn}
                 </div>
             </div>

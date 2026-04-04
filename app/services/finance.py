@@ -12,6 +12,8 @@ BORROW_MIN: float = DEPOSIT + min(float(r) for r in LOAN_RATES)
 
 
 def can_borrow(db: Session, user) -> tuple[bool, str | None]:
+    if not user.active:
+        return False, 'account_locked'
     if user.guthaben < BORROW_MIN:
         return False, 'balance_low'
     max_books = Setting.get_int(db, 'max_books_per_user', 3)

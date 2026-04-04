@@ -13,7 +13,7 @@ A self-hosted manga/book lending kiosk built for a Raspberry Pi touchscreen.
 - **User accounts** — PIN authentication, balance (Guthaben), top-up, transaction history, active loan overview
 - **Deposit system** — new accounts start at 0 €; a 10 € deposit must be paid at the kiosk before borrowing is unlocked (minimum balance to borrow: deposit + smallest loan rate = 10.50 €)
 - **Admin panel**
-  - User management: promote/demote admin, lock/unlock, set/force PIN, adjust balance (capped at 100 €), delete with confirmation
+  - User management: promote/demote admin, activate/deactivate, set/force PIN, adjust balance, delete with confirmation
   - Overdue list with day counts
   - Rebuy list (auto-populated when last copy is marked broken)
   - Settings: max books per user, max loan days, default loan rate
@@ -284,7 +284,7 @@ mangashelf/
 │       ├── admin/           # Admin panel pages
 │       ├── js/
 │       │   ├── api.js       # Thin fetch wrapper
-│       │   ├── nav.js       # Header / navigation rendering + 90 s idle timer + admin PIN gate + JS tooltip system
+│       │   ├── nav.js       # Header / navigation rendering + 90 s idle timer + admin PIN gate
 │       │   ├── numpad.js    # Floating numpad widget (amount inputs)
 │       │   ├── pin.js       # Shared PIN entry widget (makePinField)
 │       │   ├── rating.js    # Star rating widget (1–9)

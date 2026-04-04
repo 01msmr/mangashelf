@@ -216,7 +216,7 @@ def copy_mark_broken(copy_id: int, body: BrokenRequest, db: Session = Depends(ge
     db.add(RebuyItem(
         book_id=copy.book_id,
         copy_id=copy.id,
-        reason=note or 'Marked as broken/unusable',
+        reason=note or None,
     ))
 
     book       = copy.book

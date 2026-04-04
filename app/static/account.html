@@ -17,6 +17,16 @@
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+function fmtTxnType(t) {
+    if (t.type === 'loan' && (t.description || '').includes('donor')) return Lang.t('txn.loanFree');
+    return Lang.t('txn.' + t.type) || t.type;
+}
+function fmtTxnDetail(t) {
+    if (t.type === 'entry_fee') return Lang.t('txn.entry_fee_detail');
+    const m = (t.description || '').match(/^[^:]+:\s*(.+)$/);
+    return m ? m[1] : (t.description || '');
+}
+
 let _cachedAccountData = null;
 let _cachedUser = null;
 
@@ -146,8 +156,8 @@ function renderAccount(data) {
                 <div class="txn-row">
                     <span class="txn-date">${esc(fmtDate(t.created_at))}</span>
                     <div class="txn-desc">
-                        <span class="txn-type">${esc(t.type)}</span>
-                        <span class="txn-detail">${esc(t.description || '')}</span>
+                        <span class="txn-type">${esc(fmtTxnType(t))}</span>
+                        <span class="txn-detail">${esc(fmtTxnDetail(t))}</span>
                     </div>
                     <span class="txn-amount ${cls}">${amtStr}</span>
                 </div>
@@ -164,17 +174,23 @@ function renderAccount(data) {
             <div class="lang-switcher-row">
                 <span class="lang-switcher-label">${Lang.t('acct.language')}</span>
                 <div class="lang-switcher">${langBtns}</div>
-                <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="showQr('/user-qr/${data.id}.png')" data-tip="Login QR">
-                    <i class="fa-solid fa-qrcode" style="font-size:22px"></i>
-                </button>
             </div>
             <div class="acct-body">
-                <div class="acct-section">
-                    <div class="acct-section-title">${Lang.t('acct.balance')}</div>
-                    <div class="balance-card ${balClass}">
-                        <span class="balance-label">${Lang.t('acct.balance')}</span>
-                        <span class="balance-amount">${fmtEur(data.guthaben)}</span>
-                        <span class="balance-hint">${balHint}</span>
+                <div style="display:flex;gap:0;align-items:stretch">
+                    <div class="acct-section" style="flex:1">
+                        <div class="acct-section-title">${Lang.t('acct.balance')}</div>
+                        <div class="balance-card ${balClass}">
+                            <span class="balance-label">${Lang.t('acct.balance')}</span>
+                            <span class="balance-amount">${fmtEur(data.guthaben)}</span>
+                            <span class="balance-hint">${balHint}</span>
+                        </div>
+                    </div>
+                    <div class="acct-section" style="flex:0 0 auto;cursor:pointer;display:flex;flex-direction:column"
+                         onclick="showQr('/user-qr/${data.id}.png')">
+                        <div class="acct-section-title">${Lang.t('acct.phone')}</div>
+                        <img src="/user-qr/${data.id}.png" alt="QR"
+                             style="width:88px;height:88px;border-radius:8px;border:1px solid var(--border)"
+                             onerror="this.style.display='none'">
                     </div>
                 </div>
 
@@ -203,16 +219,7 @@ function renderAccount(data) {
                     ${txnsHtml}
                 </div>
 
-                <div class="acct-section">
-                    <div class="acct-section-title">${Lang.t('acct.phone')}</div>
-                    <div class="acct-qr-row">
-                        <img class="acct-qr-img" src="/user-qr/${data.id}.png" alt="QR"
-                             onerror="this.style.display='none'">
-                        <span class="acct-qr-hint">${Lang.t('acct.qrHint')}</span>
-                    </div>
-                </div>
-
-                <div class="acct-section">
+<div class="acct-section">
                     <div class="acct-section-title">${Lang.t('acct.settings')}</div>
                     <div style="display:flex;gap:12px;flex-wrap:wrap;padding:8px 0">
                         <a href="/change-pin.html" class="btn btn-ghost btn-sm">${Lang.t('acct.changePin')}</a>
@@ -227,11 +234,30 @@ function renderAccount(data) {
             const amount = parseFloat(btn.dataset.amount);
             const msgEl  = document.getElementById('topup-msg');
             try {
-                const res = await API.post('/api/account/topup', { amount });
+                await API.post('/api/account/topup', { amount });
+                let secs = 8;
+                const undoId = 'topup-undo-btn';
                 msgEl.className = 'text-success';
-                msgEl.textContent = res.message;
                 msgEl.style.display = 'block';
-                setTimeout(() => tryLoadAccount(), 1500);
+                msgEl.innerHTML = `+${fmtEur(amount)} &nbsp;<button class="btn btn-ghost btn-sm" id="${undoId}">${Lang.t('acct.topupUndo')} (${secs})</button>`;
+                const undoBtn = document.getElementById(undoId);
+                const timer = setInterval(() => {
+                    secs--;
+                    if (secs <= 0) { clearInterval(timer); tryLoadAccount(); }
+                    else { undoBtn.textContent = `${Lang.t('acct.topupUndo')} (${secs})`; }
+                }, 1000);
+                undoBtn.addEventListener('click', async () => {
+                    clearInterval(timer);
+                    try {
+                        await API.post('/api/account/topup/undo');
+                        msgEl.textContent = Lang.t('acct.topupUndone');
+                        setTimeout(tryLoadAccount, 800);
+                    } catch (e) {
+                        msgEl.className = 'text-danger';
+                        msgEl.textContent = e.detail || 'Failed';
+                        setTimeout(tryLoadAccount, 1500);
+                    }
+                });
             } catch (err) {
                 msgEl.className = 'text-danger';
                 msgEl.textContent = err.detail || Lang.t('acct.addFunds');

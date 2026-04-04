@@ -145,6 +145,27 @@ def topup(body: TopupRequest, request: Request, db: Session = Depends(get_db),
             'message': f'{amount:.2f} € added. New balance: {user.guthaben:.2f} €'}
 
 
+@router.post('/account/topup/undo')
+def topup_undo(request: Request, db: Session = Depends(get_db),
+               user: User = Depends(get_current_user)):
+    if not _is_verified(request, user.id):
+        raise HTTPException(403, 'PIN verification required')
+    txn = (db.query(Transaction)
+           .filter_by(user_id=user.id, type='topup')
+           .order_by(Transaction.id.desc())
+           .first())
+    if not txn:
+        raise HTTPException(400, 'No top-up to undo.')
+    age = datetime.now(timezone.utc) - datetime.fromisoformat(txn.created_at)
+    if age > timedelta(seconds=30):
+        raise HTTPException(400, 'Too late to undo.')
+    amount = txn.amount
+    user.guthaben = round(user.guthaben - amount, 2)
+    db.delete(txn)
+    db.commit()
+    return {'ok': True, 'message': f'Reversed {amount:.2f} €.'}
+
+
 # ── Change PIN ────────────────────────────────────────────────────────────────
 
 class ChangePinRequest(BaseModel):

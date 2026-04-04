@@ -126,9 +126,9 @@ function _showAdminPinPrompt(onVerified) {
         'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)';
     overlay.innerHTML = `
         <div class="pin-card" style="max-width:340px;width:100%">
-            <div class="pin-card-label">Admin Access</div>
+            <div class="pin-card-label">${Lang.t('adminPin.title')}</div>
             <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:14px;text-align:center;letter-spacing:0.5px">
-                Your PIN &nbsp;+&nbsp; Admin PIN
+                ${Lang.t('adminPin.hint')}
             </div>
             <div id="ap-error" class="pin-error"></div>
             <div class="pinpad-dots" id="ap-dots" style="margin-bottom:14px">
@@ -156,7 +156,7 @@ function _showAdminPinPrompt(onVerified) {
                 <button class="pinpad-key" data-ap="back">⌫</button>
             </div>
             <div class="pin-actions">
-                <button class="btn btn-ghost" id="ap-cancel">Cancel</button>
+                <button class="btn btn-ghost" id="ap-cancel">${Lang.t('adminPin.cancel')}</button>
             </div>
         </div>`;
     document.body.appendChild(overlay);

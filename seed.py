@@ -35,7 +35,7 @@ def seed():
                 user_id=admin.id,
                 amount=10.00,
                 type='entry_fee',
-                description='Entry fee credited on account creation.',
+                description='Entry fee added on account creation.',
             ))
             print('Admin account created:  username=admin  PIN=0000')
             print('Log in and change your PIN immediately!')

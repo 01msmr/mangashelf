@@ -259,6 +259,7 @@ def overdue(db: Session = Depends(get_db), _admin: User = Depends(get_current_ad
         result.append({
             'loan_id':    loan.id,
             'username':   loan.user.username,
+            'user_active': bool(loan.user.active),
             'book_title': loan.copy.book.title if loan.copy and loan.copy.book else '',
             'book_isbn':  loan.copy.book.isbn  if loan.copy and loan.copy.book else '',
             'due_date':   loan.due_date,
@@ -317,11 +318,14 @@ def rebuy(db: Session = Depends(get_db), _admin: User = Depends(get_current_admi
     )
     return [
         {
-            'id':         i.id,
-            'book_title': i.book.title if i.book else '',
-            'book_isbn':  i.book.isbn  if i.book else '',
-            'reason':     i.reason,
-            'added_at':   i.added_at,
+            'id':          i.id,
+            'book_title':  i.book.title  if i.book else '',
+            'book_author': i.book.author if i.book else '',
+            'book_isbn':   i.book.isbn   if i.book else '',
+            'copy_num':    i.copy.copy_num if i.copy else None,
+            'cover_path':  i.book.cover_path if i.book else None,
+            'reason':      i.reason,
+            'added_at':    i.added_at,
         }
         for i in items
     ]

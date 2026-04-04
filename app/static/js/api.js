@@ -35,12 +35,18 @@ function fmtEur(n) {
     return (n % 1 === 0 ? Math.round(n).toString() : n.toFixed(2)) + ' €';
 }
 
-/** Format ISO date string as DD.MM.YYYY */
+/** Format ISO date string — locale-aware, no leading zeros */
 function fmtDate(iso) {
     if (!iso) return '';
     try {
         const d = new Date(iso);
-        return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const lang = (typeof Lang !== 'undefined') ? Lang.current : 'en';
+        if (lang === 'en') {
+            return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'numeric', year: 'numeric' });
+        }
+        // de / swb: "12. 3. 2026"
+        const raw = d.toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' });
+        return raw.replace(/\.(\d)/g, '. $1');
     } catch { return iso; }
 }
 

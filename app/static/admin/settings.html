@@ -59,7 +59,9 @@
                         </div>
                         <hr class="divider">
                         <div id="purge-desc" style="font-size:13px;color:var(--text-muted);margin-bottom:8px"></div>
-                        <button class="btn btn-danger btn-sm" id="btn-purge"></button>
+                        <span id="purge-btn-area">
+                            <button class="btn btn-danger btn-sm" id="btn-purge"></button>
+                        </span>
                         <div id="purge-msg" class="fetch-status mt-2" style="display:none"></div>
                     </div>
                 </div>
@@ -89,6 +91,7 @@ function applyTranslations() {
     document.getElementById('btn-set-admin-pin').textContent  = Lang.t('adminSettings.setPinBtn');
     document.getElementById('purge-desc').textContent         = Lang.t('adminSettings.purgeDesc');
     document.getElementById('btn-purge').textContent          = Lang.t('adminSettings.purgeBtn');
+    document.getElementById('btn-purge').addEventListener('click', onPurgeClick);
 }
 
 async function init() {
@@ -149,20 +152,36 @@ document.getElementById('btn-set-admin-pin').addEventListener('click', async () 
     }
 });
 
-document.getElementById('btn-purge').addEventListener('click', async () => {
-    const msgEl = document.getElementById('purge-msg');
-    if (!confirm(Lang.t('adminSettings.purgeConfirm'))) return;
-    try {
-        const res = await API.post('/api/admin/purge-empty-books');
-        msgEl.className = 'fetch-status text-success';
-        msgEl.textContent = res.message;
-        msgEl.style.display = 'block';
-    } catch (err) {
-        msgEl.className = 'fetch-status text-danger';
-        msgEl.textContent = err.detail || 'Failed.';
-        msgEl.style.display = 'block';
-    }
-});
+function resetPurgeBtn() {
+    const area = document.getElementById('purge-btn-area');
+    area.innerHTML = `<button class="btn btn-danger btn-sm" id="btn-purge">${Lang.t('adminSettings.purgeBtn')}</button>`;
+    document.getElementById('btn-purge').addEventListener('click', onPurgeClick);
+}
+
+function onPurgeClick() {
+    const area = document.getElementById('purge-btn-area');
+    area.innerHTML = `
+        <span style="display:inline-flex;align-items:center;gap:6px">
+            <span class="fetch-status text-danger" style="display:inline">${Lang.t('adminSettings.purgeConfirm')}</span>
+            <button class="btn btn-danger btn-sm" id="btn-purge-yes">${Lang.t('adminUsers.confirmYes')}</button>
+            <button class="btn btn-ghost btn-sm" id="btn-purge-no">${Lang.t('adminUsers.confirmNo')}</button>
+        </span>`;
+    document.getElementById('btn-purge-no').addEventListener('click', resetPurgeBtn);
+    document.getElementById('btn-purge-yes').addEventListener('click', async () => {
+        resetPurgeBtn();
+        const msgEl = document.getElementById('purge-msg');
+        try {
+            const res = await API.post('/api/admin/purge-empty-books');
+            msgEl.className = 'fetch-status text-success';
+            msgEl.textContent = res.message;
+            msgEl.style.display = 'block';
+        } catch (err) {
+            msgEl.className = 'fetch-status text-danger';
+            msgEl.textContent = err.detail || 'Failed.';
+            msgEl.style.display = 'block';
+        }
+    });
+}
 
 init().then(() => {
     attachNumpad(document.getElementById('new-admin-pin'), document.getElementById('btn-numpad-admin-pin'), {});

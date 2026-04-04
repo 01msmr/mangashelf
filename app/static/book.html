@@ -72,9 +72,18 @@ async function init() {
         actionHtml = `<a href="/return.html?loan_id=${book.user_loan_id}" class="btn btn-primary detail-action-btn">${Lang.t('book.returnThis')}</a>`;
     } else if (book.available > 0 && book.borrow_allowed) {
         actionHtml = `<a href="/borrow.html?isbn=${encodeURIComponent(isbn)}" class="btn btn-primary detail-action-btn">${Lang.t('book.borrow')}</a>`;
-    } else if (!book.borrow_allowed && book.borrow_reason) {
-        const msg = book.borrow_reason === 'balance_low' ? Lang.t('book.balanceLowLong') : Lang.t('book.loanLimit');
-        actionHtml = `<div class="detail-borrow-blocked">${esc(msg)}</div>`;
+    } else {
+        let tip;
+        if (book.available === 0) {
+            tip = Lang.t('book.reasonNoAvail');
+        } else if (book.borrow_reason === 'account_locked') {
+            tip = Lang.t('book.reasonLocked');
+        } else if (book.borrow_reason === 'balance_low') {
+            tip = Lang.t('book.balanceLow');
+        } else {
+            tip = Lang.t('book.loanLimit');
+        }
+        actionHtml = `<button class="btn btn-primary detail-action-btn" disabled style="opacity:.4;cursor:not-allowed" data-tip="${esc(tip)}">${Lang.t('book.borrow')}</button>`;
     }
 
     let loansHtml = '';
