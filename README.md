@@ -203,7 +203,11 @@ flowchart TD
 git clone https://github.com/01msmr/mangashelf.git
 cd mangashelf
 
-# 2. Set your secret key in docker-compose.yml, then start
+# 2. Create your .env file and set a secret key
+cp .env.example .env
+# edit .env and set SECRET_KEY
+
+# 3. Start
 docker compose up -d
 ```
 
@@ -223,7 +227,7 @@ docker compose up -d --build
 |---|---|---|
 | `SECRET_KEY` | `mangashelf-dev-secret-change-in-production` | Session signing key — **change this in production** |
 
-Set it in `docker-compose.yml` under `environment`.
+Copy `.env.example` to `.env` and set your value. The `.env` file is gitignored and read automatically by Docker Compose.
 
 ---
 

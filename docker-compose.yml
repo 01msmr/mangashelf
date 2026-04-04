@@ -8,8 +8,8 @@ services:
       - "80:80"
     volumes:
       - mangashelf-data:/code/data
-    environment:
-      - SECRET_KEY=change-me-in-production
+    env_file:
+      - .env
 
 volumes:
   mangashelf-data:
