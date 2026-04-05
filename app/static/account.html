@@ -230,17 +230,17 @@ function renderAccount(data) {
             const msgEl  = document.getElementById('topup-msg');
             try {
                 await API.post('/api/account/topup', { amount });
-                let secs = 8;
+                const endTime = Date.now() + 8000;
                 const undoId = 'topup-undo-btn';
                 msgEl.className = 'text-success';
                 msgEl.style.display = 'block';
-                msgEl.innerHTML = `+${fmtEur(amount)} &nbsp;<button class="btn btn-ghost btn-sm" id="${undoId}">${Lang.t('acct.topupUndo')} (${secs})</button>`;
+                msgEl.innerHTML = `+${fmtEur(amount)} &nbsp;<button class="btn btn-ghost btn-sm" id="${undoId}">${Lang.t('acct.topupUndo')} (8)</button>`;
                 const undoBtn = document.getElementById(undoId);
                 const timer = setInterval(() => {
-                    secs--;
-                    if (secs <= 0) { clearInterval(timer); tryLoadAccount(); }
-                    else { undoBtn.textContent = `${Lang.t('acct.topupUndo')} (${secs})`; }
-                }, 1000);
+                    const remaining = Math.ceil((endTime - Date.now()) / 1000);
+                    if (remaining <= 0) { clearInterval(timer); tryLoadAccount(); }
+                    else { undoBtn.textContent = `${Lang.t('acct.topupUndo')} (${remaining})`; }
+                }, 500);
                 undoBtn.addEventListener('click', async () => {
                     clearInterval(timer);
                     try {

@@ -88,6 +88,8 @@ html, body {
     letter-spacing: 1px;
     color: var(--text);
     text-decoration: none;
+    border: 2px solid transparent;
+    border-radius: var(--radius);
 }
 .logo-badge {
     display: inline-flex;
@@ -1252,10 +1254,27 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .login-subtitle { color: var(--text-muted); font-size: var(--text-sm); margin-top: -12px; }
 .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; width: 100%; max-width: 720px; }
 
+@keyframes nav-border-blink {
+    0%, 100% { border-color: var(--primary-hover); }
+    50%       { border-color: transparent; }
+}
+
 .app-header .nav-active, a.app-logo:hover {
     border: 2px solid var(--primary-hover);
     background: var(--primary-dim);
     border-radius: var(--radius);
+}
+
+.app-header a:not(.nav-active),
+.app-header button:not(.nav-active) {
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+}
+
+.app-header a:not(.nav-active):hover,
+.app-header button:not(.nav-active):hover {
+    border-color: var(--primary-hover);
+    animation: nav-border-blink 0.2s 2 forwards;
 }
 
 .app-header .nav-active:not(.app-logo) {
