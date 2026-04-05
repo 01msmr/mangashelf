@@ -42,14 +42,14 @@ async function tryLoadAccount() {
             // redirected
         } else {
             document.getElementById('main-content').innerHTML =
-                `<p style="padding:24px" class="text-danger">${esc(err.detail)}</p>`;
+                `<p class="text-danger p-6">${esc(err.detail)}</p>`;
         }
     }
 }
 
 function renderVerify() {
     document.getElementById('main-content').innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:center;flex:1">
+        <div class="flex items-center justify-center flex-1">
             <div class="pin-card">
                 <div class="pin-card-label" id="verify-label"></div>
                 <div class="pin-card-user" id="verify-subtitle"></div>
@@ -102,9 +102,8 @@ function renderVerify() {
 
 function showQr(src) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;' +
-        'display:flex;align-items:center;justify-content:center;cursor:pointer';
-    overlay.innerHTML = `<img src="${src}" style="max-width:80vw;max-height:80vh;border-radius:8px;background:#fff;padding:14px;box-shadow:0 0 40px rgba(0,0,0,0.8)">`;
+    overlay.className = 'overlay';
+    overlay.innerHTML = `<img src="${src}" class="overlay-img">`;
     overlay.addEventListener('click', () => overlay.remove());
     document.addEventListener('keydown', function handler(e) {
         if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
@@ -131,7 +130,7 @@ function renderAccount(data) {
                 <div class="loan-card${overdue ? ' loan-overdue' : ''}">
                     <div class="loan-card-info">
                         <div class="loan-card-title">
-                            <a href="/book.html?isbn=${encodeURIComponent(l.book_isbn)}" style="color:inherit;text-decoration:none">${esc(l.book_title)}</a>
+                            <a href="/book.html?isbn=${encodeURIComponent(l.book_isbn)}" class="link-plain">${esc(l.book_title)}</a>
                         </div>
                     </div>
                     <div class="loan-card-right">
@@ -140,7 +139,7 @@ function renderAccount(data) {
                         </div>
                         ${overdue ? `<span class="overdue-badge">${Lang.t('return.overdue')}</span>` : ''}
                         <span id="return-wrap-${l.id}">
-                            <button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="confirmReturn(${l.id})">${Lang.t('book.return')}</button>
+                            <button class="btn btn-ghost btn-sm mt-1" onclick="confirmReturn(${l.id})">${Lang.t('book.return')}</button>
                         </span>
                     </div>
                 </div>
@@ -175,12 +174,12 @@ function renderAccount(data) {
         <div class="acct-page">
             <div class="lang-switcher-row">
                 <a href="/change-pin.html" class="btn btn-ghost btn-sm">${Lang.t('acct.changePin')}</a>
-                <span class="lang-switcher-label" style="margin-left:auto">${Lang.t('acct.language')}</span>
+                <span class="lang-switcher-label ml-auto">${Lang.t('acct.language')}</span>
                 <div class="lang-switcher">${langBtns}</div>
             </div>
             <div class="acct-body">
-                <div style="display:flex;gap:0;align-items:stretch">
-                    <div class="acct-section" style="flex:1">
+                <div class="flex items-stretch">
+                    <div class="acct-section flex-1">
                         <div class="acct-section-title">${Lang.t('acct.balance')}</div>
                         <div class="balance-card ${balClass}">
                             <span class="balance-label">${Lang.t('acct.balance')}</span>
@@ -188,11 +187,10 @@ function renderAccount(data) {
                             <span class="balance-hint">${balHint}</span>
                         </div>
                     </div>
-                    <div class="acct-section" style="flex:0 0 auto;cursor:pointer;display:flex;flex-direction:column"
+                    <div class="acct-section acct-qr-section"
                          onclick="showQr('/user-qr/${data.id}.png')">
                         <div class="acct-section-title">${Lang.t('acct.phone')}</div>
-                        <img src="/user-qr/${data.id}.png" alt="QR"
-                             style="width:88px;height:88px;border-radius:8px;border:1px solid var(--border)"
+                        <img src="/user-qr/${data.id}.png" alt="QR" class="acct-qr-img"
                              onerror="this.style.display='none'">
                     </div>
                 </div>
@@ -202,7 +200,7 @@ function renderAccount(data) {
                     <div class="topup-form">
                         <div class="topup-hint">${Lang.t('acct.cashHint')}</div>
                         <div class="topup-presets">${topupBtns}</div>
-                        <div id="topup-msg" style="font-size:13px;display:none"></div>
+                        <div id="topup-msg" class="text-sm" style="display:none"></div>
                     </div>
                 </div>
 
@@ -277,8 +275,8 @@ function confirmReturn(loanId) {
     const wrap = document.getElementById(`return-wrap-${loanId}`);
     if (!wrap) return;
     wrap.innerHTML = `
-        <span style="display:inline-flex;align-items:center;gap:6px;margin-top:4px">
-            <span class="text-danger" style="font-size:13px">${Lang.t('acct.confirmReturn')}</span>
+        <span class="inline-flex items-center gap-1 mt-1">
+            <span class="text-danger text-sm">${Lang.t('acct.confirmReturn')}</span>
             <button class="btn btn-ghost btn-sm" onclick="doReturn(${loanId})">${Lang.t('adminUsers.confirmYes')}</button>
             <button class="btn btn-ghost btn-sm" onclick="tryLoadAccount()">${Lang.t('adminUsers.confirmNo')}</button>
         </span>`;
@@ -290,7 +288,7 @@ async function doReturn(loanId) {
         tryLoadAccount();
     } catch (err) {
         const wrap = document.getElementById(`return-wrap-${loanId}`);
-        if (wrap) wrap.innerHTML = `<span class="text-danger" style="font-size:13px">${esc(err.detail || 'Failed')}</span>`;
+        if (wrap) wrap.innerHTML = `<span class="text-danger text-sm">${esc(err.detail || 'Failed')}</span>`;
     }
 }
 

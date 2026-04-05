@@ -41,9 +41,8 @@ function applyNavLabels() {
 
 function showQr(src) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;' +
-        'display:flex;align-items:center;justify-content:center;cursor:pointer';
-    overlay.innerHTML = `<img src="${src}" style="max-width:80vw;max-height:80vh;border-radius:8px;background:#fff;padding:14px;box-shadow:0 0 40px rgba(0,0,0,0.8)">`;
+    overlay.className = 'overlay';
+    overlay.innerHTML = `<img src="${src}" class="overlay-img">`;
     overlay.addEventListener('click', () => overlay.remove());
     document.addEventListener('keydown', function handler(e) {
         if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
@@ -75,18 +74,16 @@ async function loadUsers() {
                     <span class="lbl-hover">${u.is_admin ? '—' : 'A'}</span>
                 </button>`;
 
-            const hide = 'style="visibility:hidden;pointer-events:none"';
-
             const forcePinBtn = isSelf
-                ? `<button class="btn btn-ghost btn-sm" ${hide}><i class="fa-solid fa-rotate-left"></i></button>`
+                ? `<button class="btn btn-ghost btn-sm invisible"><i class="fa-solid fa-rotate-left"></i></button>`
                 : `<button class="btn btn-ghost btn-sm tip-left" data-tip="${Lang.t('adminUsers.forcePin')}" onclick="forcePin(${u.id})"><i class="fa-solid fa-rotate-left"></i></button>`;
 
             const deactivateBtn = isSelf
-                ? `<button class="btn btn-ghost btn-sm" ${hide}><i class="fa-solid ${u.active ? 'fa-lock' : 'fa-user-lock'}"></i></button>`
+                ? `<button class="btn btn-ghost btn-sm invisible"><i class="fa-solid ${u.active ? 'fa-lock' : 'fa-user-lock'}"></i></button>`
                 : `<button class="btn btn-ghost btn-sm tip-left" data-tip="${u.active ? Lang.t('adminUsers.deactivate') : Lang.t('adminUsers.activate')}" onclick="deactivate(${u.id}, ${u.active})"><i class="fa-solid ${u.active ? 'fa-lock' : 'fa-user-lock'}"></i></button>`;
 
             const deleteBtn = isSelf
-                ? `<button class="btn btn-danger btn-sm" ${hide}><i class="fa-solid fa-trash"></i></button>`
+                ? `<button class="btn btn-danger btn-sm invisible"><i class="fa-solid fa-trash"></i></button>`
                 : `<button class="btn btn-danger btn-sm tip-left" data-tip="${Lang.t('adminUsers.delete')}" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i></button>`;
 
             return `
@@ -94,7 +91,7 @@ async function loadUsers() {
                 <div class="user-row" id="user-${u.id}">
                     <div class="user-main">
                         <div class="user-info">
-                            <span class="user-name${!u.active ? ' user-locked' : ''}">${!u.active ? '<i class="fa-solid fa-lock" style="font-size:11px;margin-right:5px;opacity:.8"></i>' : ''}${esc(u.username)}</span>
+                            <span class="user-name${!u.active ? ' user-locked' : ''}">${!u.active ? '<i class="fa-solid fa-lock lock-icon"></i>' : ''}${esc(u.username)}</span>
                             ${inactiveBadge}
                         </div>
                         <div class="user-stats">
@@ -103,24 +100,23 @@ async function loadUsers() {
                         </div>
                         <div class="user-actions">
                             ${isSelf ? '' : `
-                            <button class="btn btn-ghost" onclick="showQr('/user-qr/${u.id}.png')"
-                                    data-tip="${Lang.t('adminUsers.fastLogin')}"
-                                    style="height:52px;padding:0 14px 0 12px;gap:12px;display:flex;align-items:center">
-                                <span style="font-size:13px;color:var(--text-muted);white-space:nowrap">${esc(u.username)} · ${Lang.t('adminUsers.fastLogin')}</span>
-                                <i class="fa-solid fa-qrcode" style="font-size:38px;color:#fff"></i>
+                            <button class="btn btn-ghost user-qr-btn" onclick="showQr('/user-qr/${u.id}.png')"
+                                    data-tip="${Lang.t('adminUsers.fastLogin')}">
+                                <span class="user-qr-label">${esc(u.username)} · ${Lang.t('adminUsers.fastLogin')}</span>
+                                <i class="fa-solid fa-qrcode user-qr-icon"></i>
                             </button>`}
                         </div>
                     </div>
                     <div class="user-adjust">
                         ${isSelf ? `
-                        <div class="adjust-form" style="justify-content:flex-end">
+                        <div class="adjust-form">
                             <a href="/account.html" class="btn btn-ghost">${Lang.t('adminUsers.goToAccount')}</a>
                         </div>` : `
-                        <div class="adjust-form" style="justify-content:flex-end">
+                        <div class="adjust-form">
                             <input type="number" step="0.01" placeholder="± €" id="adj-${u.id}"
                                    class="form-input adjust-amount" inputmode="none">
                             <button type="button" id="btn-numpad-adj-${u.id}" class="btn btn-ghost adjust-kbd-btn" tabindex="-1" data-tip="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                            <button class="btn btn-ghost adjust-icon-btn" style="margin-right:auto" onclick="adjust(${u.id})" data-tip="${Lang.t('adminUsers.adjust')}"><i class="fa-solid fa-square-check"></i></button>
+                            <button class="btn btn-ghost adjust-icon-btn mr-auto" onclick="adjust(${u.id})" data-tip="${Lang.t('adminUsers.adjust')}"><i class="fa-solid fa-square-check"></i></button>
                             <button type="button" id="btn-numpad-pin-${u.id}" class="btn btn-ghost adjust-kbd-btn" tabindex="-1" data-tip="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                             <input type="text" inputmode="none" maxlength="4" placeholder="••••"
                                    id="pin-${u.id}" class="form-input adjust-amount pin-admin-input"
@@ -132,7 +128,7 @@ async function loadUsers() {
                         </div>`}
                     </div>
                 </div>
-                <div id="msg-${u.id}" class="fetch-status" style="display:none;padding:4px 14px 6px;text-align:right"></div>
+                <div id="msg-${u.id}" class="fetch-status text-right" style="display:none;padding:4px 14px 6px"></div>
                 </div>
             `;
         }).join('');
@@ -180,8 +176,8 @@ function deleteUser(uid) {
     const btn = document.querySelector(`#wrap-${uid} .btn-danger`);
     if (!btn) return;
     btn.outerHTML = `
-        <span id="del-confirm-${uid}" style="display:inline-flex;align-items:center;gap:6px">
-            <span class="fetch-status text-danger" style="display:inline">${Lang.t('adminUsers.confirmDelete')}</span>
+        <span id="del-confirm-${uid}" class="inline-flex items-center gap-1">
+            <span class="fetch-status text-danger">${Lang.t('adminUsers.confirmDelete')}</span>
             <button class="btn btn-danger btn-sm" onclick="deleteUserConfirmed(${uid})">${Lang.t('adminUsers.confirmYes')}</button>
             <button class="btn btn-ghost btn-sm" onclick="loadUsers()">${Lang.t('adminUsers.confirmNo')}</button>
         </span>`;

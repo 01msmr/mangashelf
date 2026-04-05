@@ -32,7 +32,7 @@ function starsHtml(avg) {
     if (!avg) return '';
     const n = Math.round(avg);
     const s = Array.from({length: 9}, (_, i) => i < n ? '★' : '☆');
-    const gap = '<span style="display:inline-block;width:.22em"></span>';
+    const gap = '<span class="stars-gap"></span>';
     return s.slice(0,3).join('') + gap + s.slice(3,6).join('') + gap + s.slice(6,9).join('');
 }
 
@@ -60,7 +60,7 @@ async function init() {
 
     const coverHtml = book.cover_path
         ? `<img class="detail-cover-img" src="/static/${esc(book.cover_path)}" alt="">`
-        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal cover-icon" style="color:#aaa"></i></div>`;
+        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal cover-icon"></i></div>`;
 
     const avail = book.available > 0;
     const statusBadge = avail
@@ -83,7 +83,7 @@ async function init() {
         } else {
             tip = Lang.t('book.loanLimit');
         }
-        actionHtml = `<button class="btn btn-primary detail-action-btn" disabled style="opacity:.4;cursor:not-allowed" data-tip="${esc(tip)}">${Lang.t('book.borrow')}</button>`;
+        actionHtml = `<button class="btn btn-primary detail-action-btn opacity-60" disabled data-tip="${esc(tip)}">${Lang.t('book.borrow')}</button>`;
     }
 
     let loansHtml = '';
@@ -108,12 +108,12 @@ async function init() {
                 <div class="detail-admin">
                     <div class="detail-admin-label">${Lang.t('book.admin')}</div>
                     <div class="broken-form">
-                        <select id="broken-copy" class="form-input form-select" style="height:44px;font-size:14px">${opts}</select>
-                        <input type="text" id="broken-note" class="form-input" placeholder="${Lang.t('book.noteHint')}" style="height:44px;font-size:14px">
+                        <select id="broken-copy" class="form-input form-select">${opts}</select>
+                        <input type="text" id="broken-note" class="form-input" placeholder="${Lang.t('book.noteHint')}">
                         <div class="broken-form-btns">
                             <button class="btn btn-danger" id="btn-broken">${Lang.t('book.markBroken')}</button>
                         </div>
-                        <div id="broken-msg" class="text-danger" style="font-size:13px;display:none"></div>
+                        <div id="broken-msg" class="text-danger text-sm" style="display:none"></div>
                     </div>
                 </div>
             `;
@@ -121,13 +121,13 @@ async function init() {
     }
 
     const avgBadge = book.avg_rating
-        ? `<span class="rating-badge" style="margin-left:6px" data-tip="${book.avg_rating}/9">${starsHtml(book.avg_rating)}</span>`
+        ? `<span class="rating-badge ml-1" data-tip="${book.avg_rating}/9">${starsHtml(book.avg_rating)}</span>`
         : '';
 
     document.getElementById('detail-body').innerHTML = `
-        <div class="detail-cover-wrap" style="flex-direction:column;gap:6px;align-items:flex-start">
+        <div class="detail-cover-wrap detail-cover-col">
             ${coverHtml}
-            <div style="font-size:11px;color:var(--text-dim);word-break:break-all;max-width:160px;padding:0 2px">${esc(book.isbn)}</div>
+            <div class="detail-isbn">${esc(book.isbn)}</div>
         </div>
         <div class="detail-info">
             <div class="detail-title">${esc(book.title)}${book.subtitle ? `<span class="detail-subtitle"> — ${esc(book.subtitle)}</span>` : ''}</div>
@@ -180,11 +180,11 @@ function renderRatingSection(book, isbn) {
         sec.innerHTML = `
             <div class="rating-section">
                 <div class="rating-section-inline">
-                    <span style="font-size:var(--text-sm);color:var(--text-muted)">${Lang.t('rating.yourRating')}:</span>
-                    <span class="rating-badge" style="font-size:var(--text-base)">★ ${book.user_rating}</span>
+                    <span class="text-sm text-muted">${Lang.t('rating.yourRating')}:</span>
+                    <span class="rating-badge text-base">★ ${book.user_rating}</span>
                     <button class="btn btn-ghost btn-sm rating-edit-expand" id="btn-edit-rating">${Lang.t('rating.edit')}</button>
                 </div>
-                <div id="rating-edit-area" style="display:none;margin-top:10px"></div>
+                <div id="rating-edit-area" class="mt-2" style="display:none"></div>
             </div>`;
 
         document.getElementById('btn-edit-rating').addEventListener('click', () => {
@@ -203,10 +203,10 @@ function renderRatingSection(book, isbn) {
         sec.innerHTML = `
             <div class="rating-section">
                 <div class="rating-section-inline">
-                    <span style="font-size:var(--text-sm);color:var(--text-muted)">${Lang.t('rating.rateThis')}</span>
+                    <span class="text-sm text-muted">${Lang.t('rating.rateThis')}</span>
                     <button class="btn btn-ghost btn-sm rating-edit-expand" id="btn-open-rating">${Lang.t('rating.rateThis')}</button>
                 </div>
-                <div id="rating-edit-area" style="display:none;margin-top:10px"></div>
+                <div id="rating-edit-area" class="mt-2" style="display:none"></div>
             </div>`;
 
         document.getElementById('btn-open-rating').addEventListener('click', () => {
@@ -223,10 +223,10 @@ function renderRatingSection(book, isbn) {
 function mountRatingEditor(container, initial, isbn) {
     container.innerHTML = `
         <div id="inline-slider"></div>
-        <div style="display:flex;gap:8px;margin-top:8px">
+        <div class="flex gap-2 mt-1">
             <button class="btn btn-primary btn-sm flex-1" id="btn-rate-save">${Lang.t('rating.save')}</button>
         </div>
-        <div id="rate-msg" style="font-size:var(--text-sm);margin-top:6px;display:none"></div>`;
+        <div id="rate-msg" class="text-sm mt-1" style="display:none"></div>`;
 
     const slider = createRatingSlider(document.getElementById('inline-slider'), initial);
 

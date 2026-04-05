@@ -45,7 +45,7 @@ async function init() {
         document.getElementById('action-body').innerHTML = `
             <div class="action-panel">
                 <div class="action-title text-danger">${esc(err.detail)}</div>
-                <div class="action-buttons"><a href="/index.html" class="btn btn-ghost" style="flex:1">${Lang.t('borrow.back')}</a></div>
+                <div class="action-buttons"><a href="/index.html" class="btn btn-ghost flex-1">${Lang.t('borrow.back')}</a></div>
             </div>`;
         return;
     }
@@ -79,7 +79,7 @@ async function init() {
                 ${info.is_donor ? `
                 <div class="detail-row">
                     <span class="dr-label">${Lang.t('borrow.cost')}</span>
-                    <span class="dr-value" style="color:var(--success)">${Lang.t('borrow.donorFree')}</span>
+                    <span class="dr-value text-success">${Lang.t('borrow.donorFree')}</span>
                 </div>` : ''}
                 <div class="detail-row">
                     <span class="dr-label">${Lang.t('borrow.dueDate')}</span>

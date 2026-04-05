@@ -50,12 +50,12 @@ async function init() {
 
     const coverHtml = info.book.cover_path
         ? `<img class="detail-cover-img" src="/static/${esc(info.book.cover_path)}" alt="">`
-        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal cover-icon" style="color:#aaa"></i></div>`;
+        : `<div class="cover-placeholder cover-xl"><i class="fa-solid fa-book fa-flip-horizontal cover-icon"></i></div>`;
 
     const now = new Date().toISOString();
     const overdue = info.due_date < now;
     const overdueBadge = overdue
-        ? `<span class="overdue-badge" style="margin-bottom:8px;display:inline-block">${Lang.t('return.overdue')}</span>`
+        ? `<span class="overdue-badge" style="display:inline-block;margin-bottom:8px">${Lang.t('return.overdue')}</span>`
         : '';
 
     document.getElementById('action-body').innerHTML = `
@@ -106,12 +106,12 @@ function renderRatingPanel(book, coverHtml, successMsg, existingRating) {
         <div class="action-cover">${coverHtml}</div>
         <div class="action-panel">
             <div class="action-title text-success">${Lang.t('return.success')}</div>
-            <div class="action-subtitle" style="font-size:var(--text-sm);color:var(--text-muted)">${Lang.t('rating.howWas')}</div>
+            <div class="action-subtitle text-sm text-muted">${Lang.t('rating.howWas')}</div>
             <div class="rating-widget">
                 <div class="rating-widget-title">${existingRating > 0 ? Lang.t('rating.yourRating') + ': ★ ' + existingRating : ''}</div>
                 <div id="slider-container"></div>
             </div>
-            <div class="action-buttons" style="margin-top:8px">
+            <div class="action-buttons mt-1">
                 <button class="btn btn-primary flex-1" id="btn-save-rating">${Lang.t('rating.save')}</button>
                 <a href="/index.html" class="btn btn-ghost">${Lang.t('rating.skip')}</a>
             </div>

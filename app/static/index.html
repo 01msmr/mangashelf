@@ -11,10 +11,10 @@
 <main class="app-main">
     <div class="list-page">
         <div class="list-header">
-            <div class="search-form" style="position:relative;display:flex;align-items:center">
+            <div class="search-form">
                 <input type="text" id="search" class="form-input search-input" placeholder="Search for books" autofocus style="padding-right:36px">
-                <button id="btn-clear-search" type="button" class="btn btn-ghost btn-sm" tabindex="-1"
-                        style="display:none;position:absolute;right:4px">
+                <button id="btn-clear-search" type="button" class="btn btn-ghost btn-sm absolute" tabindex="-1"
+                        style="display:none;right:4px">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -22,7 +22,7 @@
             <label class="available-filter-label" id="chk-available-label">
                 <input type="checkbox" id="chk-available"> Available
             </label>
-            <a id="btn-add" href="/admin/add-book.html" class="btn btn-ghost btn-sm" style="display:none;margin-left:auto">
+            <a id="btn-add" href="/admin/add-book.html" class="btn btn-ghost btn-sm ml-auto" style="display:none">
                 <i class="fa-solid fa-plus"></i> <span id="btn-add-label">Add book</span>
             </a>
         </div>
@@ -41,7 +41,7 @@ function starsHtml(avg) {
     if (!avg) return '';
     const n = Math.round(avg);
     const s = Array.from({length: 9}, (_, i) => i < n ? '★' : '☆');
-    const gap = '<span style="display:inline-block;width:.22em"></span>';
+    const gap = '<span class="stars-gap"></span>';
     return s.slice(0,3).join('') + gap + s.slice(3,6).join('') + gap + s.slice(6,9).join('');
 }
 
@@ -111,7 +111,7 @@ function renderBook(b, newBookDays) {
         : `<div class="cover-placeholder cover-sm"><i class="fa-solid fa-book fa-flip-horizontal cover-icon-sm"></i></div>`;
 
     const starsRow = `<div class="be-stars">${newBadge}${b.avg_rating
-        ? `<span class="rating-badge" role="img" aria-label="Rating ${Math.round(b.avg_rating)} of 9" style="white-space:nowrap">${starsHtml(b.avg_rating)}</span>${b.rating_count ? `<span style="font-size:0.75em;color:var(--text-muted);margin-left:12px;white-space:nowrap">${b.rating_count} <i class="fa-solid fa-square-check"></i></span>` : ''}`
+        ? `<span class="rating-badge" role="img" aria-label="Rating ${Math.round(b.avg_rating)} of 9">${starsHtml(b.avg_rating)}</span>${b.rating_count ? `<span class="text-muted rating-count">${b.rating_count} <i class="fa-solid fa-square-check"></i></span>` : ''}`
         : ''}</div>`;
 
     const total = b.total_copies || 1;
@@ -130,15 +130,15 @@ function renderBook(b, newBookDays) {
         actionBtn = `<button onclick="openBorrow(${b.id}, '${esc(b.isbn)}', ${b.loan_rate || 0.5})" class="btn btn-primary btn-sm">${Lang.t('book.borrow')}</button>`;
     } else {
         const tip = b.available === 0 ? Lang.t('book.reasonNoAvail') : b.borrow_reason === 'account_locked' ? Lang.t('book.reasonLocked') : b.borrow_reason === 'balance_low' ? Lang.t('book.balanceLow') : Lang.t('book.loanLimit');
-        actionBtn = `<button class="btn btn-primary btn-sm" disabled style="opacity:.4;cursor:not-allowed" data-tip="${esc(tip)}">${Lang.t('book.borrow')}</button>`;
+        actionBtn = `<button class="btn btn-primary btn-sm opacity-60" disabled data-tip="${esc(tip)}">${Lang.t('book.borrow')}</button>`;
     }
 
     let adminRow = '';
 
     let brokenBtn = '';
     if (currentUser.is_admin) {
-        brokenBtn = `<button class="btn btn-ghost btn-sm be-broken-btn" id="btn-broken-${b.id}"
-                             data-tip="${Lang.t('book.markBroken')}" style="font-size:var(--text-xs)">
+        brokenBtn = `<button class="btn btn-ghost btn-sm be-broken-btn text-xs" id="btn-broken-${b.id}"
+                             data-tip="${Lang.t('book.markBroken')}">
                          <i class="fa-solid fa-triangle-exclamation"></i>
                      </button>`;
     }
@@ -146,18 +146,18 @@ function renderBook(b, newBookDays) {
     return `
         <div class="be" id="be-${b.id}" data-isbn="${esc(b.isbn)}">
             <div class="be-main">
-                <div class="be-cover"${b.available === 0 ? ' style="opacity:.6"' : ''}>${cover}</div>
+                <div class="be-cover${b.available === 0 ? ' opacity-60' : ''}">${cover}</div>
                 <div class="be-body">
                     ${starsRow}
                     <div class="be-title">${esc(b.title)}${b.subtitle ? `<span class="be-subtitle"> — ${esc(b.subtitle)}</span>` : ''}</div>
                     ${adminRow}
                 </div>
                 <div class="be-side">
-                    <div style="display:flex;align-items:center;gap:6px">${brokenBtn}${badge}</div>
+                    <div class="flex items-center gap-1">${brokenBtn}${badge}</div>
                 </div>
                 <div class="be-author-row">
                     <div class="be-author">${esc(b.author || '')}</div>
-                    <div class="be-action-wrap" id="be-action-${b.id}"${b.available === 0 ? ' style="opacity:.6"' : ''}>${actionBtn}</div>
+                    <div class="be-action-wrap${b.available === 0 ? ' opacity-60' : ''}" id="be-action-${b.id}">${actionBtn}</div>
                 </div>
             </div>
             <div class="be-broken-form" id="broken-form-${b.id}" style="display:none"></div>
@@ -279,8 +279,8 @@ async function markBroken(bookId, isbn) {
         if (!opts) { formEl.style.display = 'none'; return; }
         formEl.innerHTML = `
             <div class="be-broken-inner">
-                <select id="bc-sel-${bookId}" class="form-input form-select" style="height:36px;font-size:13px;flex:1;min-width:0">${opts}</select>
-                <input type="text" id="bc-note-${bookId}" class="form-input" placeholder="${Lang.t('book.noteHint')}" style="height:36px;font-size:13px;flex:1;min-width:0">
+                <select id="bc-sel-${bookId}" class="form-input form-select">${opts}</select>
+                <input type="text" id="bc-note-${bookId}" class="form-input" placeholder="${Lang.t('book.noteHint')}">
                 <button class="btn btn-danger btn-sm" id="bc-confirm-${bookId}">${Lang.t('book.markBroken')}</button>
             </div>
             <div class="be-broken-msg text-danger" id="bc-msg-${bookId}" style="display:none;padding:4px 0"></div>`;

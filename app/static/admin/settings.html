@@ -17,9 +17,9 @@
             <a href="/admin/settings.html" class="admin-nav-item active"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
         </nav>
         <div class="admin-body">
-            <div class="hint-aside-row" style="align-items:start;padding-top:8px;gap:16px;flex-wrap:wrap">
+            <div class="hint-aside-row items-start pt-2 gap-6 flex-wrap">
                 <!-- Card 1: Library settings -->
-                <div class="card" style="max-width:380px;flex:1;min-width:280px">
+                <div class="card card-col">
                     <div class="card-header" id="card-title"></div>
                     <div class="card-body">
                         <div class="form-group mb-3">
@@ -48,21 +48,21 @@
                     </div>
                 </div>
                 <!-- Card 2: Admin actions -->
-                <div class="card" style="max-width:380px;flex:1;min-width:280px">
+                <div class="card card-col">
                     <div class="card-header" id="card-title-actions"></div>
                     <div class="card-body">
                         <div class="form-group mb-3">
                             <label class="form-label" id="label-admin-pin"></label>
-                            <div id="admin-pin-desc" style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:8px"></div>
-                            <div style="display:flex;gap:8px;align-items:center">
-                                <input type="password" id="new-admin-pin" class="form-input pin-admin-input" inputmode="none" maxlength="4" placeholder="••••" style="flex:1">
+                            <div id="admin-pin-desc" class="form-desc"></div>
+                            <div class="flex gap-2 items-center">
+                                <input type="password" id="new-admin-pin" class="form-input pin-admin-input flex-1" inputmode="none" maxlength="4" placeholder="••••">
                                 <button type="button" id="btn-numpad-admin-pin" class="btn btn-ghost btn-sm" tabindex="-1" data-tip="Numpad"><i class="fa-solid fa-keyboard"></i></button>
                                 <button class="btn btn-ghost btn-sm" id="btn-set-admin-pin"></button>
                             </div>
                             <div id="admin-pin-msg" class="fetch-status mt-1" style="display:none"></div>
                         </div>
                         <hr class="divider">
-                        <div id="purge-desc" style="font-size:13px;color:var(--text-muted);margin-bottom:8px"></div>
+                        <div id="purge-desc" class="form-desc"></div>
                         <span id="purge-btn-area">
                             <button class="btn btn-danger btn-sm" id="btn-purge"></button>
                         </span>
@@ -84,7 +84,7 @@ function applyTranslations() {
     document.querySelector('.nav-label-overdue').textContent  = Lang.t('admin.overdue');
     document.querySelector('.nav-label-rebuy').textContent    = Lang.t('admin.rebuy');
     document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
-    document.getElementById('card-title').textContent         = Lang.t('admin.settings');
+    document.getElementById('card-title').textContent         = Lang.t('adminSettings.cardTitle');
     document.getElementById('card-title-actions').textContent = Lang.t('adminSettings.actionsTitle');
     document.getElementById('label-max-books').textContent    = Lang.t('adminSettings.maxBooks');
     document.getElementById('label-max-days').textContent     = Lang.t('adminSettings.maxDays');
@@ -168,8 +168,8 @@ function resetPurgeBtn() {
 function onPurgeClick() {
     const area = document.getElementById('purge-btn-area');
     area.innerHTML = `
-        <span style="display:inline-flex;align-items:center;gap:6px">
-            <span class="fetch-status text-danger" style="display:inline">${Lang.t('adminSettings.purgeConfirm')}</span>
+        <span class="inline-flex items-center gap-1">
+            <span class="fetch-status text-danger">${Lang.t('adminSettings.purgeConfirm')}</span>
             <button class="btn btn-danger btn-sm" id="btn-purge-yes">${Lang.t('adminUsers.confirmYes')}</button>
             <button class="btn btn-ghost btn-sm" id="btn-purge-no">${Lang.t('adminUsers.confirmNo')}</button>
         </span>`;

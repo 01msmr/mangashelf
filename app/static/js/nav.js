@@ -122,22 +122,18 @@ async function requireAdminPin(onVerified) {
 function _showAdminPinPrompt(onVerified) {
     const overlay = document.createElement('div');
     overlay.id = 'admin-pin-overlay';
-    overlay.style.cssText =
-        'position:fixed;inset:0;background:rgba(13,13,26,.92);z-index:9000;' +
-        'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)';
+    overlay.className = 'overlay-admin';
     overlay.innerHTML = `
-        <div class="pin-card" style="max-width:340px;width:100%">
+        <div class="pin-card pin-card-wide">
             <div class="pin-card-label">${Lang.t('adminPin.title')}</div>
-            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:14px;text-align:center;letter-spacing:0.5px">
-                ${Lang.t('adminPin.hint')}
-            </div>
+            <div class="pin-hint">${Lang.t('adminPin.hint')}</div>
             <div id="ap-error" class="pin-error"></div>
-            <div class="pinpad-dots" id="ap-dots" style="margin-bottom:14px">
+            <div class="pinpad-dots pinpad-dots-sm" id="ap-dots">
                 <div class="dot" id="ap-dot-0"></div>
                 <div class="dot" id="ap-dot-1"></div>
                 <div class="dot" id="ap-dot-2"></div>
                 <div class="dot" id="ap-dot-3"></div>
-                <div class="dot" id="ap-dot-4" style="margin-left:10px"></div>
+                <div class="dot dot-gap" id="ap-dot-4"></div>
                 <div class="dot" id="ap-dot-5"></div>
                 <div class="dot" id="ap-dot-6"></div>
                 <div class="dot" id="ap-dot-7"></div>

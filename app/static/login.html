@@ -10,11 +10,11 @@
 <body class="login-page">
 
 <!-- Language switcher — bottom right corner -->
-<div style="position:fixed;bottom:16px;right:16px;z-index:100;display:flex;gap:6px" id="login-lang-switcher"></div>
+<div class="lang-switcher-corner" id="login-lang-switcher"></div>
 
 <!-- Register button — top right corner -->
 <div class="register-corner">
-    <span id="no-account-label" style="font-size:13px;color:var(--text-muted);margin-right:10px"></span>
+    <span id="no-account-label" class="corner-label"></span>
     <a href="/register.html" class="btn btn-ghost btn-sm" id="register-link"></a>
 </div>
 
@@ -23,7 +23,7 @@
     <div class="login-title"><div class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span id="logo-shelf-login">Shelf</span></div></div>
     <div class="login-subtitle" id="login-subtitle"></div>
     <div id="user-grid" class="user-grid">
-        <div id="users-loading-msg" style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px"></div>
+        <div id="users-loading-msg" class="grid-empty-msg"></div>
     </div>
 </div>
 
@@ -32,7 +32,7 @@
     <div class="pin-card">
         <div class="pin-card-label" id="pin-card-label"></div>
         <div class="pin-card-user" id="pin-username"></div>
-        <div style="min-height:36px"><div id="pin-error" class="pin-error"></div></div>
+        <div class="pin-error-spacer"><div id="pin-error" class="pin-error"></div></div>
         <div class="pinpad-dots" id="pin-dots-display">
             <div class="dot" id="pin-dot-0"></div>
             <div class="dot" id="pin-dot-1"></div>
@@ -102,14 +102,14 @@ async function loadUsers() {
         renderUsers(users);
     } catch (e) {
         document.getElementById('user-grid').innerHTML =
-            `<div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px">${Lang.t('login.loadFailed')}</div>`;
+            `<div class="grid-empty-msg">${Lang.t('login.loadFailed')}</div>`;
     }
 }
 
 function renderUsers(users) {
     const grid = document.getElementById('user-grid');
     if (!users.length) {
-        grid.innerHTML = `<div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:20px">${Lang.t('login.noUsers')}</div>`;
+        grid.innerHTML = `<div class="grid-empty-msg">${Lang.t('login.noUsers')}</div>`;
         return;
     }
     grid.innerHTML = users.map(u => `
