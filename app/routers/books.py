@@ -17,6 +17,15 @@ from ..services.cover_cache import get_cover_path
 router = APIRouter(tags=['books'])
 
 
+def renumber_copies(book_id: int, db: Session) -> None:
+    """Active copies get numbers 1…N (by insertion order), broken copies N+1…M."""
+    copies = db.query(Copy).filter_by(book_id=book_id).order_by(Copy.id).all()
+    active = [c for c in copies if c.status != 'broken']
+    broken = [c for c in copies if c.status == 'broken']
+    for i, copy in enumerate(active + broken, 1):
+        copy.copy_num = i
+
+
 # ── Book list ─────────────────────────────────────────────────────────────────
 
 @router.get('/books')
@@ -174,9 +183,10 @@ def book_add(body: AddBookRequest, db: Session = Depends(get_db),
 
     existing = db.query(Book).filter_by(isbn=isbn_val).first()
     if existing:
-        next_num = max((c.copy_num for c in existing.copies), default=0) + 1
-        copy = Copy(book_id=existing.id, copy_num=next_num, donated_by=body.donor_id)
+        copy = Copy(book_id=existing.id, copy_num=0, donated_by=body.donor_id)
         db.add(copy)
+        db.flush()
+        renumber_copies(existing.id, db)
         db.commit()
         return {'ok': True, 'isbn': isbn_val, 'title': existing.title}
 
@@ -226,6 +236,7 @@ def copy_mark_broken(copy_id: int, body: BrokenRequest, db: Session = Depends(ge
         copy_id=copy.id,
         reason=note or None,
     ))
+    renumber_copies(copy.book_id, db)
     db.commit()
     return {'ok': True, 'book_removed': False, 'isbn': copy.book.isbn}
 

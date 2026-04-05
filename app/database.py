@@ -34,3 +34,20 @@ def run_migrations():
                 conn.commit()
             except Exception:
                 pass
+        # Renumber copies: active first (1…N), broken last (N+1…M), ordered by id
+        try:
+            conn.execute(text("""
+                UPDATE copies SET copy_num = (
+                    SELECT new_num FROM (
+                        SELECT id,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY book_id
+                                   ORDER BY CASE WHEN status != 'broken' THEN 0 ELSE 1 END, id
+                               ) AS new_num
+                        FROM copies
+                    ) AS ranked WHERE ranked.id = copies.id
+                )
+            """))
+            conn.commit()
+        except Exception:
+            pass

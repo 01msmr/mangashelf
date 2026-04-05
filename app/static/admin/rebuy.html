@@ -55,7 +55,7 @@ async function loadList() {
                     ${coverHtml}
                     <div class="rebuy-info">
                         <div class="rebuy-title">
-                            <a href="/book.html?isbn=${encodeURIComponent(i.book_isbn)}" class="rebuy-book-link">${esc(i.book_title)}</a>${i.book_author ? ` — ${esc(i.book_author)}` : ''}
+                            <a href="/index.html?q=${encodeURIComponent(i.book_isbn)}" class="rebuy-book-link">${esc(i.book_title)}</a>${i.book_author ? ` — ${esc(i.book_author)}` : ''}
                             ${i.copy_num ? `<span class="rebuy-copy">${Lang.t('book.copyNum')} #${i.copy_num}</span>` : ''}
                         </div>
                         <div class="rebuy-reason">${esc(i.reason || Lang.t('adminRebuy.brokenDefault'))}</div>

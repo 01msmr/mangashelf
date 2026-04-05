@@ -130,7 +130,7 @@ function renderAccount(data) {
                 <div class="loan-card${overdue ? ' loan-overdue' : ''}">
                     <div class="loan-card-info">
                         <div class="loan-card-title">
-                            <a href="/book.html?isbn=${encodeURIComponent(l.book_isbn)}" class="link-plain">${esc(l.book_title)}</a>
+                            <a href="/index.html?q=${encodeURIComponent(l.book_isbn)}" class="link-plain">${esc(l.book_title)}</a>
                         </div>
                     </div>
                     <div class="loan-card-right">

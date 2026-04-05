@@ -66,7 +66,7 @@ async function loadContent() {
                     ${coverHtml}
                     <div class="overdue-info">
                         <div class="overdue-title">
-                            <a href="/book.html?isbn=${encodeURIComponent(i.book_isbn)}" class="overdue-book-link">${esc(i.book_title)}</a>
+                            <a href="/index.html?q=${encodeURIComponent(i.book_isbn)}" class="overdue-book-link">${esc(i.book_title)}</a>
                         </div>
                         <div class="overdue-meta">
                             <span class="overdue-borrower${!i.user_active ? ' user-locked' : ''}">${!i.user_active ? '<i class="fa-solid fa-lock" style="font-size:10px;margin-right:4px;opacity:.8"></i>' : ''}${esc(i.username)}</span>

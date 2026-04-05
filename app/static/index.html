@@ -328,10 +328,17 @@ async function handleIsbn(isbn) {
     if (!isbn) return;
     try {
         const res = await API.get(`/api/scan?isbn=${encodeURIComponent(isbn)}`);
-        if (res.action === 'borrow')           window.location.href = `/borrow.html?isbn=${encodeURIComponent(isbn)}`;
-        else if (res.action === 'return')      window.location.href = `/return.html?loan_id=${res.loan_id}`;
-        else if (res.action === 'return_pick') window.location.href = `/return-pick.html?isbn=${encodeURIComponent(isbn)}`;
-        else if (res.action === 'add')         window.location.href = `/admin/add-book.html?isbn=${encodeURIComponent(isbn)}`;
+        if (res.action === 'add') { window.location.href = `/admin/add-book.html?isbn=${encodeURIComponent(isbn)}`; return; }
+        // Filter list to the scanned book, then trigger inline action
+        searchEl.value = isbn;
+        btnClear.style.display = 'block';
+        await loadBooks(isbn);
+        const bookEl = document.querySelector(`[data-isbn="${CSS.escape(isbn)}"]`);
+        if (!bookEl) return;
+        bookEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (res.action === 'return' && res.loan_id) {
+            openReturn(parseInt(bookEl.id.replace('be-', '')), res.loan_id);
+        }
     } catch (err) { if (handleAuthError(err)) return; }
 }
 

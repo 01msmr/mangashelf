@@ -11,6 +11,7 @@ from ..database import get_db
 from ..models import User, Loan, Copy, Book, Transaction, RebuyItem, Setting
 from ..dependencies import get_current_admin, get_current_user
 from ..services.finance import LOAN_RATES, DEPOSIT
+from .books import renumber_copies
 
 router = APIRouter(tags=['admin'])
 
@@ -344,9 +345,10 @@ def rebuy_resolve(item_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'Item not found.')
     item.resolved = 1
     if item.copy:
-        item.copy.status     = 'available'
-        item.copy.broken_at  = None
+        item.copy.status      = 'available'
+        item.copy.broken_at   = None
         item.copy.broken_note = None
+    renumber_copies(item.book_id, db)
     db.commit()
     return {'ok': True, 'message': f'"{item.book.title}" marked as reacquired.'}
 
@@ -357,6 +359,9 @@ def rebuy_dismiss(item_id: int, db: Session = Depends(get_db),
     item = db.get(RebuyItem, item_id)
     if not item:
         raise HTTPException(404, 'Item not found.')
+    book_id = item.book_id
     db.delete(item)
+    db.flush()
+    renumber_copies(book_id, db)
     db.commit()
     return {'ok': True}
