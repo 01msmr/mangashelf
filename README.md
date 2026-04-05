@@ -354,10 +354,13 @@ mangashelf/
 
 ## Adding Books
 
-Books can be added from the **Admin → Add Book** page by:
-- Entering or scanning an ISBN (USB barcode scanner or camera)
-- Clicking the lookup button — metadata and cover are fetched automatically from OpenLibrary / Google Books
-- Adjusting title, author, loan rate, and number of copies, then saving
+Admins see an **Add** button in the book list header. Scanning an unknown ISBN with the hardware barcode scanner also navigates there automatically.
+
+On the Add Book page:
+- Scan or type an ISBN (USB barcode scanner, camera, or on-screen numpad)
+- Click the lookup button — title, author, publisher, cover and published year are fetched automatically from OpenLibrary / Google Books
+- Adjust any fields, set the loan rate and optional donor, then save
+- If the book already exists in the catalogue the button changes to **Add Copy** instead
 
 ISBN-13 and ISBN-10 are both tried automatically when lookup fails for one form.
 
