@@ -1257,6 +1257,14 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     border-radius: var(--radius);
 }
 
+ .nav-active a.app-logo:not {
+    color: var(--primary-hover);
+}
+
+.app-header .nav-active:not(.app-logo) {
+    color: var(--primary-hover);
+}
+
 .user-tile { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-xl); padding: 20px 12px; text-align: center; cursor: pointer; transition: border-color var(--transition), background var(--transition); user-select: none; -webkit-user-select: none; }
 
 .user-tile:hover, .user-tile:active { border-color: var(--primary); background: var(--primary-dim); color: var(--primary); }
