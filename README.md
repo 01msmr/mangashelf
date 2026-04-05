@@ -6,22 +6,23 @@ A self-hosted manga/book lending kiosk built for a Raspberry Pi touchscreen.
 
 ## Features
 
-- **Book catalogue** — searchable list with cover images, availability badges, and inline borrow/return actions
-- **Barcode scanning** — hardware USB scanner (keypress buffer) and camera-based scanning via ZXing (for phone or USB webcam)
-- **Borrow / Return** — per-copy tracking, configurable loan period, per-book loan rate, overdue detection
+- **Book catalogue** — searchable list with cover images, availability badges, and inline borrow/return actions; no page navigation required
+- **Barcode scanning** — hardware USB scanner (keypress buffer) scrolls to the book and triggers the inline action; camera-based scanning via ZXing (for phone or USB webcam)
+- **Borrow / Return** — fully inline in the book list: rate picker and confirm/cancel without leaving the page; per-copy tracking, configurable loan period, per-book loan rate, overdue detection
+- **Copy numbering** — active copies always numbered 1–N, broken copies N+1–M; gaps are auto-filled on every mark-broken, rebuy resolve/dismiss, and at startup
 - **User accounts** — PIN authentication, balance (Guthaben), top-up, transaction history, active loan overview
 - **Deposit system** — new accounts start at 0 €; a 10 € deposit must be paid at the kiosk before borrowing is unlocked (minimum balance to borrow: deposit + smallest loan rate = 10.50 €)
 - **Admin panel**
   - User management: promote/demote admin, activate/deactivate, set/force PIN, adjust balance, delete with confirmation
   - Overdue list with day counts
-  - Rebuy list (auto-populated when last copy is marked broken)
+  - Rebuy list (auto-populated when a copy is marked broken; resolved/dismissed with automatic copy renumbering)
   - Settings: max books per user, max loan days, default loan rate
 - **QR login** — per-user QR codes for fast kiosk login without a keyboard
 - **Phone scanner** — QR code on account page lets your phone act as a wireless barcode scanner
 - **Onscreen keyboard** — toggleable QWERTY/QWERTZ soft keyboard (switches with language)
-- **Multilingual** — English, German, Schwäbisch (easily extendable via `lang.json`)
+- **Multilingual** — English, German (MangaRegal), Schwäbisch (MangaBrettl); easily extendable via `lang.json`
 - **Auto-logout** — session expires after 90 seconds of inactivity
-- **Dark manga theme** — custom CSS design system, Permanent Marker font for titles, Font Awesome icons (all served locally, no CDN)
+- **Dark manga theme** — custom CSS design system with Tailwind-inspired utility classes, Permanent Marker font for titles, Font Awesome icons (all served locally, no CDN)
 
 ---
 
@@ -176,18 +177,18 @@ sequenceDiagram
 flowchart TD
     A([Scan ISBN or tap Borrow]) --> B{ISBN in catalogue?}
     B -- No, user --> E1([404 — not in library])
-    B -- No, admin --> E2([Redirect → Add Book page])
+    B -- No, admin --> E2([Navigate → Add Book page])
     B -- Yes --> C{User already has\na loan for this book?}
-    C -- 1 active loan --> R1([Redirect → Return page])
-    C -- multiple loans --> R2([Redirect → Pick copy to return])
+    C -- 1 active loan --> R1([Scroll to book\nReturn inline])
+    C -- multiple loans --> R2([Scroll to book\nReturn inline])
     C -- No --> D{Available copies?}
     D -- None --> Z([Badge: 'Loaned' — no button])
     D -- Yes --> EL{Balance ≥ 10.50 €\nand loans below limit?}
     EL -- Balance low --> Y([Disabled Borrow button\nHint: 'Balance too low'])
     EL -- Limit reached --> X([Disabled Borrow button\nHint: 'Loan limit reached'])
-    EL -- OK --> G([Inline dropdown opens:\nFee · Balance · Due date])
+    EL -- OK --> G([Rate picker expands inline])
     G --> H{User confirms}
-    H -- Cancel --> G2([Dropdown closes])
+    H -- Cancel --> G2([Picker collapses])
     H -- Confirm --> I[POST /api/borrow/isbn]
     I --> J[Loan record created\nFee deducted from balance]
     J --> K([Book list reloads — copy now loaned])
@@ -322,9 +323,14 @@ mangashelf/
 │   │   ├── finance.py       # Balance / fee helpers + DEPOSIT / LOAN_RATES / BORROW_MIN constants
 │   │   └── scheduler.py     # APScheduler jobs (overdue processing)
 │   └── static/
-│       ├── index.html       # Book list (main kiosk view)
+│       ├── index.html       # Book list (main kiosk view) — inline borrow/return/mark-broken
 │       ├── account.html     # User account / top-up / loans
-│       ├── admin/           # Admin panel pages
+│       ├── login.html       # User selection + PIN entry
+│       ├── register.html    # New account registration
+│       ├── setup-pin.html   # First-login PIN setup
+│       ├── change-pin.html  # PIN change
+│       ├── phone-scan.html  # Camera barcode scanner (phone/webcam)
+│       ├── admin/           # Admin panel pages (users, overdue, rebuy, settings)
 │       ├── js/
 │       │   ├── api.js       # Thin fetch wrapper
 │       │   ├── nav.js       # Header / navigation rendering + 90 s idle timer + admin PIN gate
@@ -360,6 +366,8 @@ ISBN-13 and ISBN-10 are both tried automatically when lookup fails for one form.
 ## Extending Languages
 
 Edit `app/static/lang.json` and add a new top-level key with the same string keys as `"en"`. The language switcher on the account page picks it up automatically. Set `"_keyboard": "qwerty"` or `"qwertz"` to control the onscreen keyboard layout for that language. Strings support `{{var}}` placeholders that are resolved at render time (e.g. `{{min}}` for the minimum borrow balance).
+
+App-name translations are supported per locale — `"de"` uses *MangaRegal* and `"schwaebisch"` uses *MangaBrettl* where relevant.
 
 ---
 
