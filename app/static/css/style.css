@@ -18,6 +18,7 @@
     --primary-hover: #c5303c;
     --primary-dim:   rgba(230, 57, 70, 0.15);
     --text:          #f0eef8;
+    --text-highlight:#ffffff;
     --text-muted:    #8a88a8;
     --text-dim:      #55557a;
     --success:       #4ade80;
@@ -1257,12 +1258,8 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     border-radius: var(--radius);
 }
 
- .nav-active a.app-logo:not {
-    color: var(--primary-hover);
-}
-
 .app-header .nav-active:not(.app-logo) {
-    color: var(--primary-hover);
+    color: var(--text-highlight);
 }
 
 .user-tile { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-xl); padding: 20px 12px; text-align: center; cursor: pointer; transition: border-color var(--transition), background var(--transition); user-select: none; -webkit-user-select: none; }
