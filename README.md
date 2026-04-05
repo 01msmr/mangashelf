@@ -15,7 +15,7 @@ A self-hosted manga/book lending kiosk built for a Raspberry Pi touchscreen.
 - **Admin panel**
   - User management: promote/demote admin, activate/deactivate, set/force PIN, adjust balance, delete with confirmation
   - Overdue list with day counts
-  - Rebuy list (auto-populated when a copy is marked broken; resolved/dismissed with automatic copy renumbering)
+  - Broken Books list (auto-populated when a copy is marked broken; resolved/dismissed with automatic copy renumbering)
   - Settings: max books per user, max loan days, default loan rate
 - **QR login** — per-user QR codes for fast kiosk login without a keyboard
 - **Phone scanner** — QR code on account page lets your phone act as a wireless barcode scanner

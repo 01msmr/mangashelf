@@ -7,13 +7,17 @@ function renderNav(user) {
     if (!header) return;
 
     const adminBadge   = user.is_admin ? '<span class="badge-admin">Admin</span>' : '';
-    const adminLink    = user.is_admin ? `<a href="/admin/users.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-shield-halved"></i> admin section</a>` : '';
     const balanceClass = user.guthaben >= 5 ? 'bal-ok' : user.guthaben > 0 ? 'bal-warn' : 'bal-danger';
+    const path         = window.location.pathname;
+    const onAccount    = path === '/account.html';
+    const onIndex      = path === '/index.html' || path === '/';
+    const onAdmin      = path.startsWith('/admin/');
+    const adminLink    = user.is_admin ? `<a href="/admin/users.html" class="btn btn-ghost btn-sm${onAdmin ? ' nav-active' : ''}"><i class="fa-solid fa-shield-halved"></i> admin section</a>` : '';
 
     header.innerHTML = `
-        <a href="/account.html" class="btn btn-ghost btn-sm user-badge">${esc(user.username)}</a>${adminBadge}<span class="header-balance ${balanceClass}">${fmtEur(user.guthaben)}</span>
+        <a href="/account.html" class="btn btn-ghost btn-sm user-badge${onAccount ? ' nav-active' : ''}">${esc(user.username)}</a>${adminBadge}<span class="header-balance ${balanceClass}">${fmtEur(user.guthaben)}</span>
         <div class="header-left">
-            <a href="/index.html" class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span class="logo-shelf">${(typeof Lang !== 'undefined' && Lang.t) ? Lang.t('logo.shelf') : 'Shelf'}</span></a>
+            <a href="/index.html" class="app-logo${onIndex ? ' nav-active' : ''}"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span class="logo-shelf">${(typeof Lang !== 'undefined' && Lang.t) ? Lang.t('logo.shelf') : 'Shelf'}</span></a>
         </div>
         <div class="header-right">
             ${adminLink}
