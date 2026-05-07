@@ -3,3 +3,6 @@ fastapi[all]
 sqlalchemy
 qrcode
 pillow
+bcrypt
+requests
+apscheduler
