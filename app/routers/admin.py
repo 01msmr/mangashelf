@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import User, Loan, Copy, Book, Transaction, RebuyItem, Setting
-from ..dependencies import get_current_admin, get_current_user
+from ..dependencies import get_current_admin, get_current_user, SYSTEM_USER
 from ..services.finance import LOAN_RATES, DEPOSIT
 from .books import renumber_copies
 
@@ -57,7 +57,7 @@ def admin_verify(body: AdminVerifyRequest, request: Request,
         raise HTTPException(401, 'Enter your 4-digit PIN followed by the 4-digit admin PIN.')
     user_pin  = combined[:4]
     admin_pin = combined[4:]
-    stored_admin_pin = Setting.get(db, 'admin_pin', '0369')
+    stored_admin_pin = Setting.get(db, 'admin_pin')
     if not admin.check_pin(user_pin) or admin_pin != stored_admin_pin:
         raise HTTPException(401, 'Incorrect PIN combination.')
     _set_admin_verified(request, admin.id)
@@ -97,6 +97,7 @@ def users(db: Session = Depends(get_db), _admin: User = Depends(get_current_admi
             'username':     u.username,
             'is_admin':     bool(u.is_admin),
             'active':       bool(u.active),
+            'is_system':    u.username == SYSTEM_USER,
             'guthaben':     u.guthaben,
             'loan_count':   loan_counts[u.id],
             'created_at':   u.created_at,
@@ -141,6 +142,8 @@ def user_delete(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot delete yourself.')
+    if user.username == 'dmn':
+        raise HTTPException(400, 'The "dmn" user cannot be deleted.')
     open_loans = db.query(Loan).filter_by(user_id=user.id).count()
     if open_loans:
         raise HTTPException(400, f'Cannot delete "{user.username}" — they have {open_loans} open loan(s).')
@@ -278,6 +281,7 @@ def settings_get(db: Session = Depends(get_db), _admin: User = Depends(get_curre
         'max_loan_days':      Setting.get_int(db, 'max_loan_days', 60),
         'default_loan_rate':  Setting.get(db, 'default_loan_rate', '0.50'),
         'new_book_days':      Setting.get_int(db, 'new_book_days', 14),
+        'msg_duration':       Setting.get_int(db, 'msg_duration', 7),
         'loan_rates':         LOAN_RATES,
     }
 
@@ -287,6 +291,7 @@ class SettingsRequest(BaseModel):
     max_loan_days:      int
     default_loan_rate:  str
     new_book_days:      int
+    msg_duration:       int
 
 
 @router.post('/settings')
@@ -301,6 +306,8 @@ def settings_save(body: SettingsRequest, db: Session = Depends(get_db),
         errors.append('Invalid loan rate.')
     if not 0 <= body.new_book_days <= 90:
         errors.append('New book days must be between 0 and 90.')
+    if not 3 <= body.msg_duration <= 60:
+        errors.append('Notification duration must be between 3 and 60 seconds.')
     if errors:
         raise HTTPException(400, ' '.join(errors))
 
@@ -308,6 +315,7 @@ def settings_save(body: SettingsRequest, db: Session = Depends(get_db),
     Setting.set(db, 'max_loan_days',      body.max_loan_days)
     Setting.set(db, 'default_loan_rate',  body.default_loan_rate)
     Setting.set(db, 'new_book_days',      body.new_book_days)
+    Setting.set(db, 'msg_duration',       body.msg_duration)
     db.commit()
     return {'ok': True}
 

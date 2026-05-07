@@ -71,8 +71,8 @@ function showStep2() {
                 const pin_confirm = pin;
                 // We need to verify firstPin === pin here
                 if (pin !== firstPin) {
-                    pf.showError(Lang.t('setupPin.mismatch') || 'PINs do not match');
                     pf.reset();
+                    pf.showError(Lang.t('setupPin.mismatch') || 'PINs do not match');
                     return;
                 }
                 try {
@@ -80,8 +80,8 @@ function showStep2() {
                     document.removeEventListener('keydown', keyHandler);
                     window.location.href = '/index.html';
                 } catch (err) {
-                    pf.showError(err.detail || 'Error');
                     pf.reset();
+                    pf.showError(err.detail || 'Error');
                 }
             }, 200);
         }

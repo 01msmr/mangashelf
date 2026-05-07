@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models import User
 
+SYSTEM_USER = 'dmn'
+
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     user_id = request.session.get('user_id')

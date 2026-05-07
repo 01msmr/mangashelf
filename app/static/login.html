@@ -130,7 +130,7 @@ function openPin(username) {
 
 function closePinOverlay() {
     document.getElementById('pin-overlay').classList.remove('active');
-    pinValue = '';
+    pinValue = ''; isSubmitting = false;
     updateInput();
 }
 
@@ -140,7 +140,8 @@ function updateInput() {
     });
 }
 
-let lockoutTimer = null;
+let lockoutTimer   = null;
+let isSubmitting   = false;
 
 function startLockoutCountdown(seconds) {
     const errEl = document.getElementById('pin-error');
@@ -165,7 +166,8 @@ function startLockoutCountdown(seconds) {
 }
 
 async function submitPin() {
-    if (pinValue.length !== 4) return;
+    if (pinValue.length !== 4 || isSubmitting) return;
+    isSubmitting = true;
     const errEl = document.getElementById('pin-error');
     errEl.style.display = 'none';
     try {
@@ -182,6 +184,8 @@ async function submitPin() {
             errEl.style.display = 'block';
         }
         pinValue = ''; updateInput();
+    } finally {
+        isSubmitting = false;
     }
 }
 

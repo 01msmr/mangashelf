@@ -40,9 +40,16 @@
                         <label class="form-label" id="label-title"></label>
                         <input type="text" id="title" class="form-input">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" id="label-subtitle"></label>
-                        <input type="text" id="subtitle" class="form-input">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label" id="label-subtitle"></label>
+                            <input type="text" id="subtitle" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" id="label-series"></label>
+                            <input type="text" id="series" class="form-input" placeholder="1">
+                            <div id="series-dupe-hint" class="fetch-status text-warning" style="display:none;margin-top:4px;font-size:0.82em"></div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label" id="label-author"></label>
@@ -80,9 +87,9 @@
                         </div>
                     </div>
                     <div class="msg-placeholder"><div id="save-msg" class="fetch-status" style="display:none"></div></div>
-                    <div class="flex gap-3 mt-1">
-                        <button type="button" class="btn btn-primary flex-1" id="btn-add"></button>
-                        <a href="/index.html" class="btn btn-ghost" id="btn-cancel"></a>
+                    <div class="flex mt-1" style="gap:10%">
+                        <a href="/index.html" class="btn btn-ghost" id="btn-cancel" style="width:30%;flex-shrink:0"></a>
+                        <button type="button" class="btn btn-primary" id="btn-add" style="flex:1"></button>
                     </div>
                 </form>
             </div>
@@ -110,6 +117,30 @@
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function set(id, val) { document.getElementById(id).value = val || ''; }
 
+let requiresSeries = false;
+let dupeCheckTimer;
+
+function updateSeriesHint(show) {
+    document.getElementById('series-dupe-hint').style.display = show ? 'block' : 'none';
+    document.getElementById('series-dupe-hint').textContent = show ? Lang.t('addBook.seriesRequired') : '';
+    document.getElementById('series').style.outline = show ? '2px solid var(--color-warning, #f59e0b)' : '';
+}
+
+async function checkDuplicateTitle() {
+    const title = document.getElementById('title').value.trim();
+    const editIsbn = new URLSearchParams(location.search).get('edit') || '';
+    const excludeIsbn = editIsbn || isbnScan.value.trim();
+    if (!title) { requiresSeries = false; updateSeriesHint(false); return; }
+    try {
+        const data = await API.get(`/api/books?q=${encodeURIComponent(title)}`);
+        const dupes = (data.items || []).filter(b =>
+            b.title.toLowerCase() === title.toLowerCase() && b.isbn !== excludeIsbn
+        );
+        requiresSeries = dupes.length > 0;
+        updateSeriesHint(requiresSeries);
+    } catch (e) {}
+}
+
 const isbnScan    = document.getElementById('isbn-scan');
 const btnClearIsbn = document.getElementById('btn-clear-isbn');
 
@@ -126,6 +157,7 @@ function applyTranslations() {
     document.getElementById('btn-close-scanner').textContent = Lang.t('addBook.close');
     document.getElementById('label-title').textContent     = Lang.t('addBook.titleLabel');
     document.getElementById('label-subtitle').textContent  = Lang.t('addBook.subtitleLabel');
+    document.getElementById('label-series').textContent    = Lang.t('addBook.seriesLabel');
     document.getElementById('label-author').textContent    = Lang.t('addBook.authorLabel');
     document.getElementById('label-publisher').textContent = Lang.t('addBook.publisherLabel');
     document.getElementById('label-published').textContent = Lang.t('addBook.publishedLabel');
@@ -148,14 +180,39 @@ async function init() {
     const user = await initPage();
     if (!user.is_admin) { window.location.href = '/index.html'; return; }
 
-    const isbn = new URLSearchParams(location.search).get('isbn') || '';
+    const params = new URLSearchParams(location.search);
+    const isbn   = params.get('isbn') || '';
+    const editIsbn = params.get('edit') || '';
+
     if (isbn) { isbnScan.value = isbn; btnClearIsbn.style.display = 'block'; doLookup(isbn); }
+
+    if (editIsbn) {
+        isbnScan.value = editIsbn;
+        isbnScan.disabled = true;
+        btnClearIsbn.style.display = 'none';
+        document.getElementById('btn-add').textContent = Lang.t('addBook.saveEdit');
+        try {
+            const book = await API.get(`/api/books/${encodeURIComponent(editIsbn)}`);
+            set('title',     book.title);
+            set('subtitle',  book.subtitle);
+            set('series',    book.series);
+            set('author',    book.author);
+            set('publisher', book.publisher);
+            set('published', book.published);
+            if (book.loan_rate) document.getElementById('loan-rate').value = book.loan_rate;
+            updateCoverPlaceholder();
+            if (book.cover_path) {
+                document.getElementById('cover-preview').innerHTML =
+                    `<img class="cover-preview-img" src="/static/${esc(book.cover_path)}" alt="">`;
+            }
+        } catch (e) {}
+    }
 
     try {
         const sel = document.getElementById('donor-id');
         if (user.is_admin) {
             const users = await API.get('/api/admin/users');
-            users.forEach(u => {
+            users.filter(u => u.active && !u.is_system).forEach(u => {
                 const opt = document.createElement('option');
                 opt.value = u.id; opt.textContent = u.username;
                 sel.appendChild(opt);
@@ -166,6 +223,8 @@ async function init() {
             sel.appendChild(opt);
         }
     } catch (e) {}
+
+    if (!isServer) startScanner();
 }
 
 async function doLookup(isbn) {
@@ -173,40 +232,55 @@ async function doLookup(isbn) {
     msgEl.className = 'fetch-status text-muted';
     msgEl.textContent = Lang.t('addBook.lookingUp');
     msgEl.style.display = 'block';
+    const editMode = !!(new URLSearchParams(location.search).get('edit'));
     try {
         const meta = await API.get(`/api/books/fetch-isbn?isbn=${encodeURIComponent(isbn)}`);
-        set('title',     meta.title);
-        set('subtitle',  meta.subtitle);
-        set('author',    meta.author);
-        set('publisher', meta.publisher);
-        set('published', meta.published);
-        set('cover-url', meta.cover_url);
+        // In edit mode only fill empty fields; in add mode fill everything
+        function merge(id, val) {
+            if (!val) return;
+            if (editMode && document.getElementById(id).value.trim()) return;
+            set(id, val);
+        }
+        merge('title',     meta.title);
+        merge('subtitle',  meta.subtitle);
+        merge('series',    meta.series);
+        merge('author',    meta.author);
+        merge('publisher', meta.publisher);
+        merge('published', meta.published);
+        merge('cover-url', meta.cover_url);
         updateCoverPlaceholder();
-        if (meta.cover_url) {
+        checkDuplicateTitle();
+        if (meta.cover_url && (!editMode || !document.querySelector('#cover-preview img'))) {
             document.getElementById('cover-preview').innerHTML =
                 `<img class="cover-preview-img" src="${esc(meta.cover_url)}" alt="" onerror="this.style.display='none'">`;
         }
         msgEl.className = 'fetch-status text-success';
         msgEl.textContent = Lang.t('addBook.metaLoaded');
         setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
-        // Check if book already exists in library
-        const btnAdd = document.getElementById('btn-add');
-        try {
-            await API.get(`/api/books/${encodeURIComponent(isbn)}`);
-            btnAdd.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${Lang.t('addBook.addCopyBtn')}`;
-        } catch (e) {
-            btnAdd.textContent = Lang.t('addBook.addBtn');
+        if (!editMode) {
+            const btnAdd = document.getElementById('btn-add');
+            try {
+                await API.get(`/api/books/${encodeURIComponent(isbn)}`);
+                btnAdd.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${Lang.t('addBook.addCopyBtn')}`;
+            } catch (e) {
+                btnAdd.textContent = Lang.t('addBook.addBtn');
+            }
         }
     } catch (err) {
         msgEl.className = 'fetch-status text-warning';
         msgEl.textContent = Lang.t('addBook.notFound');
-        document.getElementById('btn-add').textContent = Lang.t('addBook.addBtn');
+        if (!editMode) document.getElementById('btn-add').textContent = Lang.t('addBook.addBtn');
     }
 }
 
 // ── Topbar scan bar ──────────────────────────────────────────────
+let inputTimer;
 isbnScan.addEventListener('input', () => {
     btnClearIsbn.style.display = isbnScan.value ? 'block' : 'none';
+    clearTimeout(inputTimer);
+    if (isbnScan.value.length >= 8) {
+        inputTimer = setTimeout(triggerScanLookup, 300);
+    }
 });
 btnClearIsbn.addEventListener('click', () => {
     isbnScan.value = '';
@@ -236,30 +310,68 @@ document.addEventListener('keypress', e => {
     }
 });
 
-// ── Camera ───────────────────────────────────────────────────────
+// ── Camera / hardware scanner ─────────────────────────────────────
+const isServer = ['localhost', '127.0.0.1'].includes(location.hostname);
 let codeReader;
+let _serialPort = null;
+
+async function triggerHardwareScanner() {
+    if (!navigator.serial) return;
+    try {
+        if (!_serialPort) _serialPort = await navigator.serial.requestPort();
+        if (!_serialPort.readable) await _serialPort.open({ baudRate: 9600 });
+        const writer = _serialPort.writable.getWriter();
+        await writer.write(new Uint8Array([0x7E, 0x00, 0x08, 0x01, 0x00, 0x02, 0x01, 0xAB, 0xCD]));
+        writer.releaseLock();
+    } catch(e) {
+        _serialPort = null;
+    }
+}
+
 function closeScanner() {
     document.getElementById('scanner-overlay').style.display = 'none';
     if (codeReader) { codeReader.reset(); codeReader = null; }
 }
-document.getElementById('btn-camera').addEventListener('click', async () => {
+
+async function startScanner() {
     document.getElementById('scanner-overlay').style.display = 'flex';
     const { BrowserMultiFormatReader } = ZXingBrowser;
     codeReader = new BrowserMultiFormatReader();
     try {
         await codeReader.decodeFromVideoDevice(null, document.getElementById('scanner-video'), result => {
-            if (result) { closeScanner(); isbnScan.value = result.getText(); btnClearIsbn.style.display = 'block'; triggerScanLookup(); }
+            if (!result || !codeReader) return;
+            const isbn = result.getText();
+            if (!isbn) return;
+            const reader = codeReader;
+            codeReader = null;
+            document.getElementById('scanner-overlay').style.display = 'none';
+            setTimeout(() => reader.reset(), 0);
+            isbnScan.value = isbn;
+            btnClearIsbn.style.display = 'block';
+            isbnScan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            triggerScanLookup();
         });
-    } catch (e) { closeScanner(); }
-});
+    } catch (e) {
+        closeScanner();
+    }
+}
+
+document.getElementById('btn-camera').style.display = 'inline-flex';
+if (isServer) {
+    document.getElementById('btn-camera').addEventListener('click', triggerHardwareScanner);
+} else {
+    document.getElementById('btn-camera').addEventListener('click', startScanner);
+}
 document.getElementById('btn-close-scanner').addEventListener('click', closeScanner);
 
 document.getElementById('btn-add').addEventListener('click', async () => {
-    const msgEl = document.getElementById('save-msg');
+    const msgEl   = document.getElementById('save-msg');
+    const editIsbn = new URLSearchParams(location.search).get('edit') || '';
     const body = {
         isbn:      isbnScan.value.trim(),
         title:     document.getElementById('title').value.trim(),
         subtitle:  document.getElementById('subtitle').value.trim() || null,
+        series:    document.getElementById('series').value.trim() || null,
         author:    document.getElementById('author').value.trim() || null,
         publisher: document.getElementById('publisher').value.trim() || null,
         published: document.getElementById('published').value.trim() || null,
@@ -267,9 +379,21 @@ document.getElementById('btn-add').addEventListener('click', async () => {
         loan_rate: parseFloat(document.getElementById('loan-rate').value),
         donor_id:  document.getElementById('donor-id').value ? parseInt(document.getElementById('donor-id').value) : null,
     };
+    if (requiresSeries && !body.series) {
+        msgEl.className = 'fetch-status text-danger';
+        msgEl.textContent = Lang.t('addBook.seriesRequired');
+        msgEl.style.display = 'block';
+        document.getElementById('series').focus();
+        return;
+    }
     try {
-        await API.post('/api/books', body);
-        window.location.href = `/index.html?new=${encodeURIComponent(body.isbn)}`;
+        if (editIsbn) {
+            await API.put(`/api/books/${encodeURIComponent(editIsbn)}`, body);
+            window.location.href = `/index.html?q=${encodeURIComponent(editIsbn)}`;
+        } else {
+            await API.post('/api/books', body);
+            window.location.href = `/index.html?new=${encodeURIComponent(body.isbn)}`;
+        }
     } catch (err) {
         msgEl.className = 'fetch-status text-danger';
         msgEl.textContent = err.detail || 'Failed.';
@@ -277,7 +401,11 @@ document.getElementById('btn-add').addEventListener('click', async () => {
     }
 });
 
-document.getElementById('title').addEventListener('input', updateCoverPlaceholder);
+document.getElementById('title').addEventListener('input', () => {
+    updateCoverPlaceholder();
+    clearTimeout(dupeCheckTimer);
+    dupeCheckTimer = setTimeout(checkDuplicateTitle, 500);
+});
 document.getElementById('author').addEventListener('input', updateCoverPlaceholder);
 
 // ── Numeric OSK for ISBN field ────────────────────────────────────────────────

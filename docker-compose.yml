@@ -1,8 +1,9 @@
 services:
   mangashelf:
     build: .
-    image: mangashelf
+    image: mangashelf:latest
     container_name: mangashelf
+    hostname: mangashelf
     restart: unless-stopped
     ports:
       - "8080:8080"

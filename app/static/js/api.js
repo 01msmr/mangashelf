@@ -26,6 +26,7 @@ async function api(method, path, body = null) {
 const API = {
     get:    (path)        => api('GET',    path),
     post:   (path, body)  => api('POST',   path, body),
+    put:    (path, body)  => api('PUT',    path, body),
     delete: (path)        => api('DELETE', path),
 };
 
@@ -61,6 +62,11 @@ function hideError(el) {
     if (!el) return;
     el.textContent = '';
     el.style.display = 'none';
+}
+
+/** Notification duration in ms — set by admin settings, default 7 s */
+function getMsgDuration() {
+    return (parseInt(localStorage.getItem('msg_duration')) || 7) * 1000;
 }
 
 /** Redirect to login if not authenticated */

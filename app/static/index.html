@@ -10,7 +10,14 @@
 <header id="site-header" class="app-header"></header>
 <main class="app-main">
     <div class="list-page">
-        <div class="list-header">
+        <div class="detail-topbar" id="series-topbar" style="display:none">
+            <button onclick="history.back()" class="btn btn-ghost btn-sm" id="series-back">←</button>
+            <div id="series-topbar-center">
+                <div id="series-title-display"></div>
+                <div class="se-vols" id="series-vols-display"></div>
+            </div>
+        </div>
+        <div class="list-header" id="list-header">
             <div class="search-form">
                 <input type="text" id="search" class="form-input search-input" placeholder="Search for books" autofocus style="padding-right:36px">
                 <button id="btn-clear-search" type="button" class="btn btn-ghost btn-sm absolute" tabindex="-1"
@@ -36,6 +43,8 @@
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
 <script>
+const seriesFilter = new URLSearchParams(location.search).get('series') || '';
+
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function starsHtml(avg) {
     if (!avg) return '';
@@ -51,17 +60,31 @@ async function init() {
     await Lang.load();
     currentUser = await initPage().catch(() => null);
     if (!currentUser) return;
-    if (currentUser.is_admin) document.getElementById('btn-add').style.display = 'inline-flex';
-
     document.getElementById('btn-search').textContent = Lang.t('search.btn');
     document.getElementById('search').placeholder = Lang.t('search.placeholder');
     document.getElementById('btn-add-label').textContent = Lang.t('addBook.addBtn');
     const chkLabel = document.getElementById('chk-available-label');
     if (chkLabel) chkLabel.lastChild.textContent = ' ' + Lang.t('book.available');
 
-    const urlQ = new URLSearchParams(location.search).get('q') || '';
-    if (urlQ) document.getElementById('search').value = urlQ;
-    loadBooks(urlQ);
+    if (seriesFilter) {
+        document.getElementById('list-header').style.display = 'none';
+        document.getElementById('series-topbar').style.display = 'flex';
+        document.getElementById('series-back').textContent = Lang.t('nav.allBooks');
+        document.getElementById('series-title-display').textContent = seriesFilter;
+        document.title = `${seriesFilter} — MangaShelf`;
+        loadBooks();
+    } else {
+        if (currentUser.is_admin) document.getElementById('btn-add').style.display = 'inline-flex';
+        const urlQ = new URLSearchParams(location.search).get('q') || '';
+        if (urlQ) document.getElementById('search').value = urlQ;
+        loadBooks(urlQ);
+    }
+}
+
+function _highlightIsbn(list, isbn, cls) {
+    if (!isbn) return;
+    const el = list.querySelector(`[data-isbn="${CSS.escape(isbn)}"]`);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add(cls); }
 }
 
 /* ── Book list ──────────────────────────────────────────────── */
@@ -69,6 +92,32 @@ async function loadBooks(q = '') {
     const list = document.getElementById('book-list');
     const availOnly = document.getElementById('chk-available').checked;
     list.innerHTML = `<div class="empty-state">${Lang.t('empty.loading')}</div>`;
+
+    if (seriesFilter) {
+        try {
+            const resp = await API.get(`/api/books?q=${encodeURIComponent(seriesFilter)}`);
+            let books = (resp.items || []).filter(b => b.title.toLowerCase() === seriesFilter.toLowerCase());
+            if (availOnly) books = books.filter(b => b.available > 0);
+            books.sort((a, b) => (parseInt(a.series, 10) || 0) - (parseInt(b.series, 10) || 0));
+            const newBookDays = resp.new_book_days || 0;
+            if (!books.length) { list.innerHTML = `<div class="empty-state">${Lang.t('empty.noBooks')}</div>`; return; }
+            const volsEl = document.getElementById('series-vols-display');
+            if (volsEl) volsEl.textContent = `${Lang.t('series.volumes')}: ${volumeRange(books)}`;
+            list.innerHTML = books.map(b => renderBook(b, newBookDays)).join('');
+            if (currentUser.is_admin) {
+                books.forEach(b => {
+                    const btn = document.getElementById(`btn-broken-${b.id}`);
+                    if (btn) btn.addEventListener('click', () => markBroken(b.id, b.isbn));
+                });
+            }
+            _highlightIsbn(list, new URLSearchParams(location.search).get('highlight'), 'book-highlight-pulse');
+        } catch (err) {
+            if (handleAuthError(err)) return;
+            list.innerHTML = `<div class="empty-state">${esc(err.detail || '')}</div>`;
+        }
+        return;
+    }
+
     try {
         const resp = await API.get(`/api/books?q=${encodeURIComponent(q)}&available=${availOnly}`);
         const books = resp.items;
@@ -77,9 +126,11 @@ async function loadBooks(q = '') {
             list.innerHTML = `<div class="empty-state">${Lang.t('empty.noBooks')}</div>`;
             return;
         }
-        list.innerHTML = books.map(b => renderBook(b, newBookDays)).join('');
+        const grouped = groupBooks(books);
+        list.innerHTML = grouped.map(item =>
+            item.type === 'series' ? renderSeries(item.books, newBookDays) : renderBook(item.book, newBookDays)
+        ).join('');
 
-        // Attach admin mark-broken handlers
         if (currentUser.is_admin) {
             books.forEach(b => {
                 const btn = document.getElementById(`btn-broken-${b.id}`);
@@ -96,10 +147,82 @@ async function loadBooks(q = '') {
                 el.classList.add('book-new-pulse');
             }
         }
+        _highlightIsbn(list, new URLSearchParams(location.search).get('highlight'), 'book-highlight-pulse');
     } catch (err) {
         if (handleAuthError(err)) return;
         list.innerHTML = `<div class="empty-state">${esc(err.detail || Lang.t('empty.noBooks'))}</div>`;
     }
+}
+
+function groupBooks(books) {
+    const titleCount = {};
+    for (const b of books) {
+        if (b.series) {
+            const k = b.title.toLowerCase();
+            titleCount[k] = (titleCount[k] || 0) + 1;
+        }
+    }
+    const seen = new Set();
+    const result = [];
+    for (const b of books) {
+        const k = b.title.toLowerCase();
+        if (b.series && titleCount[k] > 1) {
+            if (!seen.has(k)) {
+                seen.add(k);
+                result.push({ type: 'series', books: books.filter(x => x.title.toLowerCase() === k) });
+            }
+        } else {
+            result.push({ type: 'book', book: b });
+        }
+    }
+    return result;
+}
+
+function volumeRange(books) {
+    const nums = books.map(b => parseInt(b.series, 10)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+    if (!nums.length) return [...new Set(books.map(b => b.series).filter(Boolean))].join(', ');
+    const ranges = [];
+    let start = nums[0], end = nums[0];
+    for (let i = 1; i < nums.length; i++) {
+        if (nums[i] === end + 1) { end = nums[i]; }
+        else { ranges.push(start === end ? `${start}` : `${start}–${end}`); start = end = nums[i]; }
+    }
+    ranges.push(start === end ? `${start}` : `${start}–${end}`);
+    return ranges.join(', ');
+}
+
+function fanHtml(books) {
+    const withCover = books.filter(b => b.cover_path);
+    if (!withCover.length) {
+        return `<div class="se-fan"></div>`;
+    }
+    const last = withCover[withCover.length - 1];
+    const p = [withCover[0] || last, withCover[1] || last, withCover[2] || last];
+    const slot = (b, n) => `<div class="se-fan-img sf-${n}"><img src="/static/${esc(b.cover_path)}" alt=""></div>`;
+    return `<div class="se-fan">${slot(p[2],3)}${slot(p[1],2)}${slot(p[0],1)}</div>`;
+}
+
+function renderSeries(books, newBookDays) {
+    const b0 = books[0];
+    const totalAvail  = books.reduce((s, b) => s + (b.available || 0), 0);
+    const totalCopies = books.reduce((s, b) => s + (b.total_copies || 1), 0);
+    const hasUserLoan = books.some(b => b.user_loan_id);
+    const badge = totalAvail > 0
+        ? `<span class="status-badge status-available">${totalAvail}/${totalCopies} ${Lang.t('book.available')}</span>`
+        : `<span class="status-badge status-loaned">${Lang.t('book.allLoaned')}</span>`;
+    const loanMark = hasUserLoan ? `<i class="fa-solid fa-book-open text-success" style="font-size:var(--text-sm)"></i> ` : '';
+    return `<a href="?series=${encodeURIComponent(b0.title)}" class="se link-plain${totalAvail === 0 ? ' se-unavailable' : ''}">
+        <div class="be-main">
+            <div class="be-cover">${fanHtml(books)}</div>
+            <div class="be-body">
+                <div class="be-stars">${badge}</div>
+                <div class="be-title se-title-btn">${esc(b0.title)}</div>
+                <div class="se-vols">${Lang.t('series.volumes')}: ${esc(volumeRange(books))}</div>
+                <div class="be-author">${esc(b0.author || '')}</div>
+            </div>
+            <div class="be-author-row"></div>
+        </div>
+    </a>`;
 }
 
 function renderBook(b, newBookDays) {
@@ -110,7 +233,10 @@ function renderBook(b, newBookDays) {
         ? `<img src="/static/${esc(b.cover_path)}" alt="" class="be-cover-img">`
         : `<div class="cover-placeholder cover-sm"><i class="fa-solid fa-book fa-flip-horizontal cover-icon-sm"></i></div>`;
 
-    const starsRow = `<div class="be-stars">${newBadge}${b.avg_rating
+    const editBtn = currentUser.is_admin
+        ? `<a href="/admin/add-book.html?edit=${encodeURIComponent(b.isbn)}" class="btn btn-ghost btn-xs be-edit-btn" data-tip="${Lang.t('book.edit')}"><i class="fa-solid fa-pen"></i></a>`
+        : '';
+    const starsRow = `<div class="be-stars">${newBadge}${editBtn}${b.avg_rating
         ? `<span class="rating-badge" role="img" aria-label="Rating ${Math.round(b.avg_rating)} of 9">${starsHtml(b.avg_rating)}</span>${b.rating_count ? `<span class="text-muted rating-count">${b.rating_count} <i class="fa-solid fa-square-check"></i></span>` : ''}`
         : ''}</div>`;
 
@@ -144,12 +270,12 @@ function renderBook(b, newBookDays) {
     }
 
     return `
-        <div class="be" id="be-${b.id}" data-isbn="${esc(b.isbn)}">
+        <div class="be${b.available > 0 ? '' : ' be-unavailable'}" id="be-${b.id}" data-isbn="${esc(b.isbn)}">
             <div class="be-main">
                 <div class="be-cover${b.available === 0 ? ' opacity-60' : ''}">${cover}</div>
                 <div class="be-body">
                     ${starsRow}
-                    <div class="be-title">${esc(b.title)}${b.subtitle ? `<span class="be-subtitle"> — ${esc(b.subtitle)}</span>` : ''}</div>
+                    <div class="be-title">${seriesFilter && b.series ? `${Lang.t('series.vol')} ${esc(b.series)}` : `${esc(b.title)}${b.series ? `<span class="be-series"> (${esc(b.series)})</span>` : ''}${b.subtitle ? `<span class="be-subtitle"> — ${esc(b.subtitle)}</span>` : ''}`}</div>
                     ${adminRow}
                 </div>
                 <div class="be-side">

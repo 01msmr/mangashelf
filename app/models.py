@@ -18,6 +18,7 @@ class User(Base):
     guthaben       = Column(Float, default=0.00)
     active         = Column(Integer, default=1)
     created_at     = Column(Text, default=lambda: datetime.now(timezone.utc).isoformat())
+    last_login     = Column(Text, nullable=True)
 
     loans        = relationship('Loan', back_populates='user', foreign_keys='Loan.user_id')
     transactions = relationship('Transaction', back_populates='user')
@@ -41,6 +42,7 @@ class Book(Base):
     publisher  = Column(Text)
     published  = Column(Text)
     cover_path = Column(Text)
+    series     = Column(Text)
     loan_rate  = Column(Float, default=0.50)
     added_by   = Column(Integer, ForeignKey('users.id'))
     added_at   = Column(Text, default=lambda: datetime.now(timezone.utc).isoformat())

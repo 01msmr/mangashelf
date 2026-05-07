@@ -61,6 +61,19 @@ html, body {
     -webkit-font-smoothing: antialiased;
 }
 
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url('/static/img/manga-bg-1.jpg') center / cover no-repeat;
+    opacity: 0.06;
+    filter: grayscale(60%) contrast(0.7);
+    pointer-events: none;
+    z-index: 0;
+}
+
+body > * { position: relative; z-index: 1; }
+
 /* ── Layout ─────────────────────────────────────────────────── */
 .app-header {
     position: fixed;
@@ -131,7 +144,7 @@ html, body {
     /* text-decoration: none; */
     padding: 0 10px;
     border-radius: var(--radius);
-    border: ;
+
     /* border: 1px solid #48467a; */
     /* box-shadow: 0 2px 8px rgba(0,0,0,0.3); */
     /* transition: color var(--transition), background var(--transition), box-shadow var(--transition); */
@@ -183,8 +196,11 @@ html, body {
 .btn-ghost { background: #242240; color: #a09ec4; }
 .btn-ghost:hover { background: var(--surface); filter: brightness(1.3); color: var(--text); }
 
-.btn-danger { background: rgba(230, 57, 70, 0.15); color: var(--danger); }
+.btn-danger { background: var(--primary-dim); color: var(--danger); }
 .btn-danger:hover { background: rgba(230, 57, 70, 0.3); }
+
+.btn-success { background: rgba(74, 222, 128, 0.12); color: var(--success); }
+.btn-success:hover { background: rgba(74, 222, 128, 0.25); }
 
 .btn-block { width: 100%; }
 
@@ -510,6 +526,7 @@ html, body {
     align-items: center;
     gap: 12px;
     padding: 10px 16px;
+    min-height: 90px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
@@ -540,6 +557,7 @@ html, body {
 
 /* ── Book entry (always-visible flat cards) ─────────────────── */
 .be { border-bottom: 1px solid var(--border); padding: 12px 16px 0; }
+.be:not(.be-unavailable):hover, .be:not(.be-unavailable):active { background: rgba(255,255,255,0.08); }
 
 .be-main {
     display: grid;
@@ -565,6 +583,11 @@ html, body {
 }
 .be-title { line-height: 1.2; }
 .be-subtitle { font-size: 1.3rem; font-weight: 400; color: var(--text-muted); }
+.be-series   { font-size: 0.66em; font-weight: 400; color: var(--text-muted); vertical-align: middle; }
+.btn-xs { height: 24px; padding: 0 6px; font-size: var(--text-xs); }
+.be-edit-btn { opacity: 0.5; vertical-align: middle; }
+.be-edit-btn:hover { opacity: 1; }
+
 .be-new-badge {
     display: inline-block;
     margin-left: 8px;
@@ -580,7 +603,8 @@ html, body {
     0%, 100% { background-color: transparent; }
     50%       { background-color: rgba(34, 197, 94, 0.18); }
 }
-.book-new-pulse { animation: newPulse 1s ease-in-out 8; }
+.book-new-pulse       { animation: newPulse 1s ease-in-out 8; }
+.book-highlight-pulse { animation: newPulse 1s ease-in-out 3; }
 .be-author-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; min-width: 0; }
 .be-author {
     flex: 1;
@@ -843,10 +867,13 @@ html, body {
     gap: 8px;
     font-size: var(--text-base);
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--text);
     margin-bottom: 8px;
 }
-.acct-count { background: var(--surface); color: var(--text-muted); font-size: var(--text-xs); padding: 1px 6px; border-radius: 8px; }
+.acct-count { background: var(--surface); color: var(--text-muted); font-size: var(--text-base); padding: 1px 6px; border-radius: 8px; }
+.txn-filter-btn { background: var(--surface); color: var(--text-muted); font-size: var(--text-base); padding: 2px 8px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-family: inherit; letter-spacing: inherit; }
+.txn-filter-btn:hover { border-color: var(--border); color: var(--text); }
+.txn-filter-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
 .acct-empty { font-size: var(--text-sm); color: var(--text-dim); padding: 10px 0; }
 
 /* ── Balance card ───────────────────────────────────────────── */
@@ -1079,6 +1106,8 @@ html, body {
 .topup-form { display: flex; flex-direction: column; gap: 8px; }
 .topup-presets { display: flex; gap: 8px; }
 .topup-btn { flex: 1; height: 52px; font-size: var(--text-base); font-weight: 800; }
+.topup-undo-row { display: flex; gap: 8px; }
+.topup-undo-btn { flex: 1; height: 52px; font-size: var(--text-base); font-weight: 800; }
 .topup-hint   { font-size: var(--text-xs); color: var(--text-dim); padding-top: 2px; }
 
 /* ── Take-out rate picker ───────────────────────────────────── */
@@ -1451,3 +1480,38 @@ body.phone-scan .btn-close:active { opacity: 0.7; }
     flex-wrap: wrap;
 }
 .rating-edit-expand { margin-left: auto; }
+
+/* ── Series sub-view topbar title ──────────────────────────── */
+#series-topbar { position: relative; }
+#series-topbar-center {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center; max-width: 65%;
+}
+#series-title-display {
+    font-size: 1.92rem; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Series entry (grouped row, spans both list columns) ────── */
+.se { display: block; grid-column: 1 / -1; border-bottom: 1px solid var(--border); padding: 12px 16px 0; }
+.se:not(.se-unavailable):hover, .se:not(.se-unavailable):active { background: rgba(255,255,255,0.16); }
+.se .be-main { grid-template-columns: auto 1fr auto; }
+.se .be-body  { padding-left: 40px; }   /* half cover width indent */
+.se-vols { font-size: var(--text-sm); color: var(--text-muted); margin: 2px 0 3px; }
+.se-title-btn {
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Fan of covers — 3 slots, bottom-left (front) → top-right (back), 30px/20px offset */
+.se-fan { position: relative; width: 90px; height: 132px; flex-shrink: 0; }
+.se-fan-img {
+    position: absolute;
+    width: 70px; height: 102px;
+    border-radius: 5px; overflow: hidden;
+}
+.se-fan-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sf-1 { left: 0;    top: 30px; z-index: 3; box-shadow: -5px 5px 14px rgba(0,0,0,0.65); }
+.sf-2 { left: 10px; top: 15px; z-index: 2; box-shadow: -4px 4px 10px rgba(0,0,0,0.45); }
+.sf-3 { left: 20px; top: 0;    z-index: 1; }

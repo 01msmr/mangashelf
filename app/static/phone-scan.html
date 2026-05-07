@@ -44,7 +44,7 @@ const params = new URLSearchParams(location.search);
 const token = params.get('t');
 if (token) {
     API.get(`/api/phone-scan-token?t=${encodeURIComponent(token)}`)
-        .then(() => { window.history.replaceState({}, '', '/phone-scan.html'); })
+        .then(() => { window.location.href = '/index.html'; })
         .catch(() => { window.location.href = '/login.html'; });
 }
 
