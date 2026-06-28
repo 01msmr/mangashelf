@@ -79,6 +79,10 @@ Schwerpunkt dieser Änderungen: Die Oberfläche wurde für das **Raspberry-Pi-Ki
 - **Admin-Bereich ohne Hintergrund-Flackern** (`nav.js`, `requireAdminPin`): Beim Betreten wird sofort ein deckendes Overlay gezeigt, bis Verifizierung/PIN-Gate steht – der Admin-Inhalt blitzt nicht mehr kurz auf.
 - **Tooltips bleiben im Bild** (`nav.js`): Lange `data-tip`-Texte (z. B. der Haupt-Admin-Schutzhinweis) werden auf den sichtbaren Bereich geklemmt und kippen bei Bedarf nach oben.
 
+### Bewertungen
+
+- **Bücher bewerten nach der Rückgabe** (`rating.js` `promptRating()`, eingebunden in `index.html` + `account.html`): Nach erfolgreicher Rückgabe (Buchliste **und** eigene Ausleihen im Konto) erscheint der Stern-Slider „Wie war das Buch?" (0–9, Überspringen/Speichern) → `POST /api/books/{isbn}/rate`. Nutzt das vorhandene `createRatingSlider`-Modul; die read-only Sterne in der Buchliste waren bereits da. Verifiziert: Overlay erscheint, Bewertung wird gespeichert.
+
 ### Eingabe-Module
 
 - **Doppel-Tastatureingabe behoben** in `change-pin.html` und `setup-pin.html`: deren eigene `keydown`-Handler reichten Tasten zusätzlich an die Buttons weiter — seit `makePinField` die Tastatur selbst behandelt, wurde jede Ziffer doppelt eingegeben. Redundante Handler entfernt (Modul übernimmt). Verifiziert: 1 Tastendruck = 1 Ziffer.

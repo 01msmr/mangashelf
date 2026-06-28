@@ -43,6 +43,7 @@
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
+<script src="/static/js/rating.js"></script>
 <script>
 const seriesFilter = new URLSearchParams(location.search).get('series') || '';
 
@@ -422,7 +423,10 @@ function openReturn(bookId, loanId) {
         origBtn.disabled = true;
         try {
             await API.post(`/api/return/${loanId}`);
-            setTimeout(() => loadBooks(searchEl.value), 1000);
+            // Offer to rate the just-returned book, then refresh the list.
+            const isbn = document.getElementById(`be-${bookId}`)?.dataset.isbn;
+            const refresh = () => loadBooks(searchEl.value);
+            if (isbn) promptRating(isbn, refresh); else setTimeout(refresh, 1000);
         } catch (err) {
             if (handleAuthError(err)) return;
             restore();

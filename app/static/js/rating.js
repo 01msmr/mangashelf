@@ -84,3 +84,31 @@ function createRatingSlider(container, initial) {
         setValue: (v) => set(Math.max(0, Math.min(9, v))),
     };
 }
+
+/**
+ * Modal to rate a book — shown e.g. right after returning it.
+ * promptRating(isbn, onDone?) — saves via POST /api/books/{isbn}/rate (0 = skip).
+ */
+function promptRating(isbn, onDone) {
+    onDone = onDone || function () {};
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay-admin';
+    overlay.innerHTML = `
+        <div class="pin-card rating-card">
+            <div class="pin-card-label">${Lang.t('rating.howWas')}</div>
+            <div class="rating-slider-wrap" id="pr-slider"></div>
+            <div class="pin-actions">
+                <button class="btn btn-ghost" id="pr-skip">${Lang.t('rating.skip')}</button>
+                <button class="btn btn-primary" id="pr-save">${Lang.t('rating.save')}</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    const slider = createRatingSlider(overlay.querySelector('#pr-slider'), 0);
+
+    function close() { overlay.remove(); onDone(); }
+    overlay.querySelector('#pr-skip').addEventListener('click', close);
+    overlay.querySelector('#pr-save').addEventListener('click', async () => {
+        try { await API.post(`/api/books/${isbn}/rate`, { rating: slider.getValue() }); } catch (e) {}
+        close();
+    });
+}

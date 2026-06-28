@@ -15,6 +15,7 @@
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
 <script src="/static/js/pin.js"></script>
+<script src="/static/js/rating.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -142,7 +143,7 @@ function renderAccount(data) {
                         </div>
                         ${overdue ? `<span class="overdue-badge">${Lang.t('return.overdue')}</span>` : ''}
                         <span id="return-wrap-${l.id}">
-                            <button class="btn btn-ghost btn-sm mt-1" onclick="confirmReturn(${l.id})">${Lang.t('book.return')}</button>
+                            <button class="btn btn-ghost btn-sm mt-1" onclick="confirmReturn(${l.id}, '${esc(l.book_isbn)}')">${Lang.t('book.return')}</button>
                         </span>
                     </div>
                 </div>
@@ -292,21 +293,23 @@ function renderAccount(data) {
     });
 }
 
-function confirmReturn(loanId) {
+function confirmReturn(loanId, isbn) {
     const wrap = document.getElementById(`return-wrap-${loanId}`);
     if (!wrap) return;
     wrap.innerHTML = `
         <span class="inline-flex items-center gap-1 mt-1">
             <span class="text-danger text-sm">${Lang.t('acct.confirmReturn')}</span>
-            <button class="btn btn-ghost btn-sm" onclick="doReturn(${loanId})">${Lang.t('adminUsers.confirmYes')}</button>
+            <button class="btn btn-ghost btn-sm" onclick="doReturn(${loanId}, '${esc(isbn)}')">${Lang.t('adminUsers.confirmYes')}</button>
             <button class="btn btn-ghost btn-sm" onclick="tryLoadAccount()">${Lang.t('adminUsers.confirmNo')}</button>
         </span>`;
 }
 
-async function doReturn(loanId) {
+async function doReturn(loanId, isbn) {
     try {
         await API.post(`/api/return/${loanId}`);
-        tryLoadAccount();
+        // Offer to rate the just-returned book, then refresh.
+        if (isbn) promptRating(isbn, tryLoadAccount);
+        else tryLoadAccount();
     } catch (err) {
         const wrap = document.getElementById(`return-wrap-${loanId}`);
         if (wrap) wrap.innerHTML = `<span class="text-danger text-sm">${esc(err.detail || 'Failed')}</span>`;
