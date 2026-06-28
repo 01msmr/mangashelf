@@ -81,6 +81,8 @@ Schwerpunkt dieser Änderungen: Die Oberfläche wurde für das **Raspberry-Pi-Ki
 
 ### Bewertungen
 
+- **Sterne grün, ein einheitliches Grün** (`style.css`): Die Bewertungssterne nutzen jetzt das App-Grün `--success` (#4ade80). Außerdem alle abweichenden Grüntöne vereinheitlicht — „NEU"-Badge (`#16a34a` → `--success`) und der New-Pulse — sodass überall dasselbe Grün verwendet wird.
+
 - **Bücher bewerten nach der Rückgabe** (`rating.js` `promptRating()`, eingebunden in `index.html` + `account.html`): Nach erfolgreicher Rückgabe (Buchliste **und** eigene Ausleihen im Konto) erscheint der Stern-Slider „Wie war das Buch?" (0–9, Überspringen/Speichern) → `POST /api/books/{isbn}/rate`. Nutzt das vorhandene `createRatingSlider`-Modul; die read-only Sterne in der Buchliste waren bereits da. Verifiziert: Overlay erscheint, Bewertung wird gespeichert.
 
 ### Eingabe-Module
