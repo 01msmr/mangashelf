@@ -133,6 +133,7 @@ function applyTranslations() {
     document.getElementById('label-admin-pin').textContent    = Lang.t('adminSettings.adminPinLabel');
     document.getElementById('admin-pin-desc').textContent     = Lang.t('adminSettings.adminPinDesc');
     document.getElementById('btn-set-admin-pin').textContent  = Lang.t('adminSettings.setPinBtn');
+    document.getElementById('btn-numpad-admin-pin').dataset.tip = Lang.t('common.numpad');
     document.getElementById('purge-desc').textContent         = Lang.t('adminSettings.purgeDesc');
     document.getElementById('btn-purge').textContent          = Lang.t('adminSettings.purgeBtn');
     document.getElementById('btn-purge').addEventListener('click', onPurgeClick);

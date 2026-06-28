@@ -276,7 +276,7 @@ function renderAccount(data) {
                 setTimeout(tryLoadAccount, 800);
             } catch (e) {
                 msgEl.className = 'text-danger text-sm';
-                msgEl.textContent = e.detail || 'Failed';
+                msgEl.textContent = e.detail || Lang.t('common.error');
                 msgEl.style.display = 'block';
                 setTimeout(tryLoadAccount, 1500);
             }
@@ -312,7 +312,7 @@ async function doReturn(loanId, isbn) {
         else tryLoadAccount();
     } catch (err) {
         const wrap = document.getElementById(`return-wrap-${loanId}`);
-        if (wrap) wrap.innerHTML = `<span class="text-danger text-sm">${esc(err.detail || 'Failed')}</span>`;
+        if (wrap) wrap.innerHTML = `<span class="text-danger text-sm">${esc(err.detail || Lang.t('common.error'))}</span>`;
     }
 }
 

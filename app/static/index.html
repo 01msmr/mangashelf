@@ -384,7 +384,7 @@ function openBorrow(bookId, isbn, loanRate) {
                 const errEl = document.createElement('span');
                 errEl.className = 'text-danger';
                 errEl.style.cssText = 'font-size:12px;margin-left:6px';
-                errEl.textContent = err.detail || 'Failed';
+                errEl.textContent = err.detail || Lang.t('common.error');
                 wrap.appendChild(errEl);
             }
         });
@@ -433,7 +433,7 @@ function openReturn(bookId, loanId) {
             const errEl = document.createElement('span');
             errEl.className = 'text-danger';
             errEl.style.cssText = 'font-size:12px;margin-left:6px';
-            errEl.textContent = err.detail || 'Failed';
+            errEl.textContent = err.detail || Lang.t('common.error');
             wrap.appendChild(errEl);
         }
     });
@@ -466,7 +466,7 @@ async function markBroken(bookId, isbn) {
                 const res = await API.post(`/api/copies/${copyId}/broken`, { broken_note: note });
                 loadBooks(searchEl.value);
             } catch (err) {
-                msgEl.textContent = err.detail || 'Failed';
+                msgEl.textContent = err.detail || Lang.t('common.error');
                 msgEl.style.display = 'block';
             }
         });

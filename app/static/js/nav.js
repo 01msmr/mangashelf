@@ -26,7 +26,7 @@ function renderNav(user) {
             ${_langDropdownHtml()}
         </div>
         <div class="header-right">
-            <button class="btn btn-ghost btn-sm" id="nav-logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            <button class="btn btn-ghost btn-sm" id="nav-logout"><i class="fa-solid fa-right-from-bracket"></i> ${(typeof Lang !== 'undefined' && Lang.t) ? Lang.t('nav.logout') : 'Logout'}</button>
         </div>
     `;
 

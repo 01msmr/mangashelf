@@ -63,7 +63,7 @@ function showStep2() {
                     window.location.href = '/index.html';
                 } catch (err) {
                     pf.reset();
-                    pf.showError(err.detail || 'Error');
+                    pf.showError(err.detail || Lang.t('common.error'));
                 }
             }, 200);
         }

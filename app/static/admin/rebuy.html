@@ -84,7 +84,7 @@ async function resolve(id) {
             document.getElementById('list').innerHTML = `<div class="empty-state">${Lang.t('adminRebuy.none')}</div>`;
         }
     } catch (err) {
-        alert(err.detail || 'Failed');
+        alert(err.detail || Lang.t('common.error'));
     }
 }
 
@@ -96,7 +96,7 @@ async function dismiss(id) {
             document.getElementById('list').innerHTML = `<div class="empty-state">${Lang.t('adminRebuy.none')}</div>`;
         }
     } catch (err) {
-        alert(err.detail || 'Failed');
+        alert(err.detail || Lang.t('common.error'));
     }
 }
 

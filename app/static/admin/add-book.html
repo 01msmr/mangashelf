@@ -154,6 +154,9 @@ function updateCoverPlaceholder() {
 
 function applyTranslations() {
     document.getElementById('isbn-scan').placeholder       = Lang.t('addBook.isbnPlaceholder');
+    document.getElementById('btn-numpad').dataset.tip      = Lang.t('common.numpad');
+    document.getElementById('btn-lookup-top').dataset.tip  = Lang.t('addBook.lookup');
+    document.getElementById('btn-camera').dataset.tip      = Lang.t('addBook.camera');
     document.getElementById('topbar-back').textContent     = Lang.t('addBook.back');
     document.getElementById('btn-close-scanner').textContent = Lang.t('addBook.close');
     document.getElementById('label-title').textContent     = Lang.t('addBook.titleLabel');

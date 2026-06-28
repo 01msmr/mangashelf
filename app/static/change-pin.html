@@ -77,7 +77,7 @@ function showStep3() {
             } catch (err) {
                 if (handleAuthError(err)) return;
                 pf.reset();
-                pf.showError(err.detail || 'Error');
+                pf.showError(err.detail || Lang.t('common.error'));
                 attempt();
             }
         });
