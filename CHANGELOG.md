@@ -79,6 +79,10 @@ Schwerpunkt dieser Änderungen: Die Oberfläche wurde für das **Raspberry-Pi-Ki
 - **Admin-Bereich ohne Hintergrund-Flackern** (`nav.js`, `requireAdminPin`): Beim Betreten wird sofort ein deckendes Overlay gezeigt, bis Verifizierung/PIN-Gate steht – der Admin-Inhalt blitzt nicht mehr kurz auf.
 - **Tooltips bleiben im Bild** (`nav.js`): Lange `data-tip`-Texte (z. B. der Haupt-Admin-Schutzhinweis) werden auf den sichtbaren Bereich geklemmt und kippen bei Bedarf nach oben.
 
+### Eingabe-Module
+
+- **„Konto erstellen" (register) nutzt jetzt dasselbe PIN-Modul** (`makePinField`) wie alle anderen PIN-Screens — statt des alten `attachNumpad`-Overlays. Zwei-Schritt-Flow (PIN → Bestätigen), Tastatur eingebaut, bei Nicht-Übereinstimmung Fehler + zurück zu Schritt 1. Gleiches Pinpad-Design wie Login/Setup/PIN-ändern.
+
 ### Navbar & Sprache
 
 - **Sprach-Flaggen-Dropdown in der Navbar** (`app/static/js/nav.js`) rechts neben dem Titel: Toggle zeigt die **aktuelle** Sprache (SVG-Flagge + Kürzel in 100%), das Menü listet **alle** Sprachen als reine Flaggen (keine Labels/Tooltips), bündig ohne Padding – die Menü-Radien beschneiden den Flaggen-Stapel; die Toggle-Flagge hat eine dünne weiße Outline. Flaggen als SVG (Emoji-Flaggen rendern auf dem Pi nicht zuverlässig): EN = Union Jack, DE = Trikolore, Schwäbisch = Baden-Württemberg (schwarz/gold). Auswahl speichert via `Lang.set` + Server und lädt neu.

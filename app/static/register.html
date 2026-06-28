@@ -23,21 +23,8 @@
                     <label class="form-label" id="label-username"></label>
                     <input type="text" id="username" class="form-input" autocomplete="username" autocapitalize="none">
                 </div>
-                <div class="form-group">
-                    <label class="form-label" id="label-pin"></label>
-                    <div class="input-with-btn">
-                        <input type="password" id="pin" class="form-input flex-1" inputmode="none" maxlength="4" style="padding-right:36px">
-                        <button type="button" id="btn-numpad-pin" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" data-tip="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" id="label-confirm-pin"></label>
-                    <div class="input-with-btn">
-                        <input type="password" id="pin-confirm" class="form-input flex-1" inputmode="none" maxlength="4" style="padding-right:36px">
-                        <button type="button" id="btn-numpad-pin-confirm" class="btn btn-ghost btn-sm btn-inside" tabindex="-1" data-tip="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                    </div>
-                </div>
-                <button class="btn btn-primary btn-block" id="btn-register"></button>
+                <!-- Shared PIN module (makePinField) — step 1: PIN, step 2: confirm -->
+                <div id="reg-step"></div>
             </div>
         </div>
         <div class="hint text-muted" id="hint-aside">
@@ -47,9 +34,10 @@
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/lang.js"></script>
-<script src="/static/js/numpad.js"></script>
+<script src="/static/js/pin.js"></script>
 <script>
 const errorBox = document.getElementById('error-box');
+let firstPin = '';
 
 async function applyTranslations() {
     await Lang.load();
@@ -58,9 +46,6 @@ async function applyTranslations() {
     document.getElementById('register-title').textContent     = Lang.t('register.title');
     document.getElementById('register-subtitle').textContent  = Lang.t('register.subtitle');
     document.getElementById('label-username').textContent     = Lang.t('register.usernameLabel');
-    document.getElementById('label-pin').textContent          = Lang.t('register.pinLabel');
-    document.getElementById('label-confirm-pin').textContent  = Lang.t('register.confirmPinLabel');
-    document.getElementById('btn-register').textContent       = Lang.t('register.btn');
     document.getElementById('hint-aside').innerHTML = `
         <p><strong>${Lang.t('register.usernameLabel')}</strong><br>${Lang.t('register.hintUsername')}</p>
         <p><strong>PIN</strong><br>${Lang.t('register.hintPin')}</p>
@@ -68,23 +53,43 @@ async function applyTranslations() {
     `;
 }
 
-attachNumpad(document.getElementById('pin'), document.getElementById('btn-numpad-pin'), { keepFocus: true });
-attachNumpad(document.getElementById('pin-confirm'), document.getElementById('btn-numpad-pin-confirm'), { keepFocus: true });
+// Step 1: choose PIN (reuses the shared makePinField module — keyboard built in)
+function showStep1() {
+    const step = document.getElementById('reg-step');
+    const pf = makePinField(step, Lang.t('register.pinLabel'), 4);
+    const obs = new MutationObserver(() => {
+        if (pf.getValue().length === 4) {
+            obs.disconnect();
+            firstPin = pf.getValue();
+            setTimeout(showStep2, 150);
+        }
+    });
+    obs.observe(step.querySelector('.pf-dots'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+}
 
-document.getElementById('btn-register').addEventListener('click', async () => {
-    hideError(errorBox);
-    const username    = document.getElementById('username').value.trim();
-    const pin         = document.getElementById('pin').value.trim();
-    const pin_confirm = document.getElementById('pin-confirm').value.trim();
-    try {
-        await API.post('/api/auth/register', { username, pin, pin_confirm });
-        window.location.href = '/index.html';
-    } catch (err) {
-        showError(errorBox, err.detail || Lang.t('register.btn'));
-    }
-});
+// Step 2: confirm PIN, then register
+function showStep2() {
+    const step = document.getElementById('reg-step');
+    const pf = makePinField(step, Lang.t('register.confirmPinLabel'), 4);
+    let busy = false;
+    const obs = new MutationObserver(async () => {
+        if (busy || pf.getValue().length !== 4) return;
+        busy = true;
+        const pin = pf.getValue();
+        const username = document.getElementById('username').value.trim();
+        try {
+            await API.post('/api/auth/register', { username, pin: firstPin, pin_confirm: pin });
+            window.location.href = '/index.html';
+        } catch (err) {
+            showError(errorBox, err.detail || Lang.t('register.btn'));
+            obs.disconnect();
+            setTimeout(showStep1, 150);   // start over at the PIN step
+        }
+    });
+    obs.observe(step.querySelector('.pf-dots'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+}
 
-applyTranslations();
+applyTranslations().then(showStep1);
 </script>
 </body>
 </html>
