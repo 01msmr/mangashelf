@@ -85,14 +85,7 @@ function showStep3() {
     attempt();
 }
 
-document.addEventListener('keydown', e => {
-    if (!/^\d$/.test(e.key) && e.key !== 'Backspace') return;
-    e.preventDefault();
-    const step = document.getElementById('pin-step');
-    const key  = e.key === 'Backspace' ? 'back' : e.key;
-    const btn  = step.querySelector(`.pinpad-key[data-k="${key}"]`);
-    if (btn) btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-});
+// Physical keyboard is handled inside makePinField — no extra handler needed.
 
 applyTranslations().then(() => {
     initPage();

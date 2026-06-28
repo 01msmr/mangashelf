@@ -32,36 +32,20 @@ function showStep1() {
     const step = document.getElementById('pin-step');
     const pf = makePinField(step, Lang.t('setupPin.newPinLabel'), 4);
 
-    const keyHandler = e => {
-        e.preventDefault(); e.stopPropagation();
-        if (/^\d$/.test(e.key) && pf.getValue().length < 4) {
-            step.querySelectorAll('.pinpad-key').forEach(b => { if (b.dataset.k === e.key) b.dispatchEvent(new Event('pointerdown')); });
-        } else if (e.key === 'Backspace') {
-            step.querySelectorAll('[data-k="back"]')[0]?.dispatchEvent(new Event('pointerdown'));
-        }
-    };
-
-    // Auto-advance when 4 digits entered
-    const orig = pf.getValue;
+    // Auto-advance when 4 digits entered (keyboard handled inside makePinField)
     let checking = false;
     const observer = new MutationObserver(() => {
         if (pf.getValue().length === 4 && !checking) {
             checking = true;
-            setTimeout(() => { firstPin = pf.getValue(); document.removeEventListener('keydown', keyHandler); showStep2(); }, 200);
+            setTimeout(() => { firstPin = pf.getValue(); showStep2(); }, 200);
         }
     });
     observer.observe(step.querySelector('.pf-dots'), { subtree: true, attributes: true, attributeFilter: ['class'] });
-    document.addEventListener('keydown', keyHandler);
 }
 
 function showStep2() {
     const step = document.getElementById('pin-step');
     const pf = makePinField(step, Lang.t('setupPin.confirmLabel'), 4);
-
-    const keyHandler = e => {
-        e.preventDefault(); e.stopPropagation();
-    };
-    document.addEventListener('keydown', keyHandler);
 
     // Watch for 4 digits then submit
     const observer = new MutationObserver(() => {
@@ -69,8 +53,6 @@ function showStep2() {
             observer.disconnect();
             setTimeout(async () => {
                 const pin = pf.getValue();
-                const pin_confirm = pin;
-                // We need to verify firstPin === pin here
                 if (pin !== firstPin) {
                     pf.reset();
                     pf.showError(Lang.t('setupPin.mismatch') || 'PINs do not match');
@@ -78,7 +60,6 @@ function showStep2() {
                 }
                 try {
                     await API.post('/api/auth/setup-pin', { pin: firstPin, pin_confirm: pin });
-                    document.removeEventListener('keydown', keyHandler);
                     window.location.href = '/index.html';
                 } catch (err) {
                     pf.reset();

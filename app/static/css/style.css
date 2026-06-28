@@ -1586,7 +1586,7 @@ body.phone-scan .btn-close:active { opacity: 0.7; }
 .txn-filter-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
 
 .topup-undo-row { display: flex; gap: 8px; }
-.topup-undo-btn { flex: 1; height: clamp(36px, 6.5vw, 52px); font-size: var(--text-base); font-weight: 800; }
+.topup-undo-btn { flex: 1 1 0; min-width: 0; height: clamp(36px, 6.5vw, 52px); font-size: var(--text-sm); font-weight: 800; white-space: nowrap; overflow: hidden; padding: 0 0.3rem; }
 
 /* Series entry (fanned covers) */
 .se { display: block; grid-column: 1 / -1; border-bottom: 1px solid var(--border); padding: 12px 16px 0; }

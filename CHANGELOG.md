@@ -81,6 +81,9 @@ Schwerpunkt dieser Änderungen: Die Oberfläche wurde für das **Raspberry-Pi-Ki
 
 ### Eingabe-Module
 
+- **Doppel-Tastatureingabe behoben** in `change-pin.html` und `setup-pin.html`: deren eigene `keydown`-Handler reichten Tasten zusätzlich an die Buttons weiter — seit `makePinField` die Tastatur selbst behandelt, wurde jede Ziffer doppelt eingegeben. Redundante Handler entfernt (Modul übernimmt). Verifiziert: 1 Tastendruck = 1 Ziffer.
+- **account.html: horizontaler Überlauf behoben** — die „Storniert"-Topup-Undo-Buttons liefen +7px über (flex ohne `min-width:0` bei größerem rem-Root); jetzt schrumpfbar + kleinere Schrift.
+
 - **„Konto erstellen" (register) nutzt jetzt dasselbe PIN-Modul** (`makePinField`) wie alle anderen PIN-Screens — statt des alten `attachNumpad`-Overlays. Zwei-Schritt-Flow (PIN → Bestätigen), Tastatur eingebaut, bei Nicht-Übereinstimmung Fehler + zurück zu Schritt 1. Gleiches Pinpad-Design wie Login/Setup/PIN-ändern.
 
 ### Navbar & Sprache
