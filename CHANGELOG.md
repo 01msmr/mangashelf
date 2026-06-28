@@ -79,6 +79,11 @@ Schwerpunkt dieser Änderungen: Die Oberfläche wurde für das **Raspberry-Pi-Ki
 - **Admin-Bereich ohne Hintergrund-Flackern** (`nav.js`, `requireAdminPin`): Beim Betreten wird sofort ein deckendes Overlay gezeigt, bis Verifizierung/PIN-Gate steht – der Admin-Inhalt blitzt nicht mehr kurz auf.
 - **Tooltips bleiben im Bild** (`nav.js`): Lange `data-tip`-Texte (z. B. der Haupt-Admin-Schutzhinweis) werden auf den sichtbaren Bereich geklemmt und kippen bei Bedarf nach oben.
 
+### Farben zentralisiert
+
+- **Alle Farben in `:root` als Variablen** (`style.css`) — zentrale, gruppierte Token-Übersicht statt verstreuter Hardcodes. Neu: `--surface-2/--surface-3/--input-focus` (vorher u. a. die Tippfehler-Dublette `#242240`/`#242440`), `--text-soft`, `--placeholder`, `--danger-light` (führt die zwei hellen Fehler-Rots `#ff8a92`/`#ff6b78` zusammen), `--cover-ph-bg/--cover-icon/--cover-ph-title/--cover-ph-author`; `#fff` → `--text-highlight`; `--danger` jetzt Alias auf `--primary`.
+- **Warn-Amber angeglichen:** das Tint-Amber `#fbbf24` (status-loaned/balance-warn) auf die Warnfarbe `--warning` (#ffaa00) vereinheitlicht. `--admin-gold` (#ffd60a) bleibt bewusst eigenständig.
+
 ### Bewertungen
 
 - **Sterne grün, ein einheitliches Grün** (`style.css`): Die Bewertungssterne nutzen jetzt das App-Grün `--success` (#4ade80). Außerdem alle abweichenden Grüntöne vereinheitlicht — „NEU"-Badge (`#16a34a` → `--success`) und der New-Pulse — sodass überall dasselbe Grün verwendet wird.
