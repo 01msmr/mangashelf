@@ -81,6 +81,8 @@ Schwerpunkt dieser Änderungen: Die Oberfläche wurde für das **Raspberry-Pi-Ki
 
 ### Farben zentralisiert
 
+- **Alle Farben in `:root` (vollständig zentralisiert):** Es gibt **keine hardcodierten Farb-Literale** mehr außerhalb von `:root` — jede Farbe (Hex + alle `rgb/rgba`-Tints inkl. Schatten) ist eine Variable. 72 Tokens, gruppiert/kommentiert. Tint-Namensschema `--<basis>-<alpha>` (z. B. `--primary-30`, `--success-18`, `--warning-25`, `--white-20`, `--black-50`), plus Solids `--black`, `--admin-gold-text`, `--surface-4`. `rgb/rgba`-Schreibweise vereinheitlicht (Leerzeichen + führende Null). Verifiziert: 72 definiert = 72 genutzt, keine undefinierten/doppelten, keine Render-Regression.
+
 - **Alle Farben in `:root` als Variablen** (`style.css`) — zentrale, gruppierte Token-Übersicht statt verstreuter Hardcodes. Neu: `--surface-2/--surface-3/--input-focus` (vorher u. a. die Tippfehler-Dublette `#242240`/`#242440`), `--text-soft`, `--placeholder`, `--danger-light` (führt die zwei hellen Fehler-Rots `#ff8a92`/`#ff6b78` zusammen), `--cover-ph-bg/--cover-icon/--cover-ph-title/--cover-ph-author`; `#fff` → `--text-highlight`; `--danger` jetzt Alias auf `--primary`.
 - **Warn-Amber angeglichen:** das Tint-Amber `#fbbf24` (status-loaned/balance-warn) auf die Warnfarbe `--warning` (#ffaa00) vereinheitlicht. `--admin-gold` (#ffd60a) bleibt bewusst eigenständig.
 
