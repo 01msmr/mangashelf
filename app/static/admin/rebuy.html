@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MangaShelf — Rebuy List</title>
+    <script src="/static/js/scale.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -12,7 +13,7 @@
     <div class="admin-page">
         <nav class="admin-nav">
             <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
-            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span></a>
+            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span> <span class="nav-badge" id="overdue-badge" style="display:none"></span></a>
             <a href="/admin/rebuy.html" class="admin-nav-item active"><i class="fa-solid fa-cart-shopping"></i> <span class="nav-label-rebuy"></span></a>
             <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
         </nav>
@@ -25,6 +26,7 @@
 </main>
 
 <script src="/static/js/api.js"></script>
+    <script src="/static/js/pin.js"></script>
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
 <script>

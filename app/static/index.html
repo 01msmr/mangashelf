@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MangaShelf</title>
+    <script src="/static/js/scale.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -62,6 +63,36 @@ async function init() {
     const urlQ = new URLSearchParams(location.search).get('q') || '';
     if (urlQ) document.getElementById('search').value = urlQ;
     loadBooks(urlQ);
+
+    // Tap a truncated title to reveal the full text (touch has no hover)
+    document.getElementById('book-list').addEventListener('click', (e) => {
+        const title = e.target.closest('.be-title');
+        if (title && title.classList.contains('is-clipped')) showTitleHero(title);
+    });
+}
+
+/* Show the full title as a hero overlay at the top of its item for 2.5s,
+   left-aligned to the title's start x, expanding rightward within the screen. */
+function showTitleHero(titleEl) {
+    const be = titleEl.closest('.be');
+    if (!be) return;
+    be.querySelectorAll('.title-hero').forEach(n => n.remove());
+
+    const beRect = be.getBoundingClientRect();
+    const tRect  = titleEl.getBoundingClientRect();
+
+    const hero = document.createElement('div');
+    hero.className = 'title-hero';
+    hero.innerHTML = titleEl.innerHTML;                 // keep title + styled subtitle
+    hero.style.left     = (tRect.left - beRect.left) + 'px';   // keep the x (left start)
+    hero.style.maxWidth = (window.innerWidth - tRect.left - 12) + 'px';
+    be.appendChild(hero);
+
+    requestAnimationFrame(() => hero.classList.add('show'));
+    setTimeout(() => {
+        hero.classList.remove('show');
+        setTimeout(() => hero.remove(), 200);
+    }, 2500);
 }
 
 /* ── Book list ──────────────────────────────────────────────── */
@@ -78,6 +109,14 @@ async function loadBooks(q = '') {
             return;
         }
         list.innerHTML = books.map(b => renderBook(b, newBookDays)).join('');
+
+        // Flag titles whose text is truncated (line-clamp → vertical, or single
+        // line → horizontal) so they can be tapped to reveal the full text
+        list.querySelectorAll('.be-title').forEach(t => {
+            if (t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1) {
+                t.classList.add('is-clipped');
+            }
+        });
 
         // Attach admin mark-broken handlers
         if (currentUser.is_admin) {
@@ -118,9 +157,12 @@ function renderBook(b, newBookDays) {
     const availLabel = total > 1
         ? `${b.available} /${total} ${Lang.t('book.available')}`
         : Lang.t('book.available');
+    const loanedLabel = total > 1
+        ? `${total} ${Lang.t('book.allLoaned')}`
+        : Lang.t('book.allLoaned');
     const badge = b.available > 0
         ? `<span class="status-badge status-available">${availLabel}</span>`
-        : `<span class="status-badge status-loaned">${Lang.t('book.allLoaned')}</span>`;
+        : `<span class="status-badge status-loaned">${loanedLabel}</span>`;
 
     let actionBtn = '';
     let borrowHint = '';

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MangaShelf — Account</title>
+    <script src="/static/js/scale.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -55,49 +56,41 @@ function renderVerify() {
                 <div class="pin-card-user" id="verify-subtitle"></div>
                 <div id="verify-error" class="pin-error" style="display:none;margin-bottom:8px"></div>
                 <div id="verify-pin-step"></div>
+                <div class="pin-actions">
+                    <button class="btn btn-ghost" id="verify-cancel"></button>
+                </div>
             </div>
         </div>
     `;
     document.getElementById('verify-label').textContent    = Lang.t('acct.verify.title');
     document.getElementById('verify-subtitle').textContent = Lang.t('acct.verify.subtitle');
+    document.getElementById('verify-cancel').textContent   = Lang.t('adminPin.cancel');
+    document.getElementById('verify-cancel').addEventListener('click', () => { window.location.href = '/index.html'; });
 
     const step = document.getElementById('verify-pin-step');
     const pf = makePinField(step, '', 4);
 
     const errEl = document.getElementById('verify-error');
+    let busy = false;
 
-    async function doVerify() {
-        const pin = pf.getValue();
+    // Auto-submit at 4 digits (on-screen taps and physical keyboard both update
+    // the dots). Stays armed so a retry after a wrong PIN still works.
+    const obs = new MutationObserver(async () => {
+        if (busy || pf.getValue().length !== 4) return;
+        busy = true;
         errEl.style.display = 'none';
         try {
-            await API.post('/api/account/verify', { pin });
-            document.removeEventListener('keydown', keyHandler);
+            await API.post('/api/account/verify', { pin: pf.getValue() });
+            obs.disconnect();
             tryLoadAccount();
         } catch (err) {
             errEl.textContent = err.detail || Lang.t('acct.verify.wrongPin');
             errEl.style.display = 'block';
             pf.reset();
+            busy = false;
         }
-    }
-
-    // Watch for 4 digits
-    const obs = new MutationObserver(() => {
-        if (pf.getValue().length === 4) { obs.disconnect(); setTimeout(doVerify, 200); }
     });
     obs.observe(step.querySelector('.pf-dots'), { subtree: true, attributes: true, attributeFilter: ['class'] });
-
-    function keyHandler(e) {
-        e.preventDefault(); e.stopPropagation();
-        if (e.key === 'Escape') { document.removeEventListener('keydown', keyHandler); return; }
-        if (/^\d$/.test(e.key) && pf.getValue().length < 4) {
-            const btn = step.querySelector(`.pinpad-key[data-k="${e.key}"]`);
-            if (btn) btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-        } else if (e.key === 'Backspace') {
-            const btn = step.querySelector('.pinpad-key[data-k="back"]');
-            if (btn) btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-        }
-    }
-    document.addEventListener('keydown', keyHandler);
 }
 
 function showQr(src) {

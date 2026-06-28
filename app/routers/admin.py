@@ -33,6 +33,16 @@ def _set_admin_verified(request: Request, user_id: int):
     ).isoformat()
 
 
+def _is_main_admin(db: Session, user: User) -> bool:
+    """The 'main admin' is the earliest-created admin (lowest id). They may not
+    be demoted, deactivated or deleted by anyone — the kiosk must always keep
+    at least this one protected admin."""
+    if not user.is_admin:
+        return False
+    first_admin = db.query(User).filter_by(is_admin=1).order_by(User.id.asc()).first()
+    return bool(first_admin and first_admin.id == user.id)
+
+
 # ── Admin PIN gate ─────────────────────────────────────────────────────────────
 
 class AdminVerifyRequest(BaseModel):
@@ -90,16 +100,18 @@ def set_admin_pin(body: SetAdminPinRequest, request: Request,
 def users(db: Session = Depends(get_db), _admin: User = Depends(get_current_admin)):
     all_users = db.query(User).order_by(User.username).all()
     loan_counts = {u.id: db.query(Loan).filter_by(user_id=u.id).count() for u in all_users}
-    now_iso = datetime.now(timezone.utc).isoformat()
+    main_admin = db.query(User).filter_by(is_admin=1).order_by(User.id.asc()).first()
+    main_admin_id = main_admin.id if main_admin else None
     return [
         {
-            'id':           u.id,
-            'username':     u.username,
-            'is_admin':     bool(u.is_admin),
-            'active':       bool(u.active),
-            'guthaben':     u.guthaben,
-            'loan_count':   loan_counts[u.id],
-            'created_at':   u.created_at,
+            'id':            u.id,
+            'username':      u.username,
+            'is_admin':      bool(u.is_admin),
+            'is_main_admin': u.id == main_admin_id,
+            'active':        bool(u.active),
+            'guthaben':      u.guthaben,
+            'loan_count':    loan_counts[u.id],
+            'created_at':    u.created_at,
         }
         for u in all_users
     ]
@@ -113,6 +125,8 @@ def user_promote(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot change your own admin status.')
+    if _is_main_admin(db, user):
+        raise HTTPException(400, 'The main admin cannot be removed from admin.')
     user.is_admin = 0 if user.is_admin else 1
     db.commit()
     action = 'promoted to admin' if user.is_admin else 'removed from admin'
@@ -127,6 +141,8 @@ def user_deactivate(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot deactivate yourself.')
+    if _is_main_admin(db, user) and user.active:
+        raise HTTPException(400, 'The main admin cannot be deactivated.')
     user.active = 0 if user.active else 1
     db.commit()
     state = 'unlocked' if user.active else 'locked'
@@ -141,6 +157,8 @@ def user_delete(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot delete yourself.')
+    if _is_main_admin(db, user):
+        raise HTTPException(400, 'The main admin cannot be deleted.')
     open_loans = db.query(Loan).filter_by(user_id=user.id).count()
     if open_loans:
         raise HTTPException(400, f'Cannot delete "{user.username}" — they have {open_loans} open loan(s).')

@@ -11,7 +11,8 @@ function makePinField(container, label, count) {
         <div class="pin-card-label">${label}</div>
         <div class="pf-error pin-error" style="display:none;margin-bottom:8px"></div>
         <div class="pinpad-dots pf-dots">
-            ${Array.from({length: count}, () => '<div class="dot"></div>').join('')}
+            ${Array.from({length: count}, (_, i) =>
+                `<div class="dot${count > 4 && i === Math.floor(count / 2) ? ' dot-gap' : ''}"></div>`).join('')}
         </div>
         <div class="pinpad-grid">
             <button class="pinpad-key" data-k="1" type="button">1</button>
@@ -44,6 +45,20 @@ function makePinField(container, label, count) {
             else if (pin.length < count) pin += k;
             update();
         });
+    });
+
+    // Physical keyboard support — built into the module so every screen that
+    // uses makePinField accepts direct typing (digits + Backspace) without its
+    // own handler. Only acts while this field is actually visible.
+    document.addEventListener('keydown', e => {
+        if (!container.offsetParent) return;            // hidden / removed
+        if (/^[0-9]$/.test(e.key)) {
+            if (pin.length < count) { pin += e.key; update(); }
+            e.preventDefault();
+        } else if (e.key === 'Backspace') {
+            pin = pin.slice(0, -1); update();
+            e.preventDefault();
+        }
     });
 
     return {

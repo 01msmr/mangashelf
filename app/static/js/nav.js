@@ -6,21 +6,26 @@ function renderNav(user) {
     const header = document.getElementById('site-header');
     if (!header) return;
 
-    const adminBadge   = user.is_admin ? '<span class="badge-admin">Admin</span>' : '';
     const balanceClass = user.guthaben >= 5 ? 'bal-ok' : user.guthaben > 0 ? 'bal-warn' : 'bal-danger';
     const path         = window.location.pathname;
     const onAccount    = path === '/account.html';
     const onIndex      = path === '/index.html' || path === '/';
     const onAdmin      = path.startsWith('/admin/');
-    const adminLink    = user.is_admin ? `<a href="/admin/users.html" class="btn btn-ghost btn-sm${onAdmin ? ' nav-active' : ''}"><i class="fa-solid fa-shield-halved"></i> admin section</a>` : '';
+    // The gold "Admin" badge IS the link to the admin section (no separate button).
+    const adminTip     = (typeof Lang !== 'undefined' && Lang.t) ? Lang.t('nav.admin') : 'Admin';
+    const adminBadge   = user.is_admin
+        ? `<a href="/admin/users.html" class="badge-admin-link${onAdmin ? ' nav-active' : ''}" data-tip="${esc(adminTip)}"><span class="badge-admin">Admin</span></a>`
+        : '';
 
     header.innerHTML = `
-        <a href="/account.html" class="btn btn-ghost btn-sm user-badge${onAccount ? ' nav-active' : ''}">${esc(user.username)}</a>${adminBadge}<span class="header-balance ${balanceClass}">${fmtEur(user.guthaben)}</span>
-        <div class="header-left">
+        <div class="header-left-group">
+            <a href="/account.html" class="btn btn-ghost btn-sm user-badge${onAccount ? ' nav-active' : ''}">${esc(user.username)}</a>${adminBadge}<span class="header-balance ${balanceClass}">${fmtEur(user.guthaben)}</span>
+        </div>
+        <div class="header-center">
             <a href="/index.html" class="app-logo${onIndex ? ' nav-active' : ''}"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span class="logo-shelf">${(typeof Lang !== 'undefined' && Lang.t) ? Lang.t('logo.shelf') : 'Shelf'}</span></a>
+            ${_langDropdownHtml()}
         </div>
         <div class="header-right">
-            ${adminLink}
             <button class="btn btn-ghost btn-sm" id="nav-logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
         </div>
     `;
@@ -29,9 +34,67 @@ function renderNav(user) {
         await API.post('/api/auth/logout');
         window.location.href = '/login.html';
     });
+    _wireLangDropdown();
+}
+
+/* ── Language flag dropdown (next to the title) ───────────────────────────── */
+const _FLAGS = {
+    en: `<svg class="lang-flag" viewBox="0 0 60 30" preserveAspectRatio="none" aria-hidden="true"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="3"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/></svg>`,
+    de: `<svg class="lang-flag" viewBox="0 0 5 3" preserveAspectRatio="none" aria-hidden="true"><rect width="5" height="3" fill="#FFCE00"/><rect width="5" height="2" fill="#DD0000"/><rect width="5" height="1" fill="#000"/></svg>`,
+    schwaebisch: `<svg class="lang-flag" viewBox="0 0 5 3" preserveAspectRatio="none" aria-hidden="true"><rect width="5" height="3" fill="#FFCE00"/><rect width="5" height="1.5" fill="#000"/></svg>`,
+};
+const _LANG_LABELS = { en: 'EN', de: 'DE', schwaebisch: 'Schwob' };
+const _LANG_ORDER  = ['en', 'de', 'schwaebisch'];
+
+function _langDropdownHtml() {
+    const cur = (typeof Lang !== 'undefined') ? Lang.current : 'de';
+    // Flags only in the list (no labels, no tooltip).
+    const opts = _LANG_ORDER.map(c =>
+        `<button type="button" class="lang-option${c === cur ? ' active' : ''}" data-lang="${c}">${_FLAGS[c]}</button>`).join('');
+    return `<div class="lang-dropdown" id="lang-dropdown">
+            <button type="button" class="lang-current" id="lang-toggle">${_FLAGS[cur] || ''}<span class="lang-code">${_LANG_LABELS[cur] || ''}</span></button>
+            <div class="lang-menu" id="lang-menu">${opts}</div>
+        </div>`;
+}
+
+function _wireLangDropdown() {
+    const dd = document.getElementById('lang-dropdown');
+    if (!dd) return;
+    const menu = document.getElementById('lang-menu');
+    document.getElementById('lang-toggle').addEventListener('click', e => {
+        e.stopPropagation();
+        menu.classList.toggle('open');
+    });
+    document.addEventListener('click', e => { if (!dd.contains(e.target)) menu.classList.remove('open'); });
+    menu.querySelectorAll('.lang-option').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const code = btn.dataset.lang;
+            menu.classList.remove('open');
+            if (code === Lang.current) return;
+            Lang.set(code);
+            await API.post(`/api/account/language/${code}`).catch(() => {});
+            window.location.reload();
+        });
+    });
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/**
+ * Populate the overdue-count notification badge on the admin nav. Runs on every
+ * admin page (the badge element exists in each admin page's nav) so the count
+ * is always visible, not only on the overdue panel.
+ */
+async function loadOverdueBadge() {
+    const badge = document.getElementById('overdue-badge');
+    if (!badge) return;
+    try {
+        const items = await API.get('/api/admin/overdue');
+        const n = items.length;
+        badge.textContent = n;
+        badge.style.display = n > 0 ? 'inline-block' : 'none';
+    } catch (_) { /* not verified / not allowed → leave hidden */ }
+}
 
 /**
  * Load current user, render nav, start idle timer, return user object.
@@ -42,6 +105,7 @@ async function initPage() {
         const user = await API.get('/api/auth/me');
         renderNav(user);
         startIdleTimer();
+        if (user.is_admin) loadOverdueBadge();
         return user;
     } catch (err) {
         if (err.status === 401) {
@@ -90,9 +154,14 @@ function startIdleTimer() {
         t.style.display = 'block';
         // Position after display so offsetWidth is known
         const r = el.getBoundingClientRect();
-        const tw = t.offsetWidth;
-        t.style.top  = (r.bottom + 6) + 'px';
-        t.style.left = (r.right - tw) + 'px';
+        const tw = t.offsetWidth, th = t.offsetHeight;
+        // Clamp into the viewport so long tooltips never run off-screen.
+        let left = r.right - tw;
+        left = Math.max(6, Math.min(left, window.innerWidth - tw - 6));
+        let top = r.bottom + 6;
+        if (top + th > window.innerHeight - 6) top = r.top - th - 6;  // flip above
+        t.style.top  = top + 'px';
+        t.style.left = left + 'px';
     });
 
     document.addEventListener('mouseout', function (e) {
@@ -111,109 +180,70 @@ function startIdleTimer() {
  * onVerified() is called once the user is cleared.
  */
 async function requireAdminPin(onVerified) {
+    // Cover the page immediately so the admin content never flashes before the
+    // verification / PIN gate resolves (no background flicker on entry).
+    const overlay = document.createElement('div');
+    overlay.id = 'admin-pin-overlay';
+    overlay.className = 'overlay-admin';
+    document.body.appendChild(overlay);
     try {
         await API.get('/api/admin/verified');
+        overlay.remove();
         onVerified();
     } catch (err) {
         if (err.status === 403) {
-            _showAdminPinPrompt(onVerified);
+            _fillAdminPinPrompt(overlay, onVerified);
         } else if (err.status === 401) {
             window.location.href = '/login.html';
+        } else {
+            overlay.remove();
         }
     }
 }
 
-function _showAdminPinPrompt(onVerified) {
-    const overlay = document.createElement('div');
-    overlay.id = 'admin-pin-overlay';
-    overlay.className = 'overlay-admin';
+// Fills the already-shown cover overlay with the admin PIN gate. Uses the shared
+// makePinField module (8 digits = user PIN + admin PIN), keyboard support included.
+function _fillAdminPinPrompt(overlay, onVerified) {
     overlay.innerHTML = `
         <div class="pin-card pin-card-wide">
             <div class="pin-card-label">${Lang.t('adminPin.title')}</div>
             <div class="pin-hint">${Lang.t('adminPin.hint')}</div>
-            <div id="ap-error" class="pin-error"></div>
-            <div class="pinpad-dots pinpad-dots-sm" id="ap-dots">
-                <div class="dot" id="ap-dot-0"></div>
-                <div class="dot" id="ap-dot-1"></div>
-                <div class="dot" id="ap-dot-2"></div>
-                <div class="dot" id="ap-dot-3"></div>
-                <div class="dot dot-gap" id="ap-dot-4"></div>
-                <div class="dot" id="ap-dot-5"></div>
-                <div class="dot" id="ap-dot-6"></div>
-                <div class="dot" id="ap-dot-7"></div>
-            </div>
-            <div class="pinpad-grid">
-                <button class="pinpad-key" data-ap="1">1</button>
-                <button class="pinpad-key" data-ap="2">2</button>
-                <button class="pinpad-key" data-ap="3">3</button>
-                <button class="pinpad-key" data-ap="4">4</button>
-                <button class="pinpad-key" data-ap="5">5</button>
-                <button class="pinpad-key" data-ap="6">6</button>
-                <button class="pinpad-key" data-ap="7">7</button>
-                <button class="pinpad-key" data-ap="8">8</button>
-                <button class="pinpad-key" data-ap="9">9</button>
-                <button class="pinpad-key" data-ap="clear">C</button>
-                <button class="pinpad-key" data-ap="0">0</button>
-                <button class="pinpad-key" data-ap="back">⌫</button>
-            </div>
+            <div id="ap-error" class="pin-error" style="display:none"></div>
+            <div id="ap-step"></div>
             <div class="pin-actions">
                 <button class="btn btn-ghost" id="ap-cancel">${Lang.t('adminPin.cancel')}</button>
             </div>
         </div>`;
-    document.body.appendChild(overlay);
 
-    const errEl  = overlay.querySelector('#ap-error');
-    let apPin = '';
+    const errEl = overlay.querySelector('#ap-error');
+    const pf = makePinField(overlay.querySelector('#ap-step'), '', 8);
 
-    function updateDots() {
-        for (let i = 0; i < 8; i++) {
-            const dot = overlay.querySelector(`#ap-dot-${i}`);
-            if (dot) dot.classList.toggle('filled', i < apPin.length);
-        }
-    }
-
-    async function doVerify() {
-        if (apPin.length !== 8) return;
+    let busy = false;
+    const obs = new MutationObserver(async () => {
+        if (busy || pf.getValue().length !== 8) return;
+        busy = true;
         errEl.style.display = 'none';
         try {
-            await API.post('/api/admin/verify', { pin: apPin });
+            await API.post('/api/admin/verify', { pin: pf.getValue() });
+            obs.disconnect();
             overlay.remove();
             onVerified();
         } catch (err) {
             errEl.textContent = err.detail || 'Incorrect PIN.';
             errEl.style.display = 'block';
-            apPin = ''; updateDots();
+            pf.reset();
+            busy = false;
         }
-    }
-
-    overlay.querySelectorAll('.pinpad-key').forEach(btn => {
-        btn.addEventListener('pointerdown', e => {
-            e.preventDefault();
-            const k = btn.dataset.ap;
-            if (k === 'back')       { apPin = apPin.slice(0, -1); }
-            else if (k === 'clear') { apPin = ''; }
-            else if (apPin.length < 8) { apPin += k; }
-            updateDots();
-            if (apPin.length === 8) setTimeout(doVerify, 150);
-        });
     });
+    obs.observe(overlay.querySelector('.pf-dots'), { subtree: true, attributes: true, attributeFilter: ['class'] });
 
-    overlay.querySelector('#ap-cancel').addEventListener('click', () => {
-        overlay.remove();
+    // Keep the cover overlay up while navigating away so the empty admin page
+    // never flashes through ("leerer screen" on cancel).
+    function cancel() {
+        document.removeEventListener('keydown', onEsc);
         window.location.href = '/index.html';
-    });
-
-    overlay.addEventListener('keydown', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.key === 'Escape') { overlay.remove(); window.location.href = '/index.html'; return; }
-        if (/^\d$/.test(e.key) && apPin.length < 8) {
-            apPin += e.key; updateDots();
-            if (apPin.length === 8) setTimeout(doVerify, 150);
-        } else if (e.key === 'Backspace') {
-            apPin = apPin.slice(0, -1); updateDots();
-        }
-    });
-    overlay.setAttribute('tabindex', '-1');
-    overlay.focus();
+    }
+    function onEsc(e) { if (e.key === 'Escape') cancel(); }
+    document.addEventListener('keydown', onEsc);
+    overlay.querySelector('#ap-cancel').addEventListener('click', cancel);
 }

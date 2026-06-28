@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MangaShelf — Settings</title>
+    <script src="/static/js/scale.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -12,61 +13,81 @@
     <div class="admin-page">
         <nav class="admin-nav">
             <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
-            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span></a>
+            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span> <span class="nav-badge" id="overdue-badge" style="display:none"></span></a>
             <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> <span class="nav-label-rebuy"></span></a>
             <a href="/admin/settings.html" class="admin-nav-item active"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
         </nav>
         <div class="admin-body">
-            <div class="hint-aside-row items-start pt-2 gap-6 flex-wrap">
-                <!-- Card 1: Library settings -->
-                <div class="card card-col">
-                    <div class="card-header" id="card-title"></div>
-                    <div class="card-body">
-                        <div class="form-group mb-3">
-                            <label class="form-label" id="label-max-books"></label>
-                            <input type="number" id="max-books" class="form-input" min="1" max="20" value="3">
+            <div class="settings-cols pt-2">
+                <!-- Left column: Library settings (the tall card) -->
+                <div class="settings-col">
+                    <div class="card">
+                        <div class="card-header" id="card-title"></div>
+                        <div class="card-body">
+                            <div class="form-group mb-3">
+                                <label class="form-label" id="label-max-books"></label>
+                                <input type="number" id="max-books" class="form-input" min="1" max="20" value="3">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label" id="label-max-days"></label>
+                                <input type="number" id="max-days" class="form-input" min="7" max="365" value="60">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label" id="label-new-book-days"></label>
+                                <input type="number" id="new-book-days" class="form-input" min="0" max="90" value="14">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label" id="label-default-rate"></label>
+                                <select id="default-rate" class="form-input form-select">
+                                    <option value="0.50">0.50 €</option>
+                                    <option value="1.00">1.00 €</option>
+                                    <option value="1.50">1.50 €</option>
+                                    <option value="2.00">2.00 €</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" id="btn-save"></button>
+                            <div id="msg" class="fetch-status mt-2" style="display:none"></div>
                         </div>
-                        <div class="form-group mb-3">
-                            <label class="form-label" id="label-max-days"></label>
-                            <input type="number" id="max-days" class="form-input" min="7" max="365" value="60">
-                        </div>
-                        <div class="form-group mb-3">
-                            <label class="form-label" id="label-new-book-days"></label>
-                            <input type="number" id="new-book-days" class="form-input" min="0" max="90" value="14">
-                        </div>
-                        <div class="form-group mb-3">
-                            <label class="form-label" id="label-default-rate"></label>
-                            <select id="default-rate" class="form-input form-select">
-                                <option value="0.50">0.50 €</option>
-                                <option value="1.00">1.00 €</option>
-                                <option value="1.50">1.50 €</option>
-                                <option value="2.00">2.00 €</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-primary" id="btn-save"></button>
-                        <div id="msg" class="fetch-status mt-2" style="display:none"></div>
                     </div>
                 </div>
-                <!-- Card 2: Admin actions -->
-                <div class="card card-col">
-                    <div class="card-header" id="card-title-actions"></div>
-                    <div class="card-body">
-                        <div class="form-group mb-3">
-                            <label class="form-label" id="label-admin-pin"></label>
-                            <div id="admin-pin-desc" class="form-desc"></div>
-                            <div class="flex gap-2 items-center">
-                                <input type="password" id="new-admin-pin" class="form-input pin-admin-input flex-1" inputmode="none" maxlength="4" placeholder="••••">
-                                <button type="button" id="btn-numpad-admin-pin" class="btn btn-ghost btn-sm" tabindex="-1" data-tip="Numpad"><i class="fa-solid fa-keyboard"></i></button>
-                                <button class="btn btn-ghost btn-sm" id="btn-set-admin-pin"></button>
+                <!-- Right column: Display (top) + Admin actions -->
+                <div class="settings-col">
+                    <!-- Display / UI scale -->
+                    <div class="card">
+                        <div class="card-header" id="card-title-display"></div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" id="label-ui-scale"></label>
+                                <div id="ui-scale-desc" class="form-desc"></div>
+                                <div class="flex items-center gap-3 mt-2">
+                                    <input type="range" id="ui-scale-range" class="ui-scale-range flex-1">
+                                    <span id="ui-scale-value" class="ui-scale-value"></span>
+                                    <button type="button" class="btn btn-ghost btn-sm" id="btn-ui-scale-reset"></button>
+                                </div>
                             </div>
-                            <div id="admin-pin-msg" class="fetch-status mt-1" style="display:none"></div>
                         </div>
-                        <hr class="divider">
-                        <div id="purge-desc" class="form-desc"></div>
-                        <span id="purge-btn-area">
-                            <button class="btn btn-danger btn-sm" id="btn-purge"></button>
-                        </span>
-                        <div id="purge-msg" class="fetch-status mt-2" style="display:none"></div>
+                    </div>
+                    <!-- Admin actions -->
+                    <div class="card">
+                        <div class="card-header" id="card-title-actions"></div>
+                        <div class="card-body">
+                            <div class="form-group mb-3">
+                                <label class="form-label" id="label-admin-pin"></label>
+                                <div id="admin-pin-desc" class="form-desc"></div>
+                                <div class="flex gap-2 items-center">
+                                    <input type="password" id="new-admin-pin" class="form-input pin-admin-input flex-1" inputmode="none" maxlength="4" placeholder="••••">
+                                    <button type="button" id="btn-numpad-admin-pin" class="btn btn-ghost btn-sm" tabindex="-1" data-tip="Numpad"><i class="fa-solid fa-keyboard"></i></button>
+                                    <button class="btn btn-ghost btn-sm" id="btn-set-admin-pin"></button>
+                                </div>
+                                <div id="admin-pin-msg" class="fetch-status mt-1" style="display:none"></div>
+                            </div>
+                            <hr class="divider">
+                            <div id="purge-desc" class="form-desc"></div>
+                            <span id="purge-btn-area">
+                                <button class="btn btn-danger btn-sm" id="btn-purge"></button>
+                            </span>
+                            <div id="purge-msg" class="fetch-status mt-2" style="display:none"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -75,6 +96,7 @@
 </main>
 
 <script src="/static/js/api.js"></script>
+    <script src="/static/js/pin.js"></script>
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
 <script src="/static/js/numpad.js"></script>
@@ -97,12 +119,35 @@ function applyTranslations() {
     document.getElementById('purge-desc').textContent         = Lang.t('adminSettings.purgeDesc');
     document.getElementById('btn-purge').textContent          = Lang.t('adminSettings.purgeBtn');
     document.getElementById('btn-purge').addEventListener('click', onPurgeClick);
+    document.getElementById('card-title-display').textContent = Lang.t('adminSettings.displayTitle');
+    document.getElementById('label-ui-scale').textContent    = Lang.t('adminSettings.uiScaleLabel');
+    document.getElementById('ui-scale-desc').textContent     = Lang.t('adminSettings.uiScaleDesc');
+    document.getElementById('btn-ui-scale-reset').textContent = Lang.t('adminSettings.uiScaleReset');
+}
+
+/* ── UI scale (per-device, via UIScale in scale.js) ──────────── */
+function initUiScale() {
+    const range = document.getElementById('ui-scale-range');
+    const value = document.getElementById('ui-scale-value');
+    range.min  = UIScale.MIN;
+    range.max  = UIScale.MAX;
+    range.step = 1;
+    range.value = UIScale.get();
+    const show = (px) => { value.textContent = UIScale.pct(px) + '%'; };
+    show(UIScale.get());
+    range.addEventListener('input', () => { show(UIScale.set(range.value)); });
+    document.getElementById('btn-ui-scale-reset').addEventListener('click', () => {
+        UIScale.reset();
+        range.value = UIScale.DEFAULT;
+        show(UIScale.DEFAULT);
+    });
 }
 
 async function init() {
     await Lang.load();
     applyTranslations();
     await initPage();
+    initUiScale();
     requireAdminPin(loadContent);
 }
 
