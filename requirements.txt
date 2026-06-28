@@ -4,3 +4,5 @@ sqlalchemy
 qrcode
 pillow
 bcrypt
+requests
+apscheduler

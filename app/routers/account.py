@@ -91,8 +91,9 @@ def account_info(request: Request, db: Session = Depends(get_db),
         'active_loans':  [
             {
                 'id':          l.id,
-                'book_title':  l.copy.book.title if l.copy and l.copy.book else '',
-                'book_isbn':   l.copy.book.isbn  if l.copy and l.copy.book else '',
+                'book_title':  l.copy.book.title  if l.copy and l.copy.book else '',
+                'book_isbn':   l.copy.book.isbn   if l.copy and l.copy.book else '',
+                'book_series': l.copy.book.series if l.copy and l.copy.book else None,
                 'due_date':    l.due_date,
                 'overdue':     l.due_date < now_iso,
             }

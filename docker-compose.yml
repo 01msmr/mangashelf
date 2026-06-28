@@ -1,11 +1,12 @@
 services:
   mangashelf:
     build: .
-    image: mangashelf
+    image: mangashelf:latest
     container_name: mangashelf
+    hostname: mangashelf
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:8080"
     volumes:
       - mangashelf-data:/code/data
     env_file:

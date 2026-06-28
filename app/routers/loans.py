@@ -1,6 +1,7 @@
 """Loan endpoints: scan, borrow, return, QR images, phone-scan."""
 from __future__ import annotations
 import io
+import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -12,9 +13,9 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Book, Copy, Loan, Setting, User
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, SYSTEM_USER
 from ..services.finance import can_borrow, select_copy, charge_loan_fee, log_return
-from ..services.network import get_lan_ip
+from ..services.network import get_host_address
 from ..services.scan_tokens import make_token, consume_token
 
 router       = APIRouter(tags=['loans'])
@@ -23,9 +24,24 @@ media_router = APIRouter(tags=['media'])
 LOAN_RATES = ['0.50', '1.00', '1.50', '2.00']
 
 
-def _token_url(user_id: int, port: int = 5001) -> str:
+def _token_url(user_id: int, request: Request) -> str:
     token = make_token(user_id)
-    return f'https://{get_lan_ip()}:{port}/phone-scan?t={token}'
+    # Prefer explicit override, then the Host header from the browser request
+    # (which already contains the correct LAN IP+port when the user opened the
+    # app via the LAN address), then fall back to auto-detection.
+    override = (os.environ.get('TEST_SERVER_HOST') or os.environ.get('SERVER_HOST') or '').strip()
+    if override:
+        port = int(os.environ.get('SERVER_PORT', 8080))
+        host = f'{override}:{port}'
+    else:
+        req_host = request.headers.get('host', '')
+        is_local = req_host.startswith('localhost') or req_host.startswith('127.')
+        if req_host and not is_local:
+            host = req_host  # already includes port, e.g. "192.168.1.42:8080"
+        else:
+            port = int(os.environ.get('SERVER_PORT', 8080))
+            host = f'{get_host_address()}:{port}'
+    return f'https://{host}/phone-scan?t={token}'
 
 
 def _make_qr_png(url: str) -> bytes:
@@ -74,6 +90,8 @@ def scan_go(isbn: str = '', db: Session = Depends(get_db),
 @router.get('/borrow/{isbn}')
 def borrow_info(isbn: str, db: Session = Depends(get_db),
                 user: User = Depends(get_current_user)):
+    if user.username == SYSTEM_USER:
+        raise HTTPException(403, 'System account cannot borrow books.')
     book = db.query(Book).filter_by(isbn=isbn).first()
     if not book:
         raise HTTPException(404, 'Book not found')
@@ -113,6 +131,8 @@ class BorrowRequest(BaseModel):
 @router.post('/borrow/{isbn}')
 def borrow_confirm(isbn: str, body: BorrowRequest, db: Session = Depends(get_db),
                    user: User = Depends(get_current_user)):
+    if user.username == SYSTEM_USER:
+        raise HTTPException(403, 'System account cannot borrow books.')
     book = db.query(Book).filter_by(isbn=isbn).first()
     if not book:
         raise HTTPException(404, 'Book not found')
@@ -230,7 +250,7 @@ def phone_scan_token(t: str = '', request: Request = None,
 @media_router.get('/scan-qr.png')
 def scan_qr(request: Request, db: Session = Depends(get_db),
             user: User = Depends(get_current_user)):
-    png = _make_qr_png(_token_url(user.id))
+    png = _make_qr_png(_token_url(user.id, request))
     return Response(content=png, media_type='image/png',
                     headers={'Cache-Control': 'no-store'})
 
@@ -238,6 +258,6 @@ def scan_qr(request: Request, db: Session = Depends(get_db),
 @media_router.get('/user-qr/{user_id}.png')
 def user_qr(user_id: int, request: Request, db: Session = Depends(get_db),
             _user: User = Depends(get_current_user)):
-    png = _make_qr_png(_token_url(user_id))
+    png = _make_qr_png(_token_url(user_id, request))
     return Response(content=png, media_type='image/png',
                     headers={'Cache-Control': 'no-store'})

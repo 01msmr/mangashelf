@@ -6,7 +6,7 @@ import requests
 
 logger    = logging.getLogger(__name__)
 COVER_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', 'static', 'covers')
+    os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'covers')
 )
 _HEADERS  = {'User-Agent': 'MangaShelf/1.0 (manga-library-management)'}
 _TIMEOUT  = 10

@@ -1,6 +1,7 @@
 """Auth endpoints: login, logout, register, setup-pin, user suggestions."""
 from __future__ import annotations
 import time
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
 from ..dependencies import get_current_user
+from .account import _set_verified
 
 router = APIRouter(tags=['auth'])
 
@@ -17,6 +19,19 @@ router = APIRouter(tags=['auth'])
 _login_attempts: dict[str, dict] = {}
 LOCKOUT_ATTEMPTS = 4
 LOCKOUT_SECONDS  = 120
+DMN_HIDE_DAYS    = 14
+
+
+def _dmn_blocked(db: Session) -> bool:
+    """dmn login/listing is blocked when another admin has logged in within DMN_HIDE_DAYS days."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=DMN_HIDE_DAYS)).isoformat()
+    return db.query(User).filter(
+        User.username != 'dmn',
+        User.is_admin == 1,
+        User.active == 1,
+        User.last_login.isnot(None),
+        User.last_login >= cutoff,
+    ).first() is not None
 
 
 def _validate_pin(pin: str) -> str | None:
@@ -48,6 +63,11 @@ def login(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
         )
 
     user = db.query(User).filter_by(username=username, active=1).first()
+
+    # Block dmn when another admin has logged in recently
+    if username == 'dmn' and user and _dmn_blocked(db):
+        user = None
+
     if not user or not user.check_pin(body.pin.strip()):
         count = state['count'] + 1
         locked_until = (now + LOCKOUT_SECONDS) if count >= LOCKOUT_ATTEMPTS else 0.0
@@ -60,7 +80,10 @@ def login(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail='Wrong PIN.' if user else 'Unknown username.')
 
     _login_attempts.pop(username, None)
+    user.last_login = datetime.now(timezone.utc).isoformat()
+    db.commit()
     request.session['user_id'] = str(user.id)
+    _set_verified(request, user.id)
     return {'ok': True, 'setup_required': bool(user.setup_required), 'is_admin': bool(user.is_admin)}
 
 
@@ -104,6 +127,7 @@ def register(body: RegisterRequest, request: Request, db: Session = Depends(get_
     db.commit()
 
     request.session['user_id'] = str(user.id)
+    _set_verified(request, user.id)
     return {'ok': True, 'message': 'Account created. Please pay your 10.00 € deposit at the kiosk.'}
 
 
@@ -155,6 +179,8 @@ def user_suggestions(q: str = '', db: Session = Depends(get_db)):
     """Return matching usernames. If q is empty, return all active users (for login screen)."""
     q = q.strip().lower()
     query = db.query(User).filter(User.active == 1)
+    if _dmn_blocked(db):
+        query = query.filter(User.username != 'dmn')
     if q:
         query = query.filter(User.username.like(f'{q}%'))
     users = query.order_by(User.username).limit(50).all()

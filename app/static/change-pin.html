@@ -10,7 +10,8 @@
 <body class="login-page">
 <div class="page-center">
     <div class="pin-card">
-        <div class="auth-title" id="page-title" style="margin-bottom:16px"></div>
+        <div class="auth-title" id="page-title" style="margin-bottom:4px"></div>
+        <div class="pin-hint" id="page-hint" style="margin-bottom:12px"></div>
         <div id="pin-step"></div>
         <div class="pin-actions mt-2">
             <a href="/account.html" class="btn btn-ghost flex-1 text-center" id="btn-cancel"></a>
@@ -29,6 +30,7 @@ let newPinVal = '';
 async function applyTranslations() {
     await Lang.load();
     document.getElementById('page-title').textContent  = Lang.t('changePin.title');
+    document.getElementById('page-hint').textContent   = Lang.t('changePin.currentHint');
     document.getElementById('btn-cancel').textContent  = Lang.t('changePin.cancelBtn');
 }
 
@@ -46,6 +48,7 @@ function showStep1() {
 }
 
 function showStep2() {
+    document.getElementById('page-hint').textContent = '';
     const step = document.getElementById('pin-step');
     const pf = makePinField(step, Lang.t('changePin.newLabel'), 4);
     watchDots(step, pf, () => { newPinVal = pf.getValue(); showStep3(); });
@@ -54,27 +57,42 @@ function showStep2() {
 function showStep3() {
     const step = document.getElementById('pin-step');
     const pf = makePinField(step, Lang.t('changePin.confirmLabel'), 4);
-    watchDots(step, pf, async () => {
-        const confirm = pf.getValue();
-        if (confirm !== newPinVal) {
-            pf.showError(Lang.t('setupPin.mismatch') || 'PINs do not match');
-            pf.reset();
-            return;
-        }
-        try {
-            await API.post('/api/account/change-pin', {
-                current_pin: currentPinVal,
-                pin: newPinVal,
-                pin_confirm: confirm,
-            });
-            window.location.href = '/account.html';
-        } catch (err) {
-            if (handleAuthError(err)) return;
-            pf.showError(err.detail || 'Error');
-            pf.reset();
-        }
-    });
+
+    function attempt() {
+        watchDots(step, pf, async () => {
+            const confirm = pf.getValue();
+            if (confirm !== newPinVal) {
+                pf.reset();
+                pf.showError(Lang.t('setupPin.mismatch') || 'PINs do not match');
+                attempt();
+                return;
+            }
+            try {
+                await API.post('/api/account/change-pin', {
+                    current_pin: currentPinVal,
+                    pin: newPinVal,
+                    pin_confirm: confirm,
+                });
+                window.location.href = '/account.html';
+            } catch (err) {
+                if (handleAuthError(err)) return;
+                pf.reset();
+                pf.showError(err.detail || 'Error');
+                attempt();
+            }
+        });
+    }
+    attempt();
 }
+
+document.addEventListener('keydown', e => {
+    if (!/^\d$/.test(e.key) && e.key !== 'Backspace') return;
+    e.preventDefault();
+    const step = document.getElementById('pin-step');
+    const key  = e.key === 'Backspace' ? 'back' : e.key;
+    const btn  = step.querySelector(`.pinpad-key[data-k="${key}"]`);
+    if (btn) btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+});
 
 applyTranslations().then(() => {
     initPage();

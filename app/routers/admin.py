@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import User, Loan, Copy, Book, Transaction, RebuyItem, Setting
-from ..dependencies import get_current_admin, get_current_user
+from ..dependencies import get_current_admin, get_current_user, SYSTEM_USER
 from ..services.finance import LOAN_RATES, DEPOSIT
 from .books import renumber_copies
 
@@ -31,16 +31,6 @@ def _set_admin_verified(request: Request, user_id: int):
     request.session[_admin_session_key(user_id)] = (
         datetime.now(timezone.utc) + _ADMIN_VERIFY_TTL
     ).isoformat()
-
-
-def _is_main_admin(db: Session, user: User) -> bool:
-    """The 'main admin' is the earliest-created admin (lowest id). They may not
-    be demoted, deactivated or deleted by anyone — the kiosk must always keep
-    at least this one protected admin."""
-    if not user.is_admin:
-        return False
-    first_admin = db.query(User).filter_by(is_admin=1).order_by(User.id.asc()).first()
-    return bool(first_admin and first_admin.id == user.id)
 
 
 # ── Admin PIN gate ─────────────────────────────────────────────────────────────
@@ -67,7 +57,7 @@ def admin_verify(body: AdminVerifyRequest, request: Request,
         raise HTTPException(401, 'Enter your 4-digit PIN followed by the 4-digit admin PIN.')
     user_pin  = combined[:4]
     admin_pin = combined[4:]
-    stored_admin_pin = Setting.get(db, 'admin_pin', '0369')
+    stored_admin_pin = Setting.get(db, 'admin_pin')
     if not admin.check_pin(user_pin) or admin_pin != stored_admin_pin:
         raise HTTPException(401, 'Incorrect PIN combination.')
     _set_admin_verified(request, admin.id)
@@ -100,18 +90,17 @@ def set_admin_pin(body: SetAdminPinRequest, request: Request,
 def users(db: Session = Depends(get_db), _admin: User = Depends(get_current_admin)):
     all_users = db.query(User).order_by(User.username).all()
     loan_counts = {u.id: db.query(Loan).filter_by(user_id=u.id).count() for u in all_users}
-    main_admin = db.query(User).filter_by(is_admin=1).order_by(User.id.asc()).first()
-    main_admin_id = main_admin.id if main_admin else None
+    now_iso = datetime.now(timezone.utc).isoformat()
     return [
         {
-            'id':            u.id,
-            'username':      u.username,
-            'is_admin':      bool(u.is_admin),
-            'is_main_admin': u.id == main_admin_id,
-            'active':        bool(u.active),
-            'guthaben':      u.guthaben,
-            'loan_count':    loan_counts[u.id],
-            'created_at':    u.created_at,
+            'id':           u.id,
+            'username':     u.username,
+            'is_admin':     bool(u.is_admin),
+            'active':       bool(u.active),
+            'is_system':    u.username == SYSTEM_USER,
+            'guthaben':     u.guthaben,
+            'loan_count':   loan_counts[u.id],
+            'created_at':   u.created_at,
         }
         for u in all_users
     ]
@@ -125,8 +114,6 @@ def user_promote(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot change your own admin status.')
-    if _is_main_admin(db, user):
-        raise HTTPException(400, 'The main admin cannot be removed from admin.')
     user.is_admin = 0 if user.is_admin else 1
     db.commit()
     action = 'promoted to admin' if user.is_admin else 'removed from admin'
@@ -141,8 +128,6 @@ def user_deactivate(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot deactivate yourself.')
-    if _is_main_admin(db, user) and user.active:
-        raise HTTPException(400, 'The main admin cannot be deactivated.')
     user.active = 0 if user.active else 1
     db.commit()
     state = 'unlocked' if user.active else 'locked'
@@ -157,8 +142,8 @@ def user_delete(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot delete yourself.')
-    if _is_main_admin(db, user):
-        raise HTTPException(400, 'The main admin cannot be deleted.')
+    if user.username == 'dmn':
+        raise HTTPException(400, 'The "dmn" user cannot be deleted.')
     open_loans = db.query(Loan).filter_by(user_id=user.id).count()
     if open_loans:
         raise HTTPException(400, f'Cannot delete "{user.username}" — they have {open_loans} open loan(s).')
@@ -296,6 +281,7 @@ def settings_get(db: Session = Depends(get_db), _admin: User = Depends(get_curre
         'max_loan_days':      Setting.get_int(db, 'max_loan_days', 60),
         'default_loan_rate':  Setting.get(db, 'default_loan_rate', '0.50'),
         'new_book_days':      Setting.get_int(db, 'new_book_days', 14),
+        'msg_duration':       Setting.get_int(db, 'msg_duration', 7),
         'loan_rates':         LOAN_RATES,
     }
 
@@ -305,6 +291,7 @@ class SettingsRequest(BaseModel):
     max_loan_days:      int
     default_loan_rate:  str
     new_book_days:      int
+    msg_duration:       int
 
 
 @router.post('/settings')
@@ -319,6 +306,8 @@ def settings_save(body: SettingsRequest, db: Session = Depends(get_db),
         errors.append('Invalid loan rate.')
     if not 0 <= body.new_book_days <= 90:
         errors.append('New book days must be between 0 and 90.')
+    if not 3 <= body.msg_duration <= 60:
+        errors.append('Notification duration must be between 3 and 60 seconds.')
     if errors:
         raise HTTPException(400, ' '.join(errors))
 
@@ -326,6 +315,7 @@ def settings_save(body: SettingsRequest, db: Session = Depends(get_db),
     Setting.set(db, 'max_loan_days',      body.max_loan_days)
     Setting.set(db, 'default_loan_rate',  body.default_loan_rate)
     Setting.set(db, 'new_book_days',      body.new_book_days)
+    Setting.set(db, 'msg_duration',       body.msg_duration)
     db.commit()
     return {'ok': True}
 

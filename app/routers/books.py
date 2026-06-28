@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Book, BookRating, Copy, Loan, User, RebuyItem, Setting
-from ..dependencies import get_current_user, get_current_admin
+from ..dependencies import get_current_user, get_current_admin, SYSTEM_USER
 from ..services.isbn_lookup import lookup_isbn
 from ..services.cover_cache import get_cover_path
 
@@ -71,6 +71,7 @@ def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db
             'isbn':           book.isbn,
             'title':          book.title,
             'subtitle':       book.subtitle,
+            'series':         book.series,
             'author':         book.author,
             'cover_path':     book.cover_path,
             'loan_rate':      book.loan_rate,
@@ -141,6 +142,7 @@ def book_detail(isbn: str, db: Session = Depends(get_db),
         'isbn':           book.isbn,
         'title':          book.title,
         'subtitle':       book.subtitle,
+        'series':         book.series,
         'author':         book.author,
         'publisher':      book.publisher,
         'published':      book.published,
@@ -164,6 +166,7 @@ class AddBookRequest(BaseModel):
     isbn:      str
     title:     str
     subtitle:  Optional[str] = None
+    series:    Optional[str] = None
     author:    Optional[str] = None
     publisher: Optional[str] = None
     published: Optional[str] = None
@@ -181,6 +184,11 @@ def book_add(body: AddBookRequest, db: Session = Depends(get_db),
     if not isbn_val or not title:
         raise HTTPException(400, 'ISBN and title are required.')
 
+    if body.donor_id:
+        donor = db.get(User, body.donor_id)
+        if donor and donor.username == SYSTEM_USER:
+            raise HTTPException(400, 'System account cannot be set as donor.')
+
     existing = db.query(Book).filter_by(isbn=isbn_val).first()
     if existing:
         copy = Copy(book_id=existing.id, copy_num=0, donated_by=body.donor_id)
@@ -196,6 +204,7 @@ def book_add(body: AddBookRequest, db: Session = Depends(get_db),
         isbn=isbn_val,
         title=title,
         subtitle=body.subtitle or None,
+        series=body.series or None,
         author=body.author or None,
         publisher=body.publisher or None,
         published=body.published or None,
@@ -211,6 +220,41 @@ def book_add(body: AddBookRequest, db: Session = Depends(get_db),
     db.commit()
 
     return {'ok': True, 'isbn': isbn_val, 'title': title}
+
+
+# ── Edit book details (admin) ─────────────────────────────────────────────────
+
+class EditBookRequest(BaseModel):
+    title:     str
+    subtitle:  Optional[str] = None
+    series:    Optional[str] = None
+    author:    Optional[str] = None
+    publisher: Optional[str] = None
+    published: Optional[str] = None
+    cover_url: Optional[str] = None
+    loan_rate: Optional[float] = None
+
+
+@router.put('/books/{isbn}')
+def book_edit(isbn: str, body: EditBookRequest, db: Session = Depends(get_db),
+              _admin: User = Depends(get_current_admin)):
+    book = db.query(Book).filter_by(isbn=isbn).first()
+    if not book:
+        raise HTTPException(404, 'Book not found.')
+    book.title     = body.title.strip()
+    book.subtitle  = body.subtitle or None
+    book.series    = body.series or None
+    book.author    = body.author or None
+    book.publisher = body.publisher or None
+    book.published = body.published or None
+    if body.loan_rate is not None:
+        book.loan_rate = body.loan_rate
+    if body.cover_url and body.cover_url.strip():
+        path = get_cover_path(isbn, body.cover_url.strip())
+        if path:
+            book.cover_path = path
+    db.commit()
+    return {'ok': True, 'message': f'"{book.title}" updated.'}
 
 
 # ── Mark copy as broken (admin) ───────────────────────────────────────────────

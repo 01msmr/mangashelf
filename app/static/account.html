@@ -30,6 +30,10 @@ function fmtTxnDetail(t) {
 
 let _cachedAccountData = null;
 let _cachedUser = null;
+let _txnFilter = 'all'; // 'all' | 'books' | 'money'
+
+function isTxnBook(t)  { return t.type === 'loan' || t.type === 'return'; }
+function isTxnMoney(t) { return !isTxnBook(t); }
 
 async function tryLoadAccount() {
     try {
@@ -115,6 +119,9 @@ function renderAccount(data) {
     const topupBtns = [1, 2, 5, 10, 20].map(a =>
         `<button class="btn btn-ghost topup-btn" data-amount="${a}">${a} €</button>`
     ).join('');
+    const topupUndoBtns = [1, 2, 5, 10, 20].map(a =>
+        `<button class="btn btn-danger topup-undo-btn" data-amount="${a}" style="visibility:hidden">${Lang.t('acct.topupUndo')} (8)</button>`
+    ).join('');
 
     const loansHtml = data.active_loans.length
         ? data.active_loans.map(l => {
@@ -123,7 +130,10 @@ function renderAccount(data) {
                 <div class="loan-card${overdue ? ' loan-overdue' : ''}">
                     <div class="loan-card-info">
                         <div class="loan-card-title">
-                            <a href="/index.html?q=${encodeURIComponent(l.book_isbn)}" class="link-plain">${esc(l.book_title)}</a>
+                            <a href="${l.book_series
+                                ? `/index.html?series=${encodeURIComponent(l.book_title)}&highlight=${encodeURIComponent(l.book_isbn)}`
+                                : `/index.html?highlight=${encodeURIComponent(l.book_isbn)}`
+                            }" class="link-plain">${esc(l.book_title)}</a>
                         </div>
                     </div>
                     <div class="loan-card-right">
@@ -140,35 +150,35 @@ function renderAccount(data) {
         }).join('')
         : `<div class="acct-empty">${Lang.t('acct.noLoans')}</div>`;
 
-    const txnsHtml = data.recent_txns.length
-        ? `<div class="txn-list">${data.recent_txns.map(t => {
-            const cls = t.amount > 0 ? 'txn-credit' : t.amount < 0 ? 'txn-debit' : 'txn-neutral';
-            const amtStr = t.amount !== 0
-                ? (t.amount > 0 ? '+' : '') + fmtEur(t.amount)
-                : '—';
-            return `
-                <div class="txn-row">
-                    <span class="txn-date">${esc(fmtDate(t.created_at))}</span>
-                    <div class="txn-desc">
-                        <span class="txn-type">${esc(fmtTxnType(t))}</span>
-                        <span class="txn-detail">${esc(fmtTxnDetail(t))}</span>
-                    </div>
-                    <span class="txn-amount ${cls}">${amtStr}</span>
-                </div>
-            `;
-        }).join('')}</div>`
-        : `<div class="acct-empty">${Lang.t('acct.noTxns')}</div>`;
+    const bookCount  = data.recent_txns.filter(isTxnBook).length;
+    const moneyCount = data.recent_txns.filter(isTxnMoney).length;
 
-    const langBtns = ['en', 'de', 'schwaebisch'].map(l =>
-        `<button class="lang-btn${Lang.current===l?' active':''}" data-lang="${l}">${l === 'schwaebisch' ? 'Schwob' : l.toUpperCase()}</button>`
-    ).join('');
+    function txnRowHtml(t) {
+        const cls = t.amount > 0 ? 'txn-credit' : t.amount < 0 ? 'txn-debit' : 'txn-neutral';
+        const amtStr = t.amount !== 0 ? (t.amount > 0 ? '+' : '') + fmtEur(t.amount) : '—';
+        return `<div class="txn-row">
+            <span class="txn-date">${esc(fmtDate(t.created_at))}</span>
+            <div class="txn-desc">
+                <span class="txn-type">${esc(fmtTxnType(t))}</span>
+                <span class="txn-detail">${esc(fmtTxnDetail(t))}</span>
+            </div>
+            <span class="txn-amount ${cls}">${amtStr}</span>
+        </div>`;
+    }
+
+    function buildTxnHtml(filter) {
+        const subset = filter === 'books' ? data.recent_txns.filter(isTxnBook)
+                     : filter === 'money' ? data.recent_txns.filter(isTxnMoney)
+                     : data.recent_txns;
+        return subset.length
+            ? `<div class="txn-list">${subset.map(txnRowHtml).join('')}</div>`
+            : `<div class="acct-empty">${Lang.t('acct.noTxns')}</div>`;
+    }
 
     document.getElementById('main-content').innerHTML = `
         <div class="acct-page">
             <div class="lang-switcher-row">
                 <a href="/change-pin.html" class="btn btn-ghost btn-sm">${Lang.t('acct.changePin')}</a>
-                <span class="lang-switcher-label ml-auto">${Lang.t('acct.language')}</span>
-                <div class="lang-switcher">${langBtns}</div>
             </div>
             <div class="acct-body">
                 <div class="flex items-stretch">
@@ -193,6 +203,7 @@ function renderAccount(data) {
                     <div class="topup-form">
                         <div class="topup-hint">${Lang.t('acct.cashHint')}</div>
                         <div class="topup-presets">${topupBtns}</div>
+                        <div class="topup-undo-row">${topupUndoBtns}</div>
                         <div id="topup-msg" class="text-sm" style="display:none"></div>
                     </div>
                 </div>
@@ -209,57 +220,74 @@ function renderAccount(data) {
                     <div class="acct-section-title">
                         ${Lang.t('acct.activity')}
                         ${data.recent_txns.length ? `<span class="acct-count">${data.recent_txns.length}</span>` : ''}
+                        <button class="txn-filter-btn${_txnFilter==='all'?' active':''}" data-txn-filter="all">${Lang.t('acct.txnAll')}</button>
+                        <button class="txn-filter-btn${_txnFilter==='books'?' active':''}" data-txn-filter="books">${Lang.t('acct.txnBooks')} (${bookCount})</button>
+                        <button class="txn-filter-btn${_txnFilter==='money'?' active':''}" data-txn-filter="money">${Lang.t('acct.txnMoney')} (${moneyCount})</button>
                     </div>
-                    ${txnsHtml}
+                    <div id="txn-list-wrap">${buildTxnHtml(_txnFilter)}</div>
                 </div>
 
             </div>
         </div>
     `;
 
+    let _undoTimer = null;
+    const hideUndoBtns = () => document.querySelectorAll('.topup-undo-btn').forEach(b => b.style.visibility = 'hidden');
+
     document.querySelectorAll('.topup-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const amount = parseFloat(btn.dataset.amount);
             const msgEl  = document.getElementById('topup-msg');
+            msgEl.style.display = 'none';
             try {
                 await API.post('/api/account/topup', { amount });
-                const endTime = Date.now() + 8000;
-                const undoId = 'topup-undo-btn';
-                msgEl.className = 'text-success';
-                msgEl.style.display = 'block';
-                msgEl.innerHTML = `+${fmtEur(amount)} &nbsp;<button class="btn btn-ghost btn-sm" id="${undoId}">${Lang.t('acct.topupUndo')} (8)</button>`;
-                const undoBtn = document.getElementById(undoId);
-                const timer = setInterval(() => {
+                if (_undoTimer) { clearInterval(_undoTimer); _undoTimer = null; }
+                hideUndoBtns();
+                const undoBtn = document.querySelector(`.topup-undo-btn[data-amount="${amount}"]`);
+                undoBtn.style.visibility = 'visible';
+                const endTime = Date.now() + getMsgDuration();
+                undoBtn.textContent = `${Lang.t('acct.topupUndo')} (${Math.ceil(getMsgDuration()/1000)})`;
+                _undoTimer = setInterval(() => {
                     const remaining = Math.ceil((endTime - Date.now()) / 1000);
-                    if (remaining <= 0) { clearInterval(timer); tryLoadAccount(); }
-                    else { undoBtn.textContent = `${Lang.t('acct.topupUndo')} (${remaining})`; }
-                }, 500);
-                undoBtn.addEventListener('click', async () => {
-                    clearInterval(timer);
-                    try {
-                        await API.post('/api/account/topup/undo');
-                        msgEl.textContent = Lang.t('acct.topupUndone');
-                        setTimeout(tryLoadAccount, 800);
-                    } catch (e) {
-                        msgEl.className = 'text-danger';
-                        msgEl.textContent = e.detail || 'Failed';
-                        setTimeout(tryLoadAccount, 1500);
+                    if (remaining <= 0) {
+                        clearInterval(_undoTimer); _undoTimer = null;
+                        hideUndoBtns();
+                        tryLoadAccount();
+                    } else {
+                        undoBtn.textContent = `${Lang.t('acct.topupUndo')} (${remaining})`;
                     }
-                });
+                }, 500);
             } catch (err) {
-                msgEl.className = 'text-danger';
+                msgEl.className = 'text-danger text-sm';
                 msgEl.textContent = err.detail || Lang.t('acct.addFunds');
                 msgEl.style.display = 'block';
             }
         });
     });
 
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            Lang.set(btn.dataset.lang);
-            if (_cachedUser) renderNav(_cachedUser);
-            if (_cachedAccountData) renderAccount(_cachedAccountData);
-            await API.post(`/api/account/language/${btn.dataset.lang}`).catch(() => {});
+    document.querySelectorAll('.topup-undo-btn').forEach(undoBtn => {
+        undoBtn.addEventListener('click', async () => {
+            if (_undoTimer) { clearInterval(_undoTimer); _undoTimer = null; }
+            hideUndoBtns();
+            const msgEl = document.getElementById('topup-msg');
+            try {
+                await API.post('/api/account/topup/undo');
+                setTimeout(tryLoadAccount, 800);
+            } catch (e) {
+                msgEl.className = 'text-danger text-sm';
+                msgEl.textContent = e.detail || 'Failed';
+                msgEl.style.display = 'block';
+                setTimeout(tryLoadAccount, 1500);
+            }
+        });
+    });
+
+    document.querySelectorAll('.txn-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const f = btn.dataset.txnFilter;
+            _txnFilter = (f === 'all' || _txnFilter === f) ? 'all' : f;
+            document.querySelectorAll('.txn-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.txnFilter === _txnFilter));
+            document.getElementById('txn-list-wrap').innerHTML = buildTxnHtml(_txnFilter);
         });
     });
 }
