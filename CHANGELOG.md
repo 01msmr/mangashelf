@@ -79,6 +79,10 @@ Schwerpunkt dieser Änderungen: Die Oberfläche wurde für das **Raspberry-Pi-Ki
 - **Admin-Bereich ohne Hintergrund-Flackern** (`nav.js`, `requireAdminPin`): Beim Betreten wird sofort ein deckendes Overlay gezeigt, bis Verifizierung/PIN-Gate steht – der Admin-Inhalt blitzt nicht mehr kurz auf.
 - **Tooltips bleiben im Bild** (`nav.js`): Lange `data-tip`-Texte (z. B. der Haupt-Admin-Schutzhinweis) werden auf den sichtbaren Bereich geklemmt und kippen bei Bedarf nach oben.
 
+### Maße zentralisiert
+
+- **Spacing-Skala als Tokens** (`style.css`): Die wiederkehrenden rem-Werte (px-Skala) sind jetzt Variablen `--bw` (1px-Border) und `--sp-2 … --sp-52` plus `--tap` (44px Touch-Ziel) — 461 Vorkommen ersetzt, **werterhaltend** (gleiche Pixel; verifiziert: `.be`-Padding 12/16px, Header 68px). Einmal-Werte bleiben inline.
+
 ### Farben zentralisiert
 
 - **Alle Farben in `:root` (vollständig zentralisiert):** Es gibt **keine hardcodierten Farb-Literale** mehr außerhalb von `:root` — jede Farbe (Hex + alle `rgb/rgba`-Tints inkl. Schatten) ist eine Variable. 72 Tokens, gruppiert/kommentiert. Tint-Namensschema `--<basis>-<alpha>` (z. B. `--primary-30`, `--success-18`, `--warning-25`, `--white-20`, `--black-50`), plus Solids `--black`, `--admin-gold-text`, `--surface-4`. `rgb/rgba`-Schreibweise vereinheitlicht (Leerzeichen + führende Null). Verifiziert: 72 definiert = 72 genutzt, keine undefinierten/doppelten, keine Render-Regression.
