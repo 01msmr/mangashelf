@@ -173,9 +173,8 @@ html, body {
     background: transparent; color: var(--text); cursor: pointer;
     border: var(--sp-2) solid transparent; border-radius: var(--radius);
 }
-.lang-flag { width: 1.55rem; height: 1.04rem; border-radius: 0.12rem; display: block; box-shadow: 0 0 0 0.043rem var(--white-outline); flex-shrink: 0; }
+.lang-flag { width: 1.55rem; height: 1.04rem; border-radius: 0; clip-path: var(--chamfer-clip); display: block; box-shadow: 0 0 0 0.043rem var(--white-outline); flex-shrink: 0; }
 .lang-current .lang-flag { filter: grayscale(1) opacity(0.55); }
-.lang-code { font-size: 100%; font-weight: 700; color: var(--text-muted); letter-spacing: 0.02rem; }
 /* No repeated border blink/outline on the language dropdown buttons. */
 .app-header .lang-current:hover, .app-header .lang-option:hover { border-color: transparent !important; animation: none !important; }
 .lang-menu {
@@ -191,7 +190,7 @@ html, body {
     padding: 0; background: transparent; border: none; cursor: pointer;
 }
 /* White outline sits tight on the flag edge (no inner gap), slight rounding. */
-.lang-option .lang-flag { width: 2rem; height: 1.34rem; border-radius: 0.18rem; box-shadow: 0 0 0 0.043rem var(--white-outline); }
+.lang-option .lang-flag { width: 2rem; height: 1.34rem; border-radius: 0; clip-path: var(--chamfer-clip); box-shadow: 0 0 0 0.043rem var(--white-outline); }
 .lang-option:hover, .lang-option.active { background: var(--primary-dim); }
 .header-right { flex: 1 1 0; display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-10); }
 

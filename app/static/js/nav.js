@@ -43,7 +43,6 @@ const _FLAGS = {
     de: `<svg class="lang-flag" viewBox="0 0 5 3" preserveAspectRatio="none" aria-hidden="true"><rect width="5" height="3" fill="#FFCE00"/><rect width="5" height="2" fill="#DD0000"/><rect width="5" height="1" fill="#000"/></svg>`,
     schwaebisch: `<svg class="lang-flag" viewBox="0 0 5 3" preserveAspectRatio="none" aria-hidden="true"><rect width="5" height="3" fill="#FFCE00"/><rect width="5" height="1.5" fill="#000"/></svg>`,
 };
-const _LANG_LABELS = { en: 'EN', de: 'DE', schwaebisch: 'Schwob' };
 const _LANG_ORDER  = ['en', 'de', 'schwaebisch'];
 
 function _langDropdownHtml() {
@@ -52,7 +51,7 @@ function _langDropdownHtml() {
     const opts = _LANG_ORDER.map(c =>
         `<button type="button" class="lang-option${c === cur ? ' active' : ''}" data-lang="${c}">${_FLAGS[c]}</button>`).join('');
     return `<div class="lang-dropdown" id="lang-dropdown">
-            <button type="button" class="lang-current" id="lang-toggle">${_FLAGS[cur] || ''}<span class="lang-code">${_LANG_LABELS[cur] || ''}</span></button>
+            <button type="button" class="lang-current" id="lang-toggle">${_FLAGS[cur] || ''}</button>
             <div class="lang-menu" id="lang-menu">${opts}</div>
         </div>`;
 }
