@@ -16,9 +16,11 @@ function renderNav(user) {
     const adminBadge   = user.is_admin
         ? `<a href="/admin/users.html" class="badge-admin-link${onAdmin ? ' nav-active' : ''}" data-tip="${esc(adminTip)}"><span class="badge-admin">Admin</span></a>`
         : '';
+    const reloadTip    = (typeof Lang !== 'undefined' && Lang.t) ? Lang.t('nav.reload') : 'Reload';
 
     header.innerHTML = `
         <div class="header-left-group">
+            <button class="btn-reload" id="btn-reload" data-tip="${esc(reloadTip)}" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i></button>
             <a href="/account.html" class="btn btn-ghost btn-sm user-badge${onAccount ? ' nav-active' : ''}">${esc(user.username)}</a>${adminBadge}<span class="header-balance ${balanceClass}">${fmtEur(user.guthaben)}</span>
         </div>
         <div class="header-center">
