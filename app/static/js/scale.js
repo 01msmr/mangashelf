@@ -44,3 +44,13 @@
         pct: function (px) { return Math.round((px || this.get()) / DEFAULT * 100); }
     };
 })();
+
+// Double-tap on empty background toggles fullscreen.
+document.addEventListener('dblclick', function (e) {
+    if (e.target.closest('button, a, input, select, textarea, [role="button"]')) return;
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    } else {
+        document.documentElement.requestFullscreen().catch(function () {});
+    }
+});

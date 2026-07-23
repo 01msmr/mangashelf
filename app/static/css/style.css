@@ -211,7 +211,7 @@ html, body {
     height: .5em;
     background: var(--primary);
     border-radius: 0;
-    padding: 0.01em 0;
+    padding: 0.01em 0 0.01em 7px;
     margin-right: 0.25em;
     flex-shrink: 0;
     overflow: visible;
