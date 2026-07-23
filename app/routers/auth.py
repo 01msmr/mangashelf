@@ -1,7 +1,7 @@
 """Auth endpoints: login, logout, register, setup-pin, user suggestions."""
 from __future__ import annotations
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -19,19 +19,6 @@ router = APIRouter(tags=['auth'])
 _login_attempts: dict[str, dict] = {}
 LOCKOUT_ATTEMPTS = 4
 LOCKOUT_SECONDS  = 120
-DMN_HIDE_DAYS    = 14
-
-
-def _dmn_blocked(db: Session) -> bool:
-    """dmn login/listing is blocked when another admin has logged in within DMN_HIDE_DAYS days."""
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=DMN_HIDE_DAYS)).isoformat()
-    return db.query(User).filter(
-        User.username != 'dmn',
-        User.is_admin == 1,
-        User.active == 1,
-        User.last_login.isnot(None),
-        User.last_login >= cutoff,
-    ).first() is not None
 
 
 def _validate_pin(pin: str) -> str | None:
@@ -63,10 +50,6 @@ def login(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
         )
 
     user = db.query(User).filter_by(username=username, active=1).first()
-
-    # Block dmn when another admin has logged in recently
-    if username == 'dmn' and user and _dmn_blocked(db):
-        user = None
 
     if not user or not user.check_pin(body.pin.strip()):
         count = state['count'] + 1
@@ -178,9 +161,7 @@ def me(user: User = Depends(get_current_user)):
 def user_suggestions(q: str = '', db: Session = Depends(get_db)):
     """Return matching usernames. If q is empty, return all active users (for login screen)."""
     q = q.strip().lower()
-    query = db.query(User).filter(User.active == 1)
-    if _dmn_blocked(db):
-        query = query.filter(User.username != 'dmn')
+    query = db.query(User).filter(User.active == 1, User.username != 'dmn')
     if q:
         query = query.filter(User.username.like(f'{q}%'))
     users = query.order_by(User.username).limit(50).all()

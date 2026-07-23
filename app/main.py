@@ -61,8 +61,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title='MangaShelf', lifespan=lifespan)
 
-    # Never cache HTML so edits are visible on next page load; static assets
-    # (CSS/JS/fonts/images) may be cached since they're versioned via rebuilds.
+    # HTML stays no-store; static assets may cache.
     class CacheControlMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request: Request, call_next):
             response = await call_next(request)

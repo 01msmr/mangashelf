@@ -22,7 +22,7 @@
 
 <!-- User selection -->
 <div id="screen-select" class="login-screen">
-    <div class="login-title"><div class="app-logo"><span class="logo-badge"><img src="/static/img/kinoko.svg"></span>Manga<span id="logo-shelf-login">Shelf</span></div></div>
+    <div class="login-title"><div class="app-logo"><span class="logo-badge" id="logo-tap-target"><img src="/static/img/kinoko.svg"></span>Manga<span id="logo-shelf-login">Shelf</span></div></div>
     <div class="login-subtitle" id="login-subtitle"></div>
     <div id="user-grid" class="user-grid">
         <div id="users-loading-msg" class="grid-empty-msg"></div>
@@ -171,6 +171,18 @@ async function submitPin() {
         }
     }
 }
+
+// 4 taps on logo icon within 2s: dmn recovery login.
+let _badgeTaps = [];
+document.getElementById('logo-tap-target').addEventListener('click', () => {
+    const now = Date.now();
+    _badgeTaps = _badgeTaps.filter(t => now - t < 2000);
+    _badgeTaps.push(now);
+    if (_badgeTaps.length >= 4) {
+        _badgeTaps = [];
+        openPin('dmn');
+    }
+});
 
 document.getElementById('btn-cancel').addEventListener('click', closePinOverlay);
 
