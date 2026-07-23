@@ -47,7 +47,7 @@
 
 // Double-tap on empty background toggles fullscreen.
 document.addEventListener('dblclick', function (e) {
-    if (e.target.closest('button, a, input, select, textarea, [role="button"]')) return;
+    if (e.target.closest('button, a, input, select, textarea, [role="button"], #logo-tap-target')) return;
     if (document.fullscreenElement) {
         document.exitFullscreen();
     } else {
