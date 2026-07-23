@@ -9,6 +9,7 @@ services:
       - "8080:8080"
     volumes:
       - mangashelf-data:/code/data
+      - ./backups:/code/backups
     env_file:
       - .env
 

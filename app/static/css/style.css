@@ -1224,6 +1224,15 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .settings-col  { display: flex; flex-direction: column; gap: var(--sp-16); flex: 1 1 16rem; min-width: 16rem; }
 .settings-col > .card { width: 100%; }
 
+.backups-cols { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--sp-16); }
+.backups-cols > .card { flex: 1 1 16rem; min-width: 16rem; }
+.backup-list { display: flex; flex-direction: column; gap: var(--sp-8); }
+.backup-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-12); padding: var(--sp-8) var(--sp-10); background: var(--surface-2); border-radius: var(--radius); }
+.backup-row-date { font-weight: 700; }
+.backup-row-size { font-size: var(--text-sm); color: var(--text-muted); }
+.backup-diff { display: flex; flex-direction: column; gap: var(--sp-4); margin-bottom: var(--sp-14); }
+.backup-diff-row { display: flex; justify-content: space-between; font-size: var(--text-sm); }
+
 /* UI scale control */
 .ui-scale-range { height: 1.9rem; accent-color: var(--primary); cursor: pointer; }
 .ui-scale-value { font-weight: 700; min-width: 3.2rem; text-align: right; font-size: var(--text-base); }

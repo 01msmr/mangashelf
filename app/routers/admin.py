@@ -1,19 +1,26 @@
-"""Admin endpoints: users, overdue, settings, rebuy."""
+"""Admin endpoints: users, overdue, settings, rebuy, backups."""
 from __future__ import annotations
+import os
+import shutil
+import sqlite3
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..database import get_db, engine, DATA_DIR
 from ..models import User, Loan, Copy, Book, Transaction, RebuyItem, Setting
 from ..dependencies import get_current_admin, get_current_user, SYSTEM_USER
 from ..services.finance import LOAN_RATES, DEPOSIT
 from .books import renumber_copies
 
 router = APIRouter(tags=['admin'])
+
+BACKUPS_DIR = Path('/code/backups')
+LIVE_DB_PATH = Path(DATA_DIR) / 'mangashelf.db'
 
 _ADMIN_VERIFY_TTL = timedelta(minutes=10)
 
@@ -377,3 +384,86 @@ def rebuy_dismiss(item_id: int, db: Session = Depends(get_db),
     renumber_copies(book_id, db)
     db.commit()
     return {'ok': True}
+
+
+# ── Backups ──────────────────────────────────────────────────────────────────
+
+_BACKUP_TABLES = ('users', 'books', 'copies', 'loans')
+
+
+def _table_counts(db_path: Path) -> dict:
+    conn = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
+    try:
+        return {t: conn.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0] for t in _BACKUP_TABLES}
+    finally:
+        conn.close()
+
+
+def _resolve_backup_path(kind: str, filename: str) -> Path:
+    if kind not in ('daily', 'weekly'):
+        raise HTTPException(400, 'Invalid backup kind.')
+    root = BACKUPS_DIR.resolve()
+    path = (BACKUPS_DIR / kind / filename).resolve()
+    if not path.is_relative_to(root) or not path.is_file():
+        raise HTTPException(404, 'Backup not found.')
+    return path
+
+
+@router.get('/backups')
+def list_backups(_admin: User = Depends(get_current_admin)):
+    result = []
+    for kind in ('daily', 'weekly'):
+        d = BACKUPS_DIR / kind
+        if not d.is_dir():
+            continue
+        for f in sorted(d.glob('mangashelf-*.db'), reverse=True):
+            stat = f.stat()
+            result.append({
+                'kind':     kind,
+                'filename': f.name,
+                'size':     stat.st_size,
+                'modified': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            })
+    return result
+
+
+@router.get('/backups/{kind}/{filename}/diff')
+def backup_diff(kind: str, filename: str, db: Session = Depends(get_db),
+                _admin: User = Depends(get_current_admin)):
+    path = _resolve_backup_path(kind, filename)
+    live = {
+        'users':  db.query(User).count(),
+        'books':  db.query(Book).count(),
+        'copies': db.query(Copy).count(),
+        'loans':  db.query(Loan).count(),
+    }
+    return {'live': live, 'backup': _table_counts(path)}
+
+
+class RestoreRequest(BaseModel):
+    kind: str
+    filename: str
+    pin: str
+
+
+@router.post('/backups/restore')
+def restore_backup(body: RestoreRequest, background_tasks: BackgroundTasks,
+                   admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):
+    combined = body.pin.strip()
+    if len(combined) != 8 or not combined.isdigit():
+        raise HTTPException(401, 'Enter your 4-digit PIN followed by the 4-digit admin PIN.')
+    if not admin.check_pin(combined[:4]) or combined[4:] != Setting.get(db, 'admin_pin'):
+        raise HTTPException(401, 'Incorrect PIN combination.')
+
+    path = _resolve_backup_path(body.kind, body.filename)
+
+    pre_restore_dir = BACKUPS_DIR / 'pre-restore'
+    pre_restore_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
+    shutil.copy2(LIVE_DB_PATH, pre_restore_dir / f'mangashelf-{stamp}.db')
+
+    engine.dispose()
+    shutil.copy2(path, LIVE_DB_PATH)
+
+    background_tasks.add_task(os._exit, 1)
+    return {'ok': True, 'message': 'Restore complete. Restarting…'}

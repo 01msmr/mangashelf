@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaShelf — Backups</title>
+    <script src="/static/js/scale.js"></script>
+    <link rel="preload" href="/static/fonts/Bangers.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header id="site-header" class="app-header"></header>
+<main class="app-main">
+    <div class="admin-page">
+        <nav class="admin-nav">
+            <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
+            <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span> <span class="nav-badge" id="overdue-badge" style="display:none"></span></a>
+            <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> <span class="nav-label-rebuy"></span></a>
+            <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
+            <a href="/admin/backups.html" class="admin-nav-item active" data-tip="Backups"><i class="fa-solid fa-rotate-left"></i></a>
+        </nav>
+        <div class="admin-body">
+            <div class="backups-cols pt-2">
+                <div class="card">
+                    <div class="card-header" id="title-daily"></div>
+                    <div class="card-body backup-list" id="list-daily"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header" id="title-weekly"></div>
+                    <div class="card-body backup-list" id="list-weekly"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/pin.js"></script>
+<script src="/static/js/nav.js"></script>
+<script src="/static/js/lang.js"></script>
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function fmtSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function applyTranslations() {
+    document.querySelector('.nav-label-users').textContent    = Lang.t('admin.users');
+    document.querySelector('.nav-label-overdue').textContent  = Lang.t('admin.overdue');
+    document.querySelector('.nav-label-rebuy').textContent    = Lang.t('admin.rebuy');
+    document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
+    document.getElementById('title-daily').textContent  = Lang.t('adminBackups.daily');
+    document.getElementById('title-weekly').textContent = Lang.t('adminBackups.weekly');
+}
+
+function renderList(el, items) {
+    if (!items.length) {
+        el.innerHTML = `<div class="empty-state">${Lang.t('adminBackups.none')}</div>`;
+        return;
+    }
+    el.innerHTML = items.map(b => `
+        <div class="backup-row">
+            <div class="backup-row-info">
+                <div class="backup-row-date">${esc(b.modified.slice(0, 10))}</div>
+                <div class="backup-row-size">${fmtSize(b.size)}</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" data-kind="${b.kind}" data-filename="${esc(b.filename)}">
+                ${Lang.t('adminBackups.restore')}
+            </button>
+        </div>
+    `).join('');
+    el.querySelectorAll('button[data-filename]').forEach(btn => {
+        btn.addEventListener('click', () => openRestoreDialog(btn.dataset.kind, btn.dataset.filename));
+    });
+}
+
+async function loadBackups() {
+    const items = await API.get('/api/admin/backups');
+    renderList(document.getElementById('list-daily'),  items.filter(b => b.kind === 'daily'));
+    renderList(document.getElementById('list-weekly'), items.filter(b => b.kind === 'weekly'));
+}
+
+async function openRestoreDialog(kind, filename) {
+    const diff = await API.get(`/api/admin/backups/${kind}/${encodeURIComponent(filename)}/diff`);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay-admin';
+    overlay.innerHTML = `
+        <div class="pin-card pin-card-wide">
+            <div class="pin-card-label">${Lang.t('adminBackups.confirmTitle')}</div>
+            <div class="pin-hint">${Lang.t('adminBackups.confirmWarning')}</div>
+            <div class="backup-diff">
+                ${['users', 'books', 'copies', 'loans'].map(t => `
+                    <div class="backup-diff-row">
+                        <span>${Lang.t('adminBackups.' + t)}</span>
+                        <span>${diff.live[t]} → ${diff.backup[t]}</span>
+                    </div>
+                `).join('')}
+            </div>
+            <div id="rp-error" class="pin-error" style="display:none"></div>
+            <div id="rp-step"></div>
+            <div class="pin-actions">
+                <button class="btn btn-ghost" id="rp-cancel">${Lang.t('adminPin.cancel')}</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+
+    const errEl = overlay.querySelector('#rp-error');
+    const pf = makePinField(overlay.querySelector('#rp-step'), '', 8);
+
+    let busy = false;
+    const obs = new MutationObserver(async () => {
+        if (busy || pf.getValue().length !== 8) return;
+        busy = true;
+        errEl.style.display = 'none';
+        try {
+            overlay.innerHTML = `<div class="pin-card pin-card-wide"><div class="pin-card-label">${Lang.t('adminBackups.restoring')}</div></div>`;
+            await API.post('/api/admin/backups/restore', { kind, filename, pin: pf.getValue() });
+            pollUntilBack();
+        } catch (err) {
+            errEl.textContent = err.detail || Lang.t('adminBackups.restoreFailed');
+            errEl.style.display = 'block';
+            pf.reset();
+            busy = false;
+        }
+    });
+    obs.observe(overlay.querySelector('.pf-dots'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+
+    function cancel() {
+        document.removeEventListener('keydown', onEsc);
+        overlay.remove();
+    }
+    function onEsc(e) { if (e.key === 'Escape') cancel(); }
+    document.addEventListener('keydown', onEsc);
+    overlay.querySelector('#rp-cancel').addEventListener('click', cancel);
+}
+
+function pollUntilBack() {
+    const tryOnce = () => {
+        fetch('/api/auth/me').then(r => { if (r.ok) window.location.reload(); else setTimeout(tryOnce, 1500); })
+            .catch(() => setTimeout(tryOnce, 1500));
+    };
+    setTimeout(tryOnce, 2000);
+}
+
+async function init() {
+    await Lang.load();
+    applyTranslations();
+    await initPage();
+    requireAdminPin(loadBackups);
+}
+
+init();
+</script>
+</body>
+</html>
