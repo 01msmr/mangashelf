@@ -5,7 +5,8 @@
 
 @font-face {
     font-family: 'Bangers';
-    src: url('/static/fonts/Bangers.ttf') format('truetype');
+    src: url('/static/fonts/Bangers.woff2') format('woff2'),
+         url('/static/fonts/Bangers.ttf') format('truetype');
     font-weight: 400; font-style: normal; font-display: swap;
 }
 
@@ -132,7 +133,7 @@ html, body {
     overflow: hidden;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Bangers', cursive;
+    font-family: 'Bangers', sans-serif;
     letter-spacing: 0.0348rem;
     line-height: 1.4;
     -webkit-tap-highlight-color: transparent;
