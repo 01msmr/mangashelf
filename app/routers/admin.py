@@ -11,16 +11,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..database import get_db, engine, DATA_DIR
+from ..database import get_db, engine, BACKUPS_DIR, LIVE_DB_PATH
 from ..models import User, Loan, Copy, Book, Transaction, RebuyItem, Setting
 from ..dependencies import get_current_admin, get_current_user, SYSTEM_USER
 from ..services.finance import LOAN_RATES, DEPOSIT
 from .books import renumber_copies
 
 router = APIRouter(tags=['admin'])
-
-BACKUPS_DIR = Path('/code/backups')
-LIVE_DB_PATH = Path(DATA_DIR) / 'mangashelf.db'
 
 _ADMIN_VERIFY_TTL = timedelta(minutes=10)
 
