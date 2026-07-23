@@ -66,7 +66,11 @@ def create_app() -> FastAPI:
         async def dispatch(self, request: Request, call_next):
             response = await call_next(request)
             if request.url.path.startswith('/static/'):
-                response.headers['Cache-Control'] = 'public, max-age=3600'
+                referer = request.headers.get('referer', '')
+                if not referer or referer.rstrip('/').endswith('/login.html'):
+                    response.headers['Cache-Control'] = 'no-store'
+                else:
+                    response.headers['Cache-Control'] = 'public, max-age=3600'
             else:
                 response.headers['Cache-Control'] = 'no-store'
             return response
