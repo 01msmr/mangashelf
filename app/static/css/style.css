@@ -1113,6 +1113,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 }
 .admin-nav-item:hover  { color: var(--text); }
 .admin-nav-item.active { color: var(--primary); border-bottom-color: var(--primary); background: var(--surface-2); }
+.admin-nav-item-icon   { flex: 0 0 auto; padding: 0 var(--sp-16); }
 
 /* Overdue count as a notification badge in the top-right corner so it never
    widens the label (no second line) and shows on every admin page. */
@@ -1506,12 +1507,12 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     50%       { background: transparent; }
 }
 
-.app-header a, .app-header button {
+.app-header a:not(.btn-reload), .app-header button:not(.btn-reload) {
     position: relative;
     z-index: 0;
     border: none;
 }
-.app-header a::before, .app-header button::before {
+.app-header a:not(.btn-reload)::before, .app-header button:not(.btn-reload)::before {
     content: '';
     position: absolute;
     inset: var(--sp-2);
@@ -1529,15 +1530,15 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     background: var(--primary-dim-solid);
 }
 
-.app-header a:not(.nav-active),
-.app-header button:not(.nav-active) {
+.app-header a:not(.nav-active):not(.btn-reload),
+.app-header button:not(.nav-active):not(.btn-reload) {
     background: transparent;
     border-radius: 0;
     clip-path: var(--chamfer-clip);
 }
 
-.app-header a:not(.nav-active):hover,
-.app-header button:not(.nav-active):hover {
+.app-header a:not(.nav-active):not(.btn-reload):hover,
+.app-header button:not(.nav-active):not(.btn-reload):hover {
     background: var(--primary-hover);
     animation: nav-border-blink 0.2s 2 forwards;
 }

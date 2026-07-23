@@ -17,9 +17,10 @@
             <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span> <span class="nav-badge" id="overdue-badge" style="display:none"></span></a>
             <a href="/admin/rebuy.html" class="admin-nav-item"><i class="fa-solid fa-cart-shopping"></i> <span class="nav-label-rebuy"></span></a>
             <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
-            <a href="/admin/backups.html" class="admin-nav-item active" data-tip="Backups"><i class="fa-solid fa-rotate-left"></i></a>
+            <a href="/admin/backups.html" class="admin-nav-item admin-nav-item-icon active" data-tip="Backups"><i class="fa-solid fa-rotate-left"></i></a>
         </nav>
         <div class="admin-body">
+            <button class="btn btn-ghost btn-sm mb-2" id="btn-save-now"><i class="fa-solid fa-floppy-disk"></i> <span id="save-now-label"></span></button>
             <div class="backups-cols pt-2">
                 <div class="card">
                     <div class="card-header" id="title-daily"></div>
@@ -54,6 +55,18 @@ function applyTranslations() {
     document.querySelector('.nav-label-settings').textContent = Lang.t('admin.settings');
     document.getElementById('title-daily').textContent  = Lang.t('adminBackups.daily');
     document.getElementById('title-weekly').textContent = Lang.t('adminBackups.weekly');
+    document.getElementById('save-now-label').textContent = Lang.t('adminBackups.saveNow');
+}
+
+async function saveNow() {
+    const btn = document.getElementById('btn-save-now');
+    btn.disabled = true;
+    try {
+        await API.post('/api/admin/backups/save-now');
+        await loadBackups();
+    } finally {
+        btn.disabled = false;
+    }
 }
 
 function renderList(el, items) {
@@ -149,6 +162,7 @@ function pollUntilBack() {
 async function init() {
     await Lang.load();
     applyTranslations();
+    document.getElementById('btn-save-now').addEventListener('click', saveNow);
     await initPage();
     requireAdminPin(loadBackups);
 }

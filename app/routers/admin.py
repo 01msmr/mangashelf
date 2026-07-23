@@ -406,6 +406,13 @@ def _resolve_backup_path(kind: str, filename: str) -> Path:
     return path
 
 
+@router.post('/backups/save-now')
+def save_now(_admin: User = Depends(get_current_admin)):
+    from ..services.scheduler import _run_backup
+    _run_backup('daily', 28)
+    return {'ok': True}
+
+
 @router.get('/backups')
 def list_backups(_admin: User = Depends(get_current_admin)):
     result = []
