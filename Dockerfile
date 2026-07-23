@@ -1,10 +1,12 @@
-FROM python:3.14
+# syntax=docker/dockerfile:1
+FROM python:3.12
 
 WORKDIR /code
 
 COPY ./requirements.txt /code/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade -r /code/requirements.txt
 
 # Self-signed TLS cert (valid 10 years) — needed for camera access on mobile browsers.
 RUN mkdir -p /code/cert && openssl req -x509 -newkey rsa:2048 \
