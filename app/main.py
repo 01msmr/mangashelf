@@ -61,14 +61,18 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title='MangaShelf', lifespan=lifespan)
 
-    # Never cache HTML/CSS/JS so edits are visible on next page load
-    class NoCacheMiddleware(BaseHTTPMiddleware):
+    # Never cache HTML so edits are visible on next page load; static assets
+    # (CSS/JS/fonts/images) may be cached since they're versioned via rebuilds.
+    class CacheControlMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request: Request, call_next):
             response = await call_next(request)
-            response.headers['Cache-Control'] = 'no-store'
+            if request.url.path.startswith('/static/'):
+                response.headers['Cache-Control'] = 'public, max-age=3600'
+            else:
+                response.headers['Cache-Control'] = 'no-store'
             return response
 
-    app.add_middleware(NoCacheMiddleware)
+    app.add_middleware(CacheControlMiddleware)
 
     secret_key = os.environ.get('SECRET_KEY', 'mangashelf-dev-secret-change-in-production')
     app.add_middleware(SessionMiddleware, secret_key=secret_key, https_only=False)
