@@ -1,13 +1,40 @@
 /* ============================================================
    MangaShelf — Manga-themed dark UI, optimised for 800×480
    ============================================================ */
-@import url("/static/fonts/fa/all.min.css");
+/* Font Awesome — subset to the ~23 solid icons this app actually uses
+   (full FA was 103 KB CSS + 152 KB font; this is ~1 KB + 2 KB). */
+@font-face{font-family:"fa-solid";font-style:normal;font-weight:900;font-display:block;src:url("/static/fonts/fa-subset/fa-solid-900.woff2") format("woff2")}
+.fa-solid,.fa-sharp,.fas{font-family:"fa-solid";font-weight:900}
+.fa-solid,.fa-sharp,.fas,.fa,.fa-classic{-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;display:var(--fa-display,inline-block);font-style:normal;font-variant:normal;line-height:1;text-rendering:auto}
+.fa-book::before{content:"\f02d"}
+.fa-book-open::before{content:"\f518"}
+.fa-camera::before{content:"\f030"}
+.fa-cart-shopping::before{content:"\f07a"}
+.fa-clock-rotate-left::before{content:"\f1da"}
+.fa-floppy-disk::before{content:"\f0c7"}
+.fa-gear::before{content:"\f013"}
+.fa-keyboard::before{content:"\f11c"}
+.fa-lock::before{content:"\f023"}
+.fa-magnifying-glass::before{content:"\f002"}
+.fa-minus::before{content:"\f068"}
+.fa-pen::before{content:"\f304"}
+.fa-plus::before{content:"\2b"}
+.fa-qrcode::before{content:"\f029"}
+.fa-right-from-bracket::before{content:"\f2f5"}
+.fa-rotate-left::before{content:"\f2ea"}
+.fa-rotate-right::before{content:"\f2f9"}
+.fa-shield-halved::before{content:"\f3ed"}
+.fa-square-check::before{content:"\f14a"}
+.fa-trash::before{content:"\f1f8"}
+.fa-triangle-exclamation::before{content:"\f071"}
+.fa-users::before{content:"\f0c0"}
+.fa-xmark::before{content:"\f00d"}
 
 @font-face {
     font-family: 'Bangers';
     src: url('/static/fonts/Bangers.woff2') format('woff2'),
          url('/static/fonts/Bangers.ttf') format('truetype');
-    font-weight: 400; font-style: normal; font-display: swap;
+    font-weight: 400; font-style: normal; font-display: optional;
 }
 
 /* ── Variables ─────────────────────────────────────────────── */
@@ -736,6 +763,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
 }
 .be-title.is-clipped { cursor: pointer; }

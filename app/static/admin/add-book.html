@@ -6,6 +6,7 @@
     <title>MangaShelf — Add Book</title>
     <script src="/static/js/scale.js"></script>
     <link rel="preload" href="/static/fonts/Bangers.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/static/fonts/fa-subset/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -113,7 +114,6 @@
 <script src="/static/js/api.js"></script>
 <script src="/static/js/nav.js"></script>
 <script src="/static/js/lang.js"></script>
-<script src="/static/js/zxing-browser.min.js"></script>
 <script src="/static/js/numpad.js"></script>
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -338,8 +338,23 @@ function closeScanner() {
     if (codeReader) { codeReader.reset(); codeReader = null; }
 }
 
+// Load the 394 KB barcode library only when the camera is first opened.
+let _zxingPromise = null;
+function loadZXing() {
+    if (window.ZXingBrowser) return Promise.resolve();
+    if (!_zxingPromise) _zxingPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = '/static/js/zxing-browser.min.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+    return _zxingPromise;
+}
+
 async function startScanner() {
     document.getElementById('scanner-overlay').style.display = 'flex';
+    await loadZXing();
     const { BrowserMultiFormatReader } = ZXingBrowser;
     codeReader = new BrowserMultiFormatReader();
     try {

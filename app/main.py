@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 from .database import Base, engine, run_migrations
 
@@ -76,6 +77,7 @@ def create_app() -> FastAPI:
             return response
 
     app.add_middleware(CacheControlMiddleware)
+    app.add_middleware(GZipMiddleware, minimum_size=500)
 
     secret_key = os.environ.get('SECRET_KEY', 'mangashelf-dev-secret-change-in-production')
     app.add_middleware(SessionMiddleware, secret_key=secret_key, https_only=False)
