@@ -852,49 +852,6 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
     text-align: center;
 }
 
-/* ── Book detail ────────────────────────────────────────────── */
-.detail-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-.detail-body { flex: 1; display: flex; gap: 0; overflow: hidden; }
-
-.detail-cover-wrap {
-    flex-shrink: 0;
-    width: 7.8261rem;
-    padding: var(--sp-16) 0 var(--sp-16) var(--sp-16);
-    display: flex;
-    align-items: flex-start;
-}
-
-.detail-cover-img { width: 6.9565rem; border-radius: var(--radius-lg); box-shadow: var(--shadow); display: block; }
-.detail-cover-col { flex-direction: column; gap: var(--sp-6); }
-.detail-isbn { font-size: 0.4783rem; color: var(--text-dim); word-break: break-all; max-width: 6.9565rem; padding: 0 var(--sp-2); }
-
-.detail-info { flex: 1; padding: var(--sp-16); overflow-y: auto; display: flex; flex-direction: column; gap: var(--sp-6); }
-
-.detail-title { font-size: var(--text-2xl); font-weight: 800; line-height: 1.2; color: var(--text); }
-.detail-subtitle { font-size: var(--text-xl); font-weight: 400; color: var(--text-muted); }
-.detail-author { font-size: var(--text-xl); font-weight: 600; color: var(--text-muted); }
-.detail-meta { font-size: var(--text-sm); color: var(--text-dim); }
-.detail-availability { margin-top: var(--sp-6); }
-
-.detail-loans { margin-top: var(--sp-8); display: flex; flex-direction: column; gap: var(--sp-6); }
-.loan-row {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-8);
-    padding: var(--sp-6) var(--sp-10);
-    background: var(--surface);
-    border-radius: var(--radius);
-    font-size: var(--text-sm);
-    flex-wrap: wrap;
-}
-.loan-copy    { color: var(--text-muted); flex-shrink: 0; }
-.loan-due     { flex: 1; }
-.loan-borrower { font-size: var(--text-xs); color: var(--text-dim); background: var(--surface); padding: var(--sp-2) 0.3043rem; border-radius: var(--sp-10); }
-
-.detail-action-btn { margin-top: var(--sp-10); align-self: flex-start; }
-
-
-.detail-admin { margin-top: var(--sp-10); border-top: var(--bw) solid var(--border); padding-top: var(--sp-10); display: flex; flex-direction: column; gap: var(--sp-8); }
 .broken-form {
     display: flex;
     flex-direction: column;
@@ -908,7 +865,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .broken-form-btns { display: flex; gap: var(--sp-8); }
 
 /* ── Add book form ──────────────────────────────────────────── */
-.addbook-layout { flex: 1; display: flex; overflow: hidden; }
+.addbook-layout { flex: 1; display: flex; overflow: hidden; min-height: 0; }
 
 .addbook-form-col {
     padding: var(--sp-14) var(--sp-16);
@@ -955,61 +912,6 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
     cursor: pointer;
 }
 .form-select option { background: var(--surface); color: var(--text); }
-
-/* ── Shared action page (borrow / return) ───────────────────── */
-.action-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-.action-body { flex: 1; display: flex; overflow: hidden; }
-
-.action-cover { flex-shrink: 0; width: 8.2609rem; padding: var(--sp-16) 0 var(--sp-16) var(--sp-16); display: flex; align-items: flex-start; }
-
-.action-panel { flex: 1; padding: var(--sp-16); overflow-y: auto; display: flex; flex-direction: column; gap: var(--sp-8); }
-
-.action-title { font-size: var(--text-2xl); font-weight: 800; line-height: 1.2; }
-.action-subtitle { font-size: var(--text-xl); color: var(--text-muted); }
-
-.action-details {
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-    border-radius: var(--radius);
-    overflow: hidden;
-    border: var(--bw) solid var(--border);
-    margin: var(--sp-4) 0;
-    max-width: 18.2609rem;
-}
-
-.detail-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--sp-10) var(--sp-14);
-    border-bottom: var(--bw) solid var(--border);
-    font-size: var(--text-sm);
-    gap: var(--sp-12);
-}
-.detail-row:last-child { border-bottom: none; }
-.dr-label { color: var(--text-muted); flex-shrink: 0; font-size: var(--text-sm); }
-.dr-value { text-align: right; font-weight: 500; }
-
-.action-buttons { display: flex; gap: var(--sp-10); margin-top: auto; padding-top: var(--sp-8); max-width: 18.2609rem; }
-.action-buttons .flex-1 { flex: 1; }
-
-/* ── Return picker ──────────────────────────────────────────── */
-.picker-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-.picker-body { flex: 1; display: flex; overflow: hidden; }
-.picker-cover { flex-shrink: 0; width: 8.2609rem; padding: var(--sp-16) 0 var(--sp-16) var(--sp-16); display: flex; align-items: flex-start; }
-.picker-right { flex: 1; padding: var(--sp-16); display: flex; flex-direction: column; gap: var(--sp-10); overflow-y: auto; }
-
-.picker-question { letter-spacing: 0.0217rem; }
-.picker-book-title { font-size: var(--text-base); font-weight: 800; line-height: 1.2; }
-.picker-list { display: flex; flex-direction: column; gap: var(--sp-8); margin-top: var(--sp-4); }
-
-.picker-item { padding: var(--sp-14) var(--sp-16); text-decoration: none; color: inherit; transition: background var(--transition); min-height: 2.7826rem; }
-.picker-item:hover, .picker-item:active { background: var(--surface); filter: brightness(1.3); }
-
-.picker-copy  { font-size: var(--text-base); font-weight: 700; flex-shrink: 0; }
-.picker-date  { flex: 1; font-size: var(--text-sm); color: var(--text-muted); }
-.picker-arrow { font-size: var(--text-lg); color: var(--text-dim); flex-shrink: 0; }
 
 /* ── Account page ───────────────────────────────────────────── */
 .acct-body { display: flex; flex-direction: column; padding-bottom: var(--sp-12); }
@@ -1303,11 +1205,6 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 /* ── Take-out rate picker ───────────────────────────────────── */
 .takeout-rate-label { margin-bottom: var(--sp-6); }
 .takeout-rate-group { margin-bottom: var(--sp-10); max-width: 18.2609rem; }
-
-/* ── Flex min-height fix (prevents items growing past container) */
-.list-page, .detail-page, .action-page, .acct-page, .picker-page, .addbook-page,
-.book-list, .detail-body, .detail-info, .action-body, .action-panel,
-.acct-body, .picker-body, .addbook-layout, .addbook-form-col { min-height: 0; }
 
 /* ── Thin dark scrollbar ────────────────────────────────────── */
 ::-webkit-scrollbar            { width: var(--sp-4); height: var(--sp-4); }
