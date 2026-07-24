@@ -54,3 +54,51 @@ document.addEventListener('dblclick', function (e) {
         document.documentElement.requestFullscreen().catch(function () {});
     }
 });
+
+// Drag-to-scroll. This kiosk's Firefox reports the touchscreen as a mouse, so
+// a finger drag selects text instead of panning. Drive the nearest scrollable
+// ancestor from pointer movement — works for both real touch and mouse.
+(function () {
+    var el = null, lastY = 0, startY = 0, moved = false, THRESH = 6;
+
+    function scrollable(n) {
+        for (; n && n.nodeType === 1; n = n.parentElement) {
+            if (n.scrollHeight > n.clientHeight + 1) {
+                var oy = getComputedStyle(n).overflowY;
+                if (oy === 'auto' || oy === 'scroll') return n;
+            }
+        }
+        return document.scrollingElement || document.documentElement;
+    }
+
+    document.addEventListener('pointerdown', function (e) {
+        if (e.button && e.button !== 0) return;
+        if (e.target.closest('input, textarea, select, [contenteditable], .rs-track, .rs-puck, .ui-scale-range, .pinpad, .pinpad-grid')) { el = null; return; }
+        el = scrollable(e.target);
+        startY = lastY = e.clientY;
+        moved = false;
+    });
+
+    document.addEventListener('pointermove', function (e) {
+        if (!el) return;
+        if (!moved && Math.abs(e.clientY - startY) < THRESH) return;
+        moved = true;
+        el.scrollTop -= (e.clientY - lastY);
+        lastY = e.clientY;
+        var sel = window.getSelection && window.getSelection();
+        if (sel) sel.removeAllRanges();
+        e.preventDefault();
+    });
+
+    function end() { el = null; }
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+
+    // Swallow the click that ends a real drag so cards/buttons don't fire.
+    document.addEventListener('click', function (e) {
+        if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+    document.addEventListener('selectstart', function (e) {
+        if (el && moved) e.preventDefault();
+    });
+})();
