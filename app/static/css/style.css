@@ -1160,6 +1160,9 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .settings-col  { display: flex; flex-direction: column; gap: var(--sp-16); flex: 1 1 16rem; min-width: 16rem; }
 .settings-col > .card { width: 100%; }
 
+.source-line { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--sp-8); }
+.source-line a { color: var(--primary); text-decoration: underline; }
+
 .backups-cols { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--sp-16); }
 .backups-cols > .card { flex: 1 1 14rem; min-width: 14rem; }
 .backup-list { display: flex; flex-direction: column; gap: var(--sp-8); }

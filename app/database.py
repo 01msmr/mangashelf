@@ -32,6 +32,7 @@ def run_migrations():
         'ALTER TABLE books ADD COLUMN loan_rate REAL DEFAULT 0.50',
         'ALTER TABLE books ADD COLUMN subtitle TEXT',
         'ALTER TABLE books ADD COLUMN series TEXT',
+        'ALTER TABLE books ADD COLUMN source TEXT',
         'ALTER TABLE users ADD COLUMN last_login TEXT',
     ]
     with engine.connect() as conn:

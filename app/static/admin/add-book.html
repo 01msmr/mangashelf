@@ -38,7 +38,9 @@
         <div class="addbook-layout">
             <div class="addbook-form-col flex-scroll-body">
                 <form id="add-form">
+                    <input type="hidden" id="source">
                     <div class="msg-placeholder"><div id="lookup-msg" class="fetch-status" style="display:none"></div></div>
+                    <div id="source-line" class="source-line" style="display:none"></div>
                     <div class="form-group">
                         <label class="form-label" id="label-title"></label>
                         <input type="text" id="title" class="form-input">
@@ -118,6 +120,20 @@
 <script>
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function set(id, val) { document.getElementById(id).value = val || ''; }
+
+const SRC_NAMES = { dnb: 'DNB', loc: 'Library of Congress', gb: 'Google Books', ol: 'OpenLibrary' };
+
+// Store the metadata source with the record and show a clickable research
+// link (per-ISBN catalogue URL) so a follow-up lookup is one tap away.
+function showSource(source, url) {
+    document.getElementById('source').value = source || '';
+    const el = document.getElementById('source-line');
+    if (!source) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    const name = SRC_NAMES[source] || source;
+    const link = url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(name)}</a>` : esc(name);
+    el.innerHTML = `${esc(Lang.t('addBook.sourceLabel'))}: ${link}`;
+    el.style.display = 'block';
+}
 
 let requiresSeries = false;
 let dupeCheckTimer;
@@ -205,6 +221,7 @@ async function init() {
             set('publisher', book.publisher);
             set('published', book.published);
             if (book.loan_rate) document.getElementById('loan-rate').value = book.loan_rate;
+            showSource(book.source, book.source_url);
             updateCoverPlaceholder();
             if (book.cover_path) {
                 document.getElementById('cover-preview').innerHTML =
@@ -262,6 +279,7 @@ async function doLookup(isbn) {
         msgEl.className = 'fetch-status text-success';
         msgEl.textContent = Lang.t('addBook.metaLoaded');
         setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
+        showSource(meta.source, meta.source_url);
         if (!editMode) {
             const btnAdd = document.getElementById('btn-add');
             try {
@@ -398,6 +416,7 @@ document.getElementById('btn-add').addEventListener('click', async () => {
         cover_url: document.getElementById('cover-url').value.trim() || null,
         loan_rate: parseFloat(document.getElementById('loan-rate').value),
         donor_id:  document.getElementById('donor-id').value ? parseInt(document.getElementById('donor-id').value) : null,
+        source:    document.getElementById('source').value || null,
     };
     if (requiresSeries && !body.series) {
         msgEl.className = 'fetch-status text-danger';

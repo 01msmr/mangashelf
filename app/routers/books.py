@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Book, BookRating, Copy, Loan, User, RebuyItem, Setting
 from ..dependencies import get_current_user, get_current_admin, SYSTEM_USER
-from ..services.isbn_lookup import lookup_isbn
+from ..services.isbn_lookup import lookup_isbn, lookup_isbn_verbose, source_url
 from ..services.cover_cache import get_cover_path
 
 router = APIRouter(tags=['books'])
@@ -99,10 +99,10 @@ def book_list(q: str = '', available: bool = False, db: Session = Depends(get_db
 def fetch_isbn(isbn: str = '', _admin: User = Depends(get_current_admin)):
     if not isbn:
         raise HTTPException(400, 'ISBN required')
-    meta = lookup_isbn(isbn.strip())
+    meta, source = lookup_isbn_verbose(isbn.strip())
     if not meta or not meta.get('title'):
-        raise HTTPException(404, 'Not found in OpenLibrary or Google Books')
-    return meta
+        raise HTTPException(404, 'Not found in any source')
+    return {**meta, 'source': source, 'source_url': source_url(source, isbn.strip())}
 
 
 # ── Book detail ───────────────────────────────────────────────────────────────
@@ -148,6 +148,8 @@ def book_detail(isbn: str, db: Session = Depends(get_db),
         'published':      book.published,
         'cover_path':     book.cover_path,
         'loan_rate':      book.loan_rate,
+        'source':         book.source,
+        'source_url':     source_url(book.source, book.isbn),
         'available':      len(book.available_copies),
         'loaned':         len(book.loaned_copies),
         'copies':         [{'id': c.id, 'copy_num': c.copy_num, 'status': c.status} for c in book.copies],
@@ -173,6 +175,7 @@ class AddBookRequest(BaseModel):
     cover_url: Optional[str] = None
     donor_id:  Optional[int] = None
     loan_rate: Optional[float] = None
+    source:    Optional[str] = None
 
 
 @router.post('/books')
@@ -211,6 +214,7 @@ def book_add(body: AddBookRequest, db: Session = Depends(get_db),
         cover_path=cover_path,
         added_by=admin.id,
         loan_rate=body.loan_rate if body.loan_rate is not None else 0.50,
+        source=body.source or None,
     )
     db.add(book)
     db.flush()
@@ -233,6 +237,7 @@ class EditBookRequest(BaseModel):
     published: Optional[str] = None
     cover_url: Optional[str] = None
     loan_rate: Optional[float] = None
+    source:    Optional[str] = None
 
 
 @router.put('/books/{isbn}')
@@ -247,6 +252,8 @@ def book_edit(isbn: str, body: EditBookRequest, db: Session = Depends(get_db),
     book.author    = body.author or None
     book.publisher = body.publisher or None
     book.published = body.published or None
+    if body.source is not None:
+        book.source = body.source or None
     if body.loan_rate is not None:
         book.loan_rate = body.loan_rate
     if body.cover_url and body.cover_url.strip():

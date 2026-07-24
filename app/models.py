@@ -44,6 +44,7 @@ class Book(Base):
     cover_path = Column(Text)
     series     = Column(Text)
     loan_rate  = Column(Float, default=0.50)
+    source     = Column(Text)   # metadata source key: gb | dnb | loc | ol
     added_by   = Column(Integer, ForeignKey('users.id'))
     added_at   = Column(Text, default=lambda: datetime.now(timezone.utc).isoformat())
 

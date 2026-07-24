@@ -1,5 +1,38 @@
 # Changelog
 
+## Unreleased — ISBN-Metadatensuche: mehr Quellen, sichtbar & gespeichert
+
+Schwerpunkt: Beim Scannen wurden **zu wenige Manga erkannt** — besonders deutsche
+und international/englisch verlegte Titel. Ursachen behoben und die Quellen von
+zwei auf vier erweitert.
+
+### Neu
+
+- **Vier Metadaten-Quellen statt zwei** (`app/services/isbn_lookup.py`), alle
+  kostenlos und ohne API-Key, **parallel** abgefragt (Thread-Pool → Scan bleibt
+  bei ~6 s statt bis zu ~24 s sequenziell) und feldweise zusammengeführt:
+  - **Deutsche Nationalbibliothek (DNB)** — SRU/Dublin-Core, nahezu lückenlose
+    Abdeckung deutscher ISBNs (Pflichtabgabe).
+  - **Library of Congress (LoC)** — SRU/Dublin-Core, das US-/englische Pendant
+    zur DNB. Gemeinsamer Parser `_sru_dc()` für beide.
+  - **Google Books** und **OpenLibrary** (bisher schon vorhanden).
+- **Quelle des besten Treffers wird angezeigt und gespeichert**
+  (`app/static/admin/add-book.html`, `app/routers/books.py`, `app/models.py`).
+  - Nach dem Lookup zeigt das Formular, **welche Quelle** den übernommenen
+    Datensatz geliefert hat — als **klickbarer Recherche-Link** (ISBN-Direktlink
+    zum jeweiligen Katalog), damit eine Nachrecherche gezielt möglich ist.
+  - Die Quelle wird dauerhaft am Buch gespeichert (neue Spalte `books.source`,
+    Migration in `app/database.py`) und im Bearbeiten-Modus samt Link angezeigt.
+  - Hilfsfunktionen `SOURCE_NAMES` und `source_url(source, isbn)`; API
+    `GET /books/fetch-isbn` und `GET /books/{isbn}` liefern `source`/`source_url`.
+
+### Geändert
+
+- **Google Books mit `country`-Parameter** (`_GB_COUNTRY = 'US'`). Ohne diesen
+  liefert die API aus vielen Regionen **leere** Ergebnisse ("no access in your
+  country") — der Hauptgrund, warum international/englisch verlegte Manga von
+  einem deutschen Standort aus durchfielen.
+
 ## Unreleased — UI-Skalierung, Layout-Fixes & sticky Header
 
 Stand: noch nicht committet. Basis: `9fd155c nav UI .4`.
