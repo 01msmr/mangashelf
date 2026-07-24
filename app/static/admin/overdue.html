@@ -11,7 +11,7 @@
 <body>
 <header id="site-header" class="app-header"></header>
 <main class="app-main">
-    <div class="admin-page">
+    <div class="admin-page flex-scroll-col">
         <nav class="admin-nav">
             <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
             <a href="/admin/overdue.html" class="admin-nav-item active">
@@ -21,7 +21,7 @@
             <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
             <a href="/admin/backups.html" class="admin-nav-item admin-nav-item-icon" data-tip="Backups"><i class="fa-solid fa-rotate-left"></i></a>
         </nav>
-        <div class="admin-body">
+        <div class="admin-body flex-scroll-body">
             <div id="list" class="overdue-list">
                 <div class="empty-state" id="initial-loading"></div>
             </div>

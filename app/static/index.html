@@ -11,7 +11,7 @@
 <body>
 <header id="site-header" class="app-header"></header>
 <main class="app-main">
-    <div class="list-page">
+    <div class="list-page flex-scroll-col">
         <div class="detail-topbar" id="series-topbar" style="display:none">
             <button onclick="history.back()" class="btn btn-ghost btn-sm" id="series-back">←</button>
             <div id="series-topbar-center">
@@ -35,7 +35,7 @@
                 <i class="fa-solid fa-plus"></i> <span id="btn-add-label">Add book</span>
             </a>
         </div>
-        <div id="book-list" class="book-list">
+        <div id="book-list" class="book-list flex-scroll-body">
             <div class="empty-state" id="initial-loading">Loading…</div>
         </div>
     </div>

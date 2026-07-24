@@ -554,6 +554,14 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .flex-wrap       { flex-wrap: wrap; }
 .flex-1          { flex: 1; }
 .shrink-0        { flex-shrink: 0; }
+
+/* Fixed-viewport app shell + internally-scrolling panel. A flex child
+   defaults to min-height:auto ("never smaller than my content"), which
+   silently defeats overflow:hidden/overflow-y:auto on flex:1 children of
+   a flex container — always pair these two, at every nesting level that
+   needs its own scroll boundary. */
+.flex-scroll-col  { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.flex-scroll-body { flex: 1; overflow-y: auto; min-height: 0; }
 .items-center    { align-items: center; }
 .items-start     { align-items: flex-start; }
 .items-end       { align-items: flex-end; }
@@ -649,7 +657,6 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .detail-isbn, .page-topbar-title { font-size: var(--text-sm); color: var(--text-muted); margin-left: auto; }
 
 /* ── Book list ──────────────────────────────────────────────── */
-.list-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 
 .list-header {
     display: flex;
@@ -664,8 +671,6 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .available-filter-label { display: flex; align-items: center; gap: var(--sp-6); font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap; cursor: pointer; user-select: none; }
 
 .book-list {
-    flex: 1;
-    overflow-y: auto;
     display: grid;
     /* Single column on narrow displays (kiosk 800px, phones) so titles stay
        readable; two columns only when there's real width (see media query). */
@@ -903,13 +908,10 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .broken-form-btns { display: flex; gap: var(--sp-8); }
 
 /* ── Add book form ──────────────────────────────────────────── */
-.addbook-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 .addbook-layout { flex: 1; display: flex; overflow: hidden; }
 
 .addbook-form-col {
-    flex: 1;
     padding: var(--sp-14) var(--sp-16);
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: var(--sp-10);
@@ -1010,8 +1012,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .picker-arrow { font-size: var(--text-lg); color: var(--text-dim); flex-shrink: 0; }
 
 /* ── Account page ───────────────────────────────────────────── */
-.acct-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-.acct-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-bottom: var(--sp-12); min-height: 0; }
+.acct-body { display: flex; flex-direction: column; padding-bottom: var(--sp-12); }
 .acct-section { padding: var(--sp-12) var(--sp-16) 0; }
 
 .acct-section-title {
@@ -1090,8 +1091,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .txn-neutral { color: var(--text-dim); }
 
 /* ── Admin layout ───────────────────────────────────────────── */
-.admin-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-.admin-body { flex: 1; overflow-y: auto; padding: var(--sp-10) var(--sp-16) var(--sp-16); min-height: 0; }
+.admin-body { padding: var(--sp-10) var(--sp-16) var(--sp-16); }
 
 .admin-nav { display: flex; border-bottom: var(--bw) solid var(--border); background: var(--surface); flex-shrink: 0; }
 

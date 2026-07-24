@@ -11,7 +11,7 @@
 <body>
 <header id="site-header" class="app-header"></header>
 <main class="app-main">
-    <div class="admin-page">
+    <div class="admin-page flex-scroll-col">
         <nav class="admin-nav">
             <a href="/admin/users.html" class="admin-nav-item"><i class="fa-solid fa-users"></i> <span class="nav-label-users"></span></a>
             <a href="/admin/overdue.html" class="admin-nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label-overdue"></span> <span class="nav-badge" id="overdue-badge" style="display:none"></span></a>
@@ -19,7 +19,7 @@
             <a href="/admin/settings.html" class="admin-nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-label-settings"></span></a>
             <a href="/admin/backups.html" class="admin-nav-item admin-nav-item-icon active" data-tip="Backups"><i class="fa-solid fa-rotate-left"></i></a>
         </nav>
-        <div class="admin-body">
+        <div class="admin-body flex-scroll-body">
             <button class="btn btn-ghost btn-sm" id="btn-save-now"><i class="fa-solid fa-floppy-disk"></i> <span id="save-now-label"></span></button>
             <div id="save-now-msg" class="fetch-status mb-2" style="display:none"></div>
             <div class="backups-cols pt-2">

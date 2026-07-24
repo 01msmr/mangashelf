@@ -178,11 +178,11 @@ function renderAccount(data) {
     }
 
     document.getElementById('main-content').innerHTML = `
-        <div class="acct-page">
+        <div class="acct-page flex-scroll-col">
             <div class="lang-switcher-row">
                 <a href="/change-pin.html" class="btn btn-ghost btn-sm">${Lang.t('acct.changePin')}</a>
             </div>
-            <div class="acct-body">
+            <div class="acct-body flex-scroll-body">
                 <div class="flex items-stretch">
                     <div class="acct-section flex-1">
                         <div class="acct-section-title">${Lang.t('acct.balance')}</div>
