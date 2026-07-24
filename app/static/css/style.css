@@ -1206,11 +1206,15 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .takeout-rate-label { margin-bottom: var(--sp-6); }
 .takeout-rate-group { margin-bottom: var(--sp-10); max-width: 18.2609rem; }
 
-/* ── Thin dark scrollbar ────────────────────────────────────── */
-::-webkit-scrollbar            { width: var(--sp-4); height: var(--sp-4); }
-::-webkit-scrollbar-track      { background: transparent; }
-::-webkit-scrollbar-thumb      { background: var(--surface); border-radius: var(--sp-2); }
-::-webkit-scrollbar-thumb:hover{ background: var(--text-dim); }
+/* ── Always-visible, finger-friendly scrollbar (Chromium + Firefox) ── */
+* { scrollbar-width: auto; scrollbar-color: var(--text-dim) var(--surface); }
+::-webkit-scrollbar            { width: var(--sp-16); height: var(--sp-16); }
+::-webkit-scrollbar-track      { background: var(--surface); }
+::-webkit-scrollbar-thumb      { background: var(--text-dim); border-radius: var(--sp-8); border: var(--sp-3) solid var(--surface); min-height: var(--sp-52); }
+::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active { background: var(--text-muted); }
+
+html { overflow-y: scroll; }
+.flex-scroll-body { overflow-y: scroll; }
 
 /* ── Focus rings ────────────────────────────────────────────── */
 :focus:not(:focus-visible) { outline: none; box-shadow: none; }
@@ -1336,7 +1340,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 @media (max-width: 1024px) {
     /* Only <html> scrolls. If <body> is also a scroll container, the sticky
        header sticks to body while html scrolls — so it never pins. */
-    html { overflow: auto; height: auto; overscroll-behavior: auto; }
+    html { overflow-y: scroll; height: auto; overscroll-behavior: auto; }
     body { overflow: visible; height: auto; }
     .app-main  { position: static; overflow: visible; height: auto; }
     .app-header { position: sticky; top: 0; z-index: 100; }
