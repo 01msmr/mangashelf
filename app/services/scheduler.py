@@ -6,6 +6,7 @@ has not yet been charged, debit the borrower 10.00 € (entry-fee amount)
 and record a Transaction of type 'overdue'.
 """
 import hashlib
+import os
 import sqlite3
 import tempfile
 from datetime import datetime, timezone
@@ -29,8 +30,13 @@ def _run_backup(kind: str, retention_days: int):
     backup_dir = BACKUPS_DIR / kind
     backup_dir.mkdir(parents=True, exist_ok=True)
 
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
-        tmp_path = Path(tmp.name)
+    # Written directly into backup_dir (not the system tempdir) so the final
+    # rename stays on the same filesystem — /tmp is the container's own
+    # overlay fs, while backups/ is a bind-mounted host volume; renaming
+    # across the two fails with "Invalid cross-device link".
+    fd, tmp_name = tempfile.mkstemp(suffix='.db', dir=backup_dir)
+    os.close(fd)
+    tmp_path = Path(tmp_name)
     try:
         src = sqlite3.connect(str(LIVE_DB_PATH))
         dst = sqlite3.connect(str(tmp_path))
