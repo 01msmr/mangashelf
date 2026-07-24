@@ -649,7 +649,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .detail-isbn, .page-topbar-title { font-size: var(--text-sm); color: var(--text-muted); margin-left: auto; }
 
 /* ── Book list ──────────────────────────────────────────────── */
-.list-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.list-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 
 .list-header {
     display: flex;
@@ -848,7 +848,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 }
 
 /* ── Book detail ────────────────────────────────────────────── */
-.detail-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.detail-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 .detail-body { flex: 1; display: flex; gap: 0; overflow: hidden; }
 
 .detail-cover-wrap {
@@ -903,7 +903,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .broken-form-btns { display: flex; gap: var(--sp-8); }
 
 /* ── Add book form ──────────────────────────────────────────── */
-.addbook-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.addbook-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 .addbook-layout { flex: 1; display: flex; overflow: hidden; }
 
 .addbook-form-col {
@@ -955,7 +955,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .form-select option { background: var(--surface); color: var(--text); }
 
 /* ── Shared action page (borrow / return) ───────────────────── */
-.action-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.action-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 .action-body { flex: 1; display: flex; overflow: hidden; }
 
 .action-cover { flex-shrink: 0; width: 8.2609rem; padding: var(--sp-16) 0 var(--sp-16) var(--sp-16); display: flex; align-items: flex-start; }
@@ -993,7 +993,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .action-buttons .flex-1 { flex: 1; }
 
 /* ── Return picker ──────────────────────────────────────────── */
-.picker-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.picker-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 .picker-body { flex: 1; display: flex; overflow: hidden; }
 .picker-cover { flex-shrink: 0; width: 8.2609rem; padding: var(--sp-16) 0 var(--sp-16) var(--sp-16); display: flex; align-items: flex-start; }
 .picker-right { flex: 1; padding: var(--sp-16); display: flex; flex-direction: column; gap: var(--sp-10); overflow-y: auto; }
@@ -1010,7 +1010,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .picker-arrow { font-size: var(--text-lg); color: var(--text-dim); flex-shrink: 0; }
 
 /* ── Account page ───────────────────────────────────────────── */
-.acct-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.acct-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 .acct-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-bottom: var(--sp-12); }
 .acct-section { padding: var(--sp-12) var(--sp-16) 0; }
 
@@ -1090,7 +1090,7 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .txn-neutral { color: var(--text-dim); }
 
 /* ── Admin layout ───────────────────────────────────────────── */
-.admin-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.admin-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 .admin-body { flex: 1; overflow-y: auto; padding: var(--sp-10) var(--sp-16) var(--sp-16); }
 
 .admin-nav { display: flex; border-bottom: var(--bw) solid var(--border); background: var(--surface); flex-shrink: 0; }
