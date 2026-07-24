@@ -1,3 +1,14 @@
+// Paint the cached header for this page immediately (before the async
+// /api/auth/me round-trip), so the bar no longer pops in a moment late.
+(function primeNav() {
+    try {
+        const header = document.getElementById('site-header');
+        if (!header || header.innerHTML.trim()) return;
+        const cache = JSON.parse(localStorage.getItem('navCache') || '{}');
+        if (cache[window.location.pathname]) header.innerHTML = cache[window.location.pathname];
+    } catch (e) {}
+})();
+
 /**
  * Renders the site header once the current user is loaded.
  * Call renderNav(user) after fetching /api/auth/me.
@@ -32,7 +43,16 @@ function renderNav(user) {
         </div>
     `;
 
+    // Cache the finished (already-localized) bar per page so the next visit
+    // paints it instantly instead of waiting for /api/auth/me to return.
+    try {
+        const cache = JSON.parse(localStorage.getItem('navCache') || '{}');
+        cache[path] = header.innerHTML;
+        localStorage.setItem('navCache', JSON.stringify(cache));
+    } catch (e) {}
+
     document.getElementById('nav-logout').addEventListener('click', async () => {
+        try { localStorage.removeItem('navCache'); } catch (e) {}
         await API.post('/api/auth/logout');
         window.location.href = '/login.html';
     });
@@ -73,6 +93,7 @@ function _wireLangDropdown() {
             menu.classList.remove('open');
             if (code === Lang.current) return;
             Lang.set(code);
+            try { localStorage.removeItem('navCache'); } catch (e) {}
             await API.post(`/api/account/language/${code}`).catch(() => {});
             window.location.reload();
         });
@@ -124,6 +145,7 @@ function startIdleTimer() {
     function reset() {
         clearTimeout(_idleTimer);
         _idleTimer = setTimeout(async () => {
+            try { localStorage.removeItem('navCache'); } catch (e) {}
             await API.post('/api/auth/logout').catch(() => {});
             window.location.href = '/login.html';
         }, IDLE_MS);
