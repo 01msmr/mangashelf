@@ -440,10 +440,15 @@ a.badge-admin-link:link, a.badge-admin-link:visited { color: inherit !important;
 .pin-hint { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--sp-14); text-align: center; letter-spacing: 0.0217rem; }
 .dot-gap { margin-left: var(--sp-10); }
 .overlay-admin {
-    position: fixed; inset: 0;
-    background: var(--overlay-bg);
+    position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0;
     z-index: 9000;
     display: flex; align-items: center; justify-content: center;
+}
+/* Grey/blur only when the PIN prompt is actually shown; while merely
+   waiting for the verify round-trip the overlay stays invisible (blocks
+   clicks only) so an already-verified admin sees no flash. */
+.overlay-admin.locked {
+    background: var(--overlay-bg);
     backdrop-filter: blur(var(--sp-3));
 }
 

@@ -227,6 +227,7 @@ async function requireAdminPin(onVerified) {
 // Fills the already-shown cover overlay with the admin PIN gate. Uses the shared
 // makePinField module (8 digits = user PIN + admin PIN), keyboard support included.
 function _fillAdminPinPrompt(overlay, onVerified) {
+    overlay.classList.add('locked');
     overlay.innerHTML = `
         <div class="pin-card pin-card-wide">
             <div class="pin-card-label">${Lang.t('adminPin.title')}</div>
