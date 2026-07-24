@@ -29,7 +29,7 @@ function renderNav(user) {
         : '';
     const reloadTip    = (typeof Lang !== 'undefined' && Lang.t) ? Lang.t('nav.reload') : 'Reload';
 
-    header.innerHTML = `
+    const html = `
         <div class="header-left-group">
             <button class="btn-reload" id="btn-reload" data-tip="${esc(reloadTip)}" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i></button>
             <a href="/account.html" class="btn btn-ghost btn-sm user-badge${onAccount ? ' nav-active' : ''}">${esc(user.username)}</a>${adminBadge}<span class="header-balance ${balanceClass}">${fmtEur(user.guthaben)}</span>
@@ -42,6 +42,14 @@ function renderNav(user) {
             <button class="btn btn-ghost btn-sm" id="nav-logout"><i class="fa-solid fa-right-from-bracket"></i> ${(typeof Lang !== 'undefined' && Lang.t) ? Lang.t('nav.logout') : 'Logout'}</button>
         </div>
     `;
+
+    // Only touch the DOM when the bar actually differs from what primeNav
+    // already painted — otherwise the (identical) re-render reloads the logo
+    // img and flickers. Normalise via a temp node so the string comparison
+    // matches the browser-serialized innerHTML.
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    if (header.innerHTML !== tmp.innerHTML) header.innerHTML = tmp.innerHTML;
 
     // Cache the finished (already-localized) bar per page so the next visit
     // paints it instantly instead of waiting for /api/auth/me to return.
@@ -203,12 +211,12 @@ function startIdleTimer() {
  * onVerified() is called once the user is cleared.
  */
 async function requireAdminPin(onVerified) {
-    // Cover the page immediately so the admin content never flashes before the
-    // verification / PIN gate resolves (no background flicker on entry).
+    // Cover only the content region (below header + nav tabs) so those stay put
+    // while the verification / PIN gate resolves.
     const overlay = document.createElement('div');
     overlay.id = 'admin-pin-overlay';
     overlay.className = 'overlay-admin';
-    document.body.appendChild(overlay);
+    (document.querySelector('.admin-body') || document.body).appendChild(overlay);
     try {
         await API.get('/api/admin/verified');
         overlay.remove();
