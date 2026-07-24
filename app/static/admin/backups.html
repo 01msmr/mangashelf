@@ -20,7 +20,8 @@
             <a href="/admin/backups.html" class="admin-nav-item admin-nav-item-icon active" data-tip="Backups"><i class="fa-solid fa-rotate-left"></i></a>
         </nav>
         <div class="admin-body">
-            <button class="btn btn-ghost btn-sm mb-2" id="btn-save-now"><i class="fa-solid fa-floppy-disk"></i> <span id="save-now-label"></span></button>
+            <button class="btn btn-ghost btn-sm" id="btn-save-now"><i class="fa-solid fa-floppy-disk"></i> <span id="save-now-label"></span></button>
+            <div id="save-now-msg" class="fetch-status mb-2" style="display:none"></div>
             <div class="backups-cols pt-2">
                 <div class="card">
                     <div class="card-header" id="title-daily"></div>
@@ -59,13 +60,21 @@ function applyTranslations() {
 }
 
 async function saveNow() {
-    const btn = document.getElementById('btn-save-now');
+    const btn   = document.getElementById('btn-save-now');
+    const msgEl = document.getElementById('save-now-msg');
     btn.disabled = true;
     try {
         await API.post('/api/admin/backups/save-now');
         await loadBackups();
+        msgEl.className = 'fetch-status text-success mb-2';
+        msgEl.textContent = Lang.t('adminBackups.saved');
+    } catch (err) {
+        msgEl.className = 'fetch-status text-danger mb-2';
+        msgEl.textContent = err.detail || Lang.t('adminBackups.saveFailed');
     } finally {
         btn.disabled = false;
+        msgEl.style.display = 'block';
+        setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
     }
 }
 
